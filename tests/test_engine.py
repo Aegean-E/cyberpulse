@@ -207,7 +207,54 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(self.engine.state.trace_percent, 30)
         self.assertTrue(self.engine.nodes["node_proxy_a"].logs_cleared)
 
+    def test_local_deck_filesystem_and_loot_archiving(self):
+        # List local files on rig
+        ok, output, local_files = self.engine.list_local_files()
+        self.assertTrue(ok)
+        self.assertIn("Local Rig Filesystem", output)
+        self.assertTrue(len(local_files) >= 2)
+
+        # Read local file
+        ok, view, content = self.engine.read_local_file("/home/deck/notes.txt")
+        self.assertTrue(ok)
+        self.assertIn("NETRUNNER LOG", content)
+
+        # Stealing remote file archives into local /loot/
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.download_file("192.168.1.10", "/home/admin/network_map.txt")
+        self.assertTrue(any(f.path == "/loot/network_map.txt" for f in self.engine.deck.local_filesystem))
+
+    def test_phishing_dispatch(self):
+        self.engine.deck.cpu_cycles = 5
+        ok, msg, report = self.engine.phish_target("192.168.1.10")
+        self.assertIn("PHISHING", msg)
+        self.assertIn("target_ip", report)
+        self.assertEqual(report["target_ip"], "192.168.1.10")
+
+    def test_craft_virus_workshop(self):
+        self.engine.deck.cryptocreds = 200
+        ok, msg = self.engine.craft_virus("worm_replicator")
+        self.assertTrue(ok)
+        self.assertIn("WORKSHOP SYNTHESIS COMPLETE", msg)
+        self.assertIn("worm_replicator", self.engine.deck.exploits)
+        self.assertEqual(self.engine.deck.cryptocreds, 50)
+
+    def test_deploy_and_tick_keylogger_daemon(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.deck.cpu_cycles = 4
+        ok, msg = self.engine.deploy_daemon("192.168.1.10", "keylogger")
+        self.assertTrue(ok)
+        self.assertIn("DAEMON INITIALIZED", msg)
+        self.assertEqual(len(self.engine.deck.active_daemons), 1)
+
+        # Tick daemons
+        unbanked_before = self.engine.state.unbanked_creds
+        msgs = self.engine.tick_daemons()
+        self.assertTrue(len(msgs) >= 1)
+        self.assertGreater(self.engine.state.unbanked_creds, unbanked_before)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

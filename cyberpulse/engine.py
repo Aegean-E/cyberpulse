@@ -8,15 +8,52 @@ from cyberpulse.models import (
     CareerProfile,
     CyberDeck,
     GameState,
+    MalwareDaemon,
     Node,
     NodeStatus,
     NodeType,
     PortService,
     VirtualFile,
+    VirusCraftRecipe,
     apply_career_profile,
 )
 from cyberpulse.network import generate_network
 from cyberpulse.rewards import roll_breach_reward
+
+CRAFTING_RECIPES: Dict[str, VirusCraftRecipe] = {
+    "keylogger_daemon": VirusCraftRecipe(
+        name="keylogger_daemon",
+        vector="stealth",
+        payload="keylogger",
+        cost_creds=100,
+        cpu_cost=2,
+        description="Persistent background listener chip. Harvests credentials and passive credits from breached hosts.",
+    ),
+    "worm_replicator": VirusCraftRecipe(
+        name="worm_replicator",
+        vector="worm",
+        payload="logic_overload",
+        cost_creds=150,
+        cpu_cost=3,
+        description="Self-propagating payload. Breaches target node and forces disclosure of all adjacent subnet nodes.",
+    ),
+    "data_siphon": VirusCraftRecipe(
+        name="data_siphon",
+        vector="trojan",
+        payload="credit_siphon",
+        cost_creds=120,
+        cpu_cost=2,
+        description="Automated exfiltration script. Immediately drains 150 unbanked credits from target host.",
+    ),
+    "trace_cleaner": VirusCraftRecipe(
+        name="trace_cleaner",
+        vector="stealth",
+        payload="trace_wipe",
+        cost_creds=80,
+        cpu_cost=2,
+        description="Anti-forensic daemon. Scrub active trace by 35% on execution.",
+    ),
+}
 
 
 class GameEngine:
@@ -109,6 +146,7 @@ class GameEngine:
         self.add_trace(5)
         self.regenerate_cpu(1)
         self.state.turns_elapsed += 1
+        self.tick_daemons()
         return True, f"Scanned {len(revealed)} adjacent network nodes. Recovered 1 CPU cycle.", revealed
 
     def can_move_to(self, target_id: str) -> Tuple[bool, str]:
@@ -140,6 +178,7 @@ class GameEngine:
         self.state.turns_elapsed += 1
         self.regenerate_cpu(1)
         self.add_trace(2)
+        self.tick_daemons()
         node = self.get_current_node()
         msg = f"⚡ Transferred terminal session to '{node.name}'. Recovered 1 CPU cycle."
         self.state.message_log.append(msg)
@@ -268,6 +307,55 @@ class GameEngine:
             msg = f"⛏️ BRUTE MINER EXECUTED! Mined +{mined} unbanked CryptoCreds (Trace +15% -> {self.state.trace_percent}%)."
             self.state.message_log.append(msg)
             return True, msg
+
+        if name == "trace_cleaner":
+            reduced = min(self.state.trace_percent, 35)
+            self.state.trace_percent = max(0, self.state.trace_percent - 35)
+            self.deck.exploits.remove(name)
+            msg = f"🧹 TRACE CLEANER EXECUTED! Scrubbed active forensic footprint by {reduced}% (current: {self.state.trace_percent}%)."
+            self.state.message_log.append(msg)
+            return True, msg
+
+        if name == "data_siphon":
+            target = target_id or self.state.current_node_id
+            node = self.find_node(target)
+            if not node:
+                return False, f"Target '{target}' not found."
+            if node.status != NodeStatus.BREACHED:
+                return False, f"Data siphon requires host {node.hostname} to be securely breached."
+            siphoned = 150
+            self.state.unbanked_creds += siphoned
+            self.deck.exploits.remove(name)
+            self.add_trace(10)
+            msg = f"⚡ DATA SIPHON EXECUTED! Drained +{siphoned} unbanked Creds from {node.hostname} (Trace +10% -> {self.state.trace_percent}%)."
+            self.state.message_log.append(msg)
+            return True, msg
+
+        if name == "worm_replicator":
+            if not target_id:
+                return False, "Usage: exploit worm_replicator <target_ip | node_id>"
+            node = self.find_node(target_id)
+            if not node:
+                return False, f"Target '{target_id}' not found."
+            curr = self.get_current_node()
+            if node.node_id not in curr.connected_ids and node.node_id != curr.node_id:
+                return False, f"Target '{node.hostname}' is not in direct subnet range."
+            self.deck.exploits.remove(name)
+            _, breach_msg = self.complete_breach(node.node_id)
+            for adj_id in node.connected_ids:
+                adj = self.nodes.get(adj_id)
+                if adj and adj.status == NodeStatus.LOCKED:
+                    adj.status = NodeStatus.DISCOVERED
+            msg = f"🐛 WORM REPLICATOR PROPAGATED! Infiltrated {node.hostname} and forced network disclosure of connected subnets!\n{breach_msg}"
+            self.state.message_log.append(msg)
+            return True, msg
+
+        if name == "keylogger_daemon":
+            target = target_id or self.state.current_node_id
+            ok, d_msg = self.deploy_daemon(target, "keylogger")
+            if ok:
+                self.deck.exploits.remove(name)
+            return ok, d_msg
 
         return False, f"Exploit '{name}' has no active payload handler."
 
@@ -458,15 +546,24 @@ class GameEngine:
 
         self.add_trace(8)
         self.state.turns_elapsed += 1
+        self.tick_daemons()
 
         already_looted = vfile.path in self.state.looted_payloads
         if not already_looted:
             self.state.looted_payloads.append(vfile.path)
             self.state.unbanked_creds += vfile.value_creds
 
+        # Archive copy into player's local deck filesystem under /loot/<filename>
+        loot_name = vfile.path.split("/")[-1]
+        loot_path = f"/loot/{loot_name}"
+        if not any(f.path == loot_path for f in self.deck.local_filesystem):
+            self.deck.local_filesystem.append(
+                VirtualFile(path=loot_path, size_kb=vfile.size_kb, content=vfile.content, value_creds=vfile.value_creds)
+            )
+
         msg = f"📥 EXFILTRATION COMPLETE: Stole '{vfile.path}' ({vfile.size_kb}KB) from {node.hostname}."
         if vfile.value_creds > 0 and not already_looted:
-            msg += f" Data sold on darknet for +{vfile.value_creds} unbanked Creds!"
+            msg += f" Data sold on darknet for +{vfile.value_creds} unbanked Creds! Archived to local rig ({loot_path})."
 
         contract = self.state.active_contract
         if contract and not contract.completed:
@@ -518,4 +615,170 @@ class GameEngine:
 
         self.state.message_log.append(msg)
         return True, msg
+
+    def tick_daemons(self) -> List[str]:
+        """Process active background malware daemons (e.g. keyloggers)."""
+        messages = []
+        for daemon in list(self.deck.active_daemons):
+            daemon.turns_active += 1
+            node = self.nodes.get(daemon.target_node_id)
+            if not node or node.status != NodeStatus.BREACHED:
+                continue
+
+            self.state.unbanked_creds += daemon.yield_per_turn
+            self.add_trace(daemon.detection_risk)
+            msg = f"📡 [{daemon.daemon_type.upper()}] Harvested +{daemon.yield_per_turn} unbanked Creds from {node.hostname} (Trace +{daemon.detection_risk}%)."
+            messages.append(msg)
+            self.state.message_log.append(msg)
+        return messages
+
+    def deploy_daemon(self, target_query: str, daemon_type: str = "keylogger") -> Tuple[bool, str]:
+        """Deploy an in-game background malware listener daemon onto a breached host."""
+        if self.state.is_game_over:
+            return False, "Cannot deploy daemon: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot deploy daemon: terminal session jacked out."
+
+        node = self.find_node(target_query)
+        if not node:
+            return False, f"Target '{target_query}' not found."
+
+        if node.status != NodeStatus.BREACHED:
+            return False, f"Cannot deploy daemon: Host {node.hostname} ({node.ip_address}) is not breached."
+
+        if any(d.target_node_id == node.node_id and d.daemon_type == daemon_type for d in self.deck.active_daemons):
+            return False, f"Daemon '{daemon_type}' is already running on {node.hostname}."
+
+        if self.deck.cpu_cycles < 2:
+            return False, "Insufficient CPU cycles (need 2 CPU to initialize daemon listener)."
+
+        self.deck.cpu_cycles -= 2
+        daemon_id = f"dmn_{len(self.deck.active_daemons) + 1:03d}"
+        daemon = MalwareDaemon(
+            daemon_id=daemon_id,
+            daemon_type=daemon_type,
+            target_node_id=node.node_id,
+            target_ip=node.ip_address,
+            yield_per_turn=25,
+            detection_risk=3,
+        )
+        self.deck.active_daemons.append(daemon)
+        msg = f"👾 DAEMON INITIALIZED: [{daemon_type.upper()}] active on {node.hostname} ({node.ip_address}). Passively harvesting +25 unbanked Creds/turn."
+        self.state.message_log.append(msg)
+        return True, msg
+
+    def list_local_files(self) -> Tuple[bool, str, List[VirtualFile]]:
+        """List files (ls) stored on player's local cyberdeck rig (localhost)."""
+        lines = [
+            f"Local Rig Filesystem ({self.deck.local_hostname} [{self.deck.local_ip}]):",
+            "PERM        SIZE     VALUE    PATH"
+        ]
+        for f in self.deck.local_filesystem:
+            val_str = f"{f.value_creds}cr" if f.value_creds > 0 else "---"
+            lines.append(f"-rw-r--r--  {f.size_kb:>4}KB  {val_str:>7}  {f.path}")
+        return True, "\n".join(lines), self.deck.local_filesystem
+
+    def read_local_file(self, file_path: str) -> Tuple[bool, str, Optional[str]]:
+        """Read content (cat) of a file on player's local cyberdeck rig."""
+        fp = file_path.strip()
+        vfile = next((f for f in self.deck.local_filesystem if f.path == fp or f.path.endswith("/" + fp) or f.path.split("/")[-1] == fp), None)
+        if not vfile:
+            return False, f"File '{file_path}' not found on local deck.", None
+        return True, f"=== [cat {vfile.path}] ===\n{vfile.content}\n=== [EOF] ===", vfile.content
+
+    def phish_target(self, target_query: str) -> Tuple[bool, str, Dict[str, Any]]:
+        """Dispatch a simulated social engineering spear-phishing campaign to target host employees."""
+        if self.state.is_game_over:
+            return False, "Cannot phish: system lockout in effect.", {}
+        if self.state.is_jacked_out:
+            return False, "Cannot phish: terminal session jacked out.", {}
+
+        node = self.find_node(target_query)
+        if not node:
+            return False, f"Target '{target_query}' not found.", {}
+
+        if node.status == NodeStatus.BREACHED:
+            return False, f"Host {node.hostname} ({node.ip_address}) is already compromised.", {}
+
+        curr = self.get_current_node()
+        if node.status == NodeStatus.LOCKED and node.node_id not in curr.connected_ids and node.node_id != curr.node_id:
+            return False, f"Target {node.hostname} is out of subnet range.", {}
+
+        if self.deck.cpu_cycles < 1:
+            return False, "Insufficient CPU cycles (need 1 CPU).", {}
+
+        self.deck.cpu_cycles -= 1
+        self.state.turns_elapsed += 1
+        self.add_trace(6)
+        self.tick_daemons()
+
+        base_chance = max(0.40, 0.90 - (node.security_level * 0.12))
+        roll = self.rng.random()
+        success = roll <= base_chance
+
+        report = {
+            "target_ip": node.ip_address,
+            "target_hostname": node.hostname,
+            "success": success,
+            "roll": round(roll, 2),
+            "chance": round(base_chance, 2),
+        }
+
+        if success:
+            if node.status == NodeStatus.LOCKED:
+                node.status = NodeStatus.DISCOVERED
+
+            lowered = False
+            if node.security_level > 1:
+                node.security_level -= 1
+                lowered = True
+
+            cred_file = f"/loot/{node.hostname}_credentials.token"
+            token_content = f"HARVESTED EMPLOYEE CREDENTIALS\nHost: {node.hostname} ({node.ip_address})\nAuth Token: PHISH-TOKEN-{self.rng.randint(1000, 9999)}-X\nAccess: Backdoor port clearance granted."
+            if not any(f.path == cred_file for f in self.deck.local_filesystem):
+                self.deck.local_filesystem.append(
+                    VirtualFile(path=cred_file, size_kb=1, content=token_content, value_creds=40)
+                )
+
+            msg = f"🎣 PHISHING SUCCESS: Employee at {node.hostname} clicked credential lure!\n"
+            if lowered:
+                msg += f"   * Security tier downgraded to Level {node.security_level} (Buffer RAM required reduced to {node.security_level * 16}MB)!\n"
+            msg += f"   * Harvested auth token saved to local rig at {cred_file}."
+            self.state.message_log.append(f"Phishing success against {node.hostname}.")
+            return True, msg, report
+        else:
+            self.add_trace(8)
+            msg = f"🎣 PHISHING FAILED: IT security on {node.hostname} flagged spear-phishing lure. IDS alert triggered (Trace +8%)!"
+            self.state.message_log.append(msg)
+            return False, msg, report
+
+    def craft_virus(self, recipe_name: str) -> Tuple[bool, str]:
+        """Assemble a custom virus chip in the netrunner workshop."""
+        recipe_key = recipe_name.lower().strip()
+        recipe = CRAFTING_RECIPES.get(recipe_key)
+        if not recipe:
+            available = ", ".join(CRAFTING_RECIPES.keys())
+            return False, f"Unknown recipe '{recipe_name}'. Available recipes: {available}"
+
+        total_funds = self.deck.cryptocreds + self.state.unbanked_creds
+        if total_funds < recipe.cost_creds:
+            return False, f"Insufficient funds: Synthesis requires {recipe.cost_creds} Creds (available: {total_funds} Creds)."
+
+        rem = recipe.cost_creds
+        if self.state.unbanked_creds >= rem:
+            self.state.unbanked_creds -= rem
+        else:
+            rem -= self.state.unbanked_creds
+            self.state.unbanked_creds = 0
+            self.deck.cryptocreds -= rem
+
+        self.deck.exploits.append(recipe.name)
+        msg = f"🧬 WORKSHOP SYNTHESIS COMPLETE: Crafted virus chip '{recipe.name}' (Vector: {recipe.vector}, Payload: {recipe.payload}). Loaded into deck exploits."
+        self.state.message_log.append(msg)
+        return True, msg
+
+    def list_crafting_recipes(self) -> List[Dict[str, Any]]:
+        """List available malware crafting recipes in the workshop."""
+        return [r.to_dict() for r in CRAFTING_RECIPES.values()]
+
 
