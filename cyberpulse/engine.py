@@ -194,6 +194,10 @@ class GameEngine:
 
     def spoof_ip(self) -> Tuple[bool, str]:
         """Reduce active trace level by burning CPU cycles."""
+        if self.state.is_game_over:
+            return False, "Cannot spoof: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot spoof: terminal session jacked out."
         if self.deck.cpu_cycles < 3:
             return False, "Insufficient CPU cycles (need 3 CPU)."
         self.deck.cpu_cycles -= 3
@@ -205,6 +209,10 @@ class GameEngine:
 
     def scan_surroundings(self) -> Tuple[bool, str, List[Node]]:
         """Scan adjacent nodes to reveal their security level and status."""
+        if self.state.is_game_over:
+            return False, "Cannot scan: system lockout in effect.", []
+        if self.state.is_jacked_out:
+            return False, "Cannot scan: terminal session jacked out.", []
         current = self.get_current_node()
         revealed: List[Node] = []
         for adj_id in current.connected_ids:
@@ -338,7 +346,14 @@ class GameEngine:
 
     def use_exploit(self, exploit_name: str, target_id: Optional[str] = None) -> Tuple[bool, str]:
         """Deploy an executable exploit chip loaded in cyberdeck firmware."""
-        name = exploit_name.lower().strip()
+        if self.state.is_game_over:
+            return False, "Cannot use exploit: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot use exploit: terminal session jacked out."
+
+        name = str(exploit_name or "").lower().strip()
+        if not name:
+            return False, "No exploit name specified."
         if name not in self.deck.exploits:
             return False, f"Exploit '{name}' is not loaded in cyberdeck firmware."
 
@@ -451,11 +466,13 @@ class GameEngine:
         self.state.message_log.append(msg)
         return True, msg
 
-    def find_node(self, query: str) -> Optional[Node]:
+    def find_node(self, query: Optional[str]) -> Optional[Node]:
         """Lookup node by node_id, ip_address, or hostname."""
-        q = query.strip().lower()
-        if query in self.nodes:
-            return self.nodes[query]
+        if not query:
+            return None
+        q = str(query).strip().lower()
+        if str(query) in self.nodes:
+            return self.nodes[str(query)]
         for node in self.nodes.values():
             if node.node_id.lower() == q or node.ip_address.lower() == q or node.hostname.lower() == q:
                 return node
@@ -591,12 +608,19 @@ class GameEngine:
         self.deck.cpu_cycles -= cpu_needed
         target_port.breached = True
         self.add_trace(trace_add)
+        self.state.turns_elapsed += 1
+        self.tick_daemons()
         _, breach_msg = self.complete_breach(node.node_id)
         msg = f"💥 EXPLOIT SUCCESSFUL! Injected {exploit_label} via port {port_num} ({target_port.service}). Root access acquired on {node.hostname} ({node.ip_address})!\n{breach_msg}{av_notice}"
         return True, msg
 
     def list_files(self, target_query: Optional[str] = None) -> Tuple[bool, str, List[VirtualFile]]:
         """List files (ls) on target host's virtual filesystem (requires host to be breached)."""
+        if self.state.is_game_over:
+            return False, "Cannot list files: system lockout in effect.", []
+        if self.state.is_jacked_out:
+            return False, "Cannot list files: terminal session jacked out.", []
+
         if target_query:
             node = self.find_node(target_query)
         else:
@@ -619,6 +643,11 @@ class GameEngine:
 
     def read_file(self, target_query: str, file_path: str) -> Tuple[bool, str, Optional[str]]:
         """Read file contents (cat) on breached host."""
+        if self.state.is_game_over:
+            return False, "Cannot read file: system lockout in effect.", None
+        if self.state.is_jacked_out:
+            return False, "Cannot read file: terminal session jacked out.", None
+
         node = self.find_node(target_query)
         if not node:
             return False, f"Host '{target_query}' not found.", None
@@ -626,7 +655,10 @@ class GameEngine:
         if node.status != NodeStatus.BREACHED:
             return False, f"Access Denied: Host {node.hostname} is not breached.", None
 
-        fp = file_path.strip()
+        fp = str(file_path or "").strip()
+        if not fp:
+            return False, "File path cannot be empty.", None
+
         vfile = next((f for f in node.filesystem if f.path == fp or f.path.endswith("/" + fp) or f.path.split("/")[-1] == fp), None)
         if not vfile:
             return False, f"File '{file_path}' not found on {node.hostname}.", None
@@ -647,7 +679,10 @@ class GameEngine:
         if node.status != NodeStatus.BREACHED:
             return False, f"Access Denied: Host {node.hostname} is not breached.", None
 
-        fp = file_path.strip()
+        fp = str(file_path or "").strip()
+        if not fp:
+            return False, "File path cannot be empty.", None
+
         vfile = next((f for f in node.filesystem if f.path == fp or f.path.endswith("/" + fp) or f.path.split("/")[-1] == fp), None)
         if not vfile:
             return False, f"File '{file_path}' not found on {node.hostname}.", None
@@ -792,6 +827,11 @@ class GameEngine:
 
     def list_local_files(self) -> Tuple[bool, str, List[VirtualFile]]:
         """List files (ls) stored on player's local cyberdeck rig (localhost)."""
+        if self.state.is_game_over:
+            return False, "Cannot list files: system lockout in effect.", []
+        if self.state.is_jacked_out:
+            return False, "Cannot list files: terminal session jacked out.", []
+
         lines = [
             f"Local Rig Filesystem ({self.deck.local_hostname} [{self.deck.local_ip}]):",
             "PERM        SIZE     VALUE    PATH"
@@ -803,7 +843,15 @@ class GameEngine:
 
     def read_local_file(self, file_path: str) -> Tuple[bool, str, Optional[str]]:
         """Read content (cat) of a file on player's local cyberdeck rig."""
-        fp = file_path.strip()
+        if self.state.is_game_over:
+            return False, "Cannot read file: system lockout in effect.", None
+        if self.state.is_jacked_out:
+            return False, "Cannot read file: terminal session jacked out.", None
+
+        fp = str(file_path or "").strip()
+        if not fp:
+            return False, "File path cannot be empty.", None
+
         vfile = next((f for f in self.deck.local_filesystem if f.path == fp or f.path.endswith("/" + fp) or f.path.split("/")[-1] == fp), None)
         if not vfile:
             return False, f"File '{file_path}' not found on local deck.", None
@@ -1056,7 +1104,12 @@ class GameEngine:
 
     def craft_virus(self, recipe_name: str) -> Tuple[bool, str]:
         """Assemble a custom virus chip in the netrunner workshop."""
-        recipe_key = recipe_name.lower().strip()
+        if self.state.is_game_over:
+            return False, "Cannot craft virus: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot craft virus: terminal session jacked out."
+
+        recipe_key = str(recipe_name or "").lower().strip()
         recipe = CRAFTING_RECIPES.get(recipe_key)
         if not recipe:
             available = ", ".join(CRAFTING_RECIPES.keys())

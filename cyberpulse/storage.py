@@ -2,6 +2,7 @@
 
 import json
 import os
+import random
 import shutil
 import time
 from pathlib import Path
@@ -92,6 +93,7 @@ class SaveManager:
             engine.deck = CyberDeck.from_dict(data["deck"])
             engine.state = GameState.from_dict(data["state"])
             engine.nodes = {nid: Node.from_dict(ndata) for nid, ndata in data["nodes"].items()}
+            engine.rng = random.Random(engine.seed + engine.state.turns_elapsed)
             return engine
         except (KeyError, TypeError):
             return None

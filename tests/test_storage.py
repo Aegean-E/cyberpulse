@@ -98,6 +98,18 @@ class TestStorage(unittest.TestCase):
         self.save_mgr.delete_save()
         self.assertFalse(self.save_mgr.save_file.exists())
 
+    def test_rng_reseeding_on_load(self):
+        engine = GameEngine(seed=123)
+        engine.state.turns_elapsed = 15
+        self.save_mgr.save(engine)
+
+        loaded = self.save_mgr.load()
+        self.assertIsNotNone(loaded)
+        # Expected roll corresponds to Random(123 + 15)
+        import random
+        expected_roll = random.Random(123 + 15).random()
+        self.assertEqual(loaded.rng.random(), expected_roll)
+
 
 if __name__ == "__main__":
     unittest.main()

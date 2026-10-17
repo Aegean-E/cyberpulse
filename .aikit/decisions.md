@@ -107,3 +107,21 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. *Zero External Dependencies & Synthetic Invariant*:
      - 100% in-memory standard library dataclasses, deterministic RNG generation, zero external pip dependencies, sub-second test execution.
 - **Consequences**: Deepens the hacker simulation with strategic counters (Firewalls block ports -> require Bypass or Social Eng; Antivirus hunts Keyloggers -> requires Evade or Rootkit; CVEs give tactical choices).
+
+### ADR-008: System-Wide Engine Hardening, Full CVE Network Matrix, CLI Completion Lifecycle, and Probed Port HUD
+- **Date**: 2026-10-17
+- **Status**: Accepted
+- **Context**: A holistic audit across `cyberpulse` identified several gaps, edge-case risks, and user-experience opportunities:
+  1. Several engine methods (`spoof_ip`, `scan_surroundings`, `use_exploit`, `list_files`, `read_file`, `craft_virus`) lacked `is_game_over` / `is_jacked_out` guards, allowing operations to execute after terminal disconnect or trace lockout.
+  2. Engine string parameters (e.g. `exploit_name`, `recipe_name`, `query`, `method`, `filepath`) lacked defensive `None`/type coercion, risking `AttributeError` on malformed API payloads or empty CLI inputs.
+  3. Turn progression was inconsistent: `exploit_service` did not advance `turns_elapsed` or tick daemons, and `SaveManager.load()` did not re-seed the engine RNG with turn offset.
+  4. The CVE exploit catalog had gaps: `CyberDeck.known_cves` referenced `CVE-2025-9901` which was missing from `KNOWN_CVES`, and no CVEs existed for `https` or the AI Supercore.
+  5. The CLI batch execution mode (`--exec`) bypassed career completion hooks upon victory/game-over.
+  6. The Web Cyberdeck only rendered open ports when a host was already breached; probing an unbreached host only logged text into the terminal, missing an opportunity for interactive visual port exploration and direct exploit/bypass buttons.
+- **Decision**:
+  1. Add universal session state checks (`is_game_over`, `is_jacked_out`) and defensive string sanitization across all engine methods.
+  2. Implement turn progression and daemon ticks in `exploit_service`, and ensure RNG persistence determinism on save load.
+  3. Expand `KNOWN_CVES` to include `CVE-2025-9901` (Project Omega Neural Core Deserialization RCE, target_service: `"any"`) and `CVE-2022-0778` (OpenSSL BN_mod_sqrt loop on `"https"`), aligning with `CyberDeck.known_cves`.
+  4. Unify CLI run completion logic (`handle_run_completion`) across interactive and batch modes.
+  5. Add visual Probed Ports Subsystem, keyboard shortcuts, and interactive exploit selectors in Web Cyberdeck UI.
+- **Consequences**: Hardens system integrity, eliminates runtime exceptions, provides complete CVE network coverage, and delivers an enriched, seamless hacker simulation experience.

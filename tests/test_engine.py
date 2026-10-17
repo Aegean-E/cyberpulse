@@ -322,6 +322,55 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(report["vector"], "pretext")
         self.assertEqual(report["employee"], "Alice Vance")
 
+    def test_game_over_and_jacked_out_guards(self):
+        # When game over
+        self.engine.state.is_game_over = True
+        self.assertFalse(self.engine.spoof_ip()[0])
+        self.assertFalse(self.engine.scan_surroundings()[0])
+        self.assertFalse(self.engine.use_exploit("192.168.1.1", "PortBypass.sh")[0])
+        self.assertFalse(self.engine.list_files()[0])
+        self.assertFalse(self.engine.read_file("192.168.1.10", "notes.txt")[0])
+        self.assertFalse(self.engine.download_file("192.168.1.10", "notes.txt")[0])
+        self.assertFalse(self.engine.list_local_files()[0])
+        self.assertFalse(self.engine.read_local_file("credentials.txt")[0])
+        self.assertFalse(self.engine.craft_virus("hydra_worm")[0])
+
+        # When jacked out
+        self.engine.state.is_game_over = False
+        self.engine.state.is_jacked_out = True
+        self.assertFalse(self.engine.spoof_ip()[0])
+        self.assertFalse(self.engine.scan_surroundings()[0])
+        self.assertFalse(self.engine.use_exploit("192.168.1.1", "PortBypass.sh")[0])
+        self.assertFalse(self.engine.list_files()[0])
+        self.assertFalse(self.engine.read_file("192.168.1.10", "notes.txt")[0])
+        self.assertFalse(self.engine.download_file("192.168.1.10", "notes.txt")[0])
+        self.assertFalse(self.engine.list_local_files()[0])
+        self.assertFalse(self.engine.read_local_file("credentials.txt")[0])
+        self.assertFalse(self.engine.craft_virus("hydra_worm")[0])
+
+    def test_defensive_input_sanitization(self):
+        self.assertIsNone(self.engine.find_node(None))
+        self.assertIsNone(self.engine.find_node(""))
+        ok, msg = self.engine.use_exploit(None)
+        self.assertFalse(ok)
+        self.assertIn("No exploit name specified", msg)
+
+        # Local and remote file read with None/empty
+        ok, msg, _ = self.engine.read_local_file(None)
+        self.assertFalse(ok)
+        self.assertIn("cannot be empty", msg)
+
+        ok, msg = self.engine.craft_virus(None)
+        self.assertFalse(ok)
+        self.assertIn("Unknown recipe", msg)
+
+    def test_exploit_service_turn_advancement(self):
+        self.engine.deck.cpu_cycles = 4
+        initial_turns = self.engine.state.turns_elapsed
+        ok, _ = self.engine.exploit_service("192.168.1.10", 21, cve_id="cve-2011-2523")
+        self.assertTrue(ok)
+        self.assertEqual(self.engine.state.turns_elapsed, initial_turns + 1)
+
 
 if __name__ == "__main__":
     unittest.main()
