@@ -158,6 +158,53 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertTrue(wipe_res["ok"])
         self.assertIn("LOGS SANITIZED", wipe_res["message"])
 
+    def test_get_workshop_and_local_files(self):
+        # 1. Test GET /api/workshop
+        status, data = self._get("/api/workshop")
+        self.assertEqual(status, 200)
+        self.assertIn("recipes", data)
+        self.assertGreater(len(data["recipes"]), 0)
+
+        # 2. Test GET /api/local_files
+        status, ldata = self._get("/api/local_files")
+        self.assertEqual(status, 200)
+        self.assertEqual(ldata["ip"], "10.99.0.2")
+        self.assertEqual(ldata["hostname"], "rig.netrunner.local")
+        self.assertIsInstance(ldata["files"], list)
+        self.assertIsInstance(ldata["daemons"], list)
+
+    def test_server_phish_craft_and_daemon(self):
+        # 1. Phish target
+        status, phish_res = self._post("/api/action", {"action": "phish", "target": "192.168.1.10"})
+        self.assertEqual(status, 200)
+        self.assertTrue(phish_res["ok"])
+        self.assertIn("PHISHING SUCCESS", phish_res["message"])
+
+        # 2. Deploy daemon fails when target is not breached
+        status, d_fail = self._post("/api/action", {"action": "deploy_daemon", "target": "192.168.1.10", "daemon_type": "keylogger"})
+        self.assertEqual(status, 200)
+        self.assertFalse(d_fail["ok"])
+        self.assertIn("not breached", d_fail["message"])
+
+        # Breach host via exploit service
+        self._post("/api/action", {"action": "exploit_service", "target": "192.168.1.10", "port": 21})
+
+        # Deploy daemon succeeds now that host is breached
+        status, d_res = self._post("/api/action", {"action": "deploy_daemon", "target": "192.168.1.10", "daemon_type": "keylogger"})
+        self.assertEqual(status, 200)
+        self.assertTrue(d_res["ok"])
+        self.assertIn("DAEMON INITIALIZED", d_res["message"])
+
+        # 3. Craft invalid recipe gives error
+        try:
+            status, craft_err = self._post("/api/action", {"action": "craft", "recipe": "non_existent_recipe"})
+            self.assertEqual(status, 200)
+            self.assertFalse(craft_err["ok"])
+            self.assertIn("Unknown recipe", craft_err["message"])
+        finally:
+            # Reset server session state for subsequent test isolation
+            self._post("/api/action", {"action": "reset", "seed": 1337})
+
 
 if __name__ == "__main__":
     unittest.main()

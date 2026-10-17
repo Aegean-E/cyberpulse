@@ -190,6 +190,8 @@ function initUIEvents() {
   document.getElementById("btn-scan").addEventListener("click", handleScan);
   document.getElementById("btn-spoof").addEventListener("click", handleSpoof);
   document.getElementById("btn-jackout").addEventListener("click", handleJackout);
+  document.getElementById("btn-rig-open").addEventListener("click", openRigModal);
+  document.getElementById("btn-workshop-open").addEventListener("click", openWorkshopModal);
   document.getElementById("btn-shop-open").addEventListener("click", openShopModal);
   document.getElementById("btn-career-open").addEventListener("click", openCareerModal);
   document.getElementById("btn-reset-run").addEventListener("click", handleReset);
@@ -198,6 +200,8 @@ function initUIEvents() {
   document.getElementById("btn-probe-node").addEventListener("click", handleProbeNode);
   document.getElementById("btn-init-hack").addEventListener("click", handleStartHack);
   document.getElementById("btn-move-node").addEventListener("click", handleMoveNode);
+  document.getElementById("btn-phish-node").addEventListener("click", handlePhishNode);
+  document.getElementById("btn-keylogger-node").addEventListener("click", handleDeployKeylogger);
   document.getElementById("btn-wipe-logs").addEventListener("click", handleWipeLogs);
   document.getElementById("btn-close-viewer").addEventListener("click", () => {
     document.getElementById("fs-file-viewer").classList.add("hidden");
@@ -211,6 +215,14 @@ function initUIEvents() {
   });
   document.getElementById("btn-close-career").addEventListener("click", () => {
     document.getElementById("modal-career").classList.add("hidden");
+    sfx.click();
+  });
+  document.getElementById("btn-close-rig").addEventListener("click", () => {
+    document.getElementById("modal-rig").classList.add("hidden");
+    sfx.click();
+  });
+  document.getElementById("btn-close-workshop").addEventListener("click", () => {
+    document.getElementById("modal-workshop").classList.add("hidden");
     sfx.click();
   });
 
@@ -464,6 +476,8 @@ function updateTargetCard(nodeId) {
   const btnProbe = document.getElementById("btn-probe-node");
   const btnHack = document.getElementById("btn-init-hack");
   const btnMove = document.getElementById("btn-move-node");
+  const btnPhish = document.getElementById("btn-phish-node");
+  const btnKeylogger = document.getElementById("btn-keylogger-node");
   const btnWipe = document.getElementById("btn-wipe-logs");
 
   const isAdjacent = curr.connected_ids.includes(nodeId) || curr.node_id === nodeId;
@@ -472,6 +486,8 @@ function updateTargetCard(nodeId) {
   btnProbe.disabled = node.status === "LOCKED" && !isAdjacent;
   btnHack.disabled = isBreached || !isAdjacent;
   btnMove.disabled = !isBreached || curr.node_id === nodeId;
+  btnPhish.disabled = isBreached || (node.status === "LOCKED" && !isAdjacent);
+  btnKeylogger.disabled = !isBreached;
   btnWipe.disabled = !isBreached;
 }
 
@@ -755,6 +771,43 @@ async function handleWipeLogs() {
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || "Failed to wipe logs.", "warn");
+  }
+}
+
+async function handlePhishNode() {
+  if (!state.selectedNodeId) return;
+  sfx.scan();
+  addTerminalLog(`Dispatching spear-phishing credential lure to ${state.selectedNodeId}...`, "info");
+  const res = await apiPost("/api/action", { action: "phish", target: state.selectedNodeId });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+    updateTargetCard(state.selectedNodeId);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "Phishing lure ignored.", "warn");
+    if (res.state) {
+      state.data = res.state;
+      renderHUD(res.state);
+    }
+  }
+}
+
+async function handleDeployKeylogger() {
+  if (!state.selectedNodeId) return;
+  sfx.click();
+  addTerminalLog(`Injecting background keylogger listener into ${state.selectedNodeId}...`, "info");
+  const res = await apiPost("/api/action", { action: "deploy_daemon", target: state.selectedNodeId, daemon_type: "keylogger" });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "Keylogger deployment failed.", "warn");
   }
 }
 
@@ -1049,4 +1102,114 @@ async function openCareerModal() {
     : "Standard Factory Rig";
 
   document.getElementById("modal-career").classList.remove("hidden");
+}
+
+async function openRigModal() {
+  sfx.click();
+  const data = await apiGet("/api/local_files");
+  if (!data) return;
+
+  document.getElementById("rig-ip").textContent = data.ip;
+  document.getElementById("rig-hostname").textContent = data.hostname;
+  if (state.data && state.data.deck && state.data.deck.model_name) {
+    document.getElementById("rig-model").textContent = state.data.deck.model_name;
+  }
+
+  // Render Local Files
+  const tbody = document.getElementById("rig-file-tbody");
+  tbody.innerHTML = "";
+  if (data.files && data.files.length > 0) {
+    data.files.forEach((f) => {
+      const tr = document.createElement("tr");
+      const valStr = f.value_creds > 0 ? `${f.value_creds} CR` : "---";
+      tr.innerHTML = `
+        <td>${f.path}</td>
+        <td>${f.size_kb}KB</td>
+        <td>${valStr}</td>
+        <td>
+          <button class="icon-btn small-btn btn-cat-local" data-path="${f.path}">CAT</button>
+        </td>
+      `;
+      tr.querySelector(".btn-cat-local").addEventListener("click", () => {
+        document.getElementById("viewer-path").textContent = `[LOCAL] ${f.path}`;
+        document.getElementById("viewer-content").textContent = f.content || "(empty file)";
+        document.getElementById("fs-file-viewer").classList.remove("hidden");
+        document.getElementById("modal-rig").classList.add("hidden");
+      });
+      tbody.appendChild(tr);
+    });
+  } else {
+    tbody.innerHTML = '<tr><td colspan="4">No local files stored.</td></tr>';
+  }
+
+  // Render Active Daemons
+  const daemonsGrid = document.getElementById("rig-daemons-grid");
+  daemonsGrid.innerHTML = "";
+  if (data.daemons && data.daemons.length > 0) {
+    data.daemons.forEach((d) => {
+      const card = document.createElement("div");
+      card.className = "daemon-card";
+      card.innerHTML = `
+        <div>
+          <span class="daemon-title">👾 ${d.daemon_type.toUpperCase()}</span>
+          <span class="daemon-target">on node ${d.target_node_id} (active ${d.turns_active} turns)</span>
+        </div>
+        <div class="daemon-yield">+${d.yield_per_turn} CR / turn (${d.detection_risk}% trace)</div>
+      `;
+      daemonsGrid.appendChild(card);
+    });
+  } else {
+    daemonsGrid.innerHTML = '<span class="empty-chips">No active background daemons deployed.</span>';
+  }
+
+  document.getElementById("modal-rig").classList.remove("hidden");
+}
+
+async function openWorkshopModal() {
+  sfx.click();
+  const data = await apiGet("/api/workshop");
+  if (!data) return;
+
+  const currentCreds = (state.data && state.data.state) ? state.data.state.unbanked_creds : 0;
+  document.getElementById("workshop-creds").textContent = currentCreds;
+  const grid = document.getElementById("workshop-recipes-grid");
+  grid.innerHTML = "";
+
+  data.recipes.forEach((recipe) => {
+    const card = document.createElement("div");
+    card.className = "workshop-recipe-card";
+    const canCraft = currentCreds >= recipe.cost_creds;
+
+    card.innerHTML = `
+      <div class="recipe-info">
+        <div class="recipe-name">${recipe.name} (${recipe.recipe_id})</div>
+        <div class="recipe-desc">${recipe.description}</div>
+      </div>
+      <div class="recipe-action">
+        <span class="recipe-cost">${recipe.cost_creds} CR</span>
+        <button class="craft-btn" ${!canCraft ? "disabled" : ""}>SYNTHESIZE</button>
+      </div>
+    `;
+
+    const craftBtn = card.querySelector(".craft-btn");
+    craftBtn.addEventListener("click", async () => {
+      sfx.click();
+      const res = await apiPost("/api/action", { action: "craft", recipe: recipe.recipe_id });
+      if (res && res.ok) {
+        sfx.jackpot();
+        addTerminalLog(res.message, "success");
+        state.data = res.state;
+        renderHUD(res.state);
+        updateExploitChips(res.state.deck.exploits);
+        openWorkshopModal(); // Refresh modal
+      } else if (res) {
+        sfx.failure();
+        addTerminalLog(res.message || "Synthesis failed.", "warn");
+      }
+    });
+
+    grid.appendChild(card);
+  });
+
+  document.getElementById("modal-workshop").classList.remove("hidden");
 }

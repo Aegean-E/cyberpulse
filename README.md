@@ -102,15 +102,22 @@ python -m cyberpulse.cli --seed 42069
 
 | Command | Action | Simulation Role |
 |---|---|---|
+| `myip` / `whoami` | Display player's local CyberDeck identity (`10.99.0.2` / `rig.netrunner.local`) | Virtual localhost identity & rig telemetry |
+| `myfiles` / `ls local` | List files on player's local CyberDeck drive (`/home/deck`, `/bin`, `/loot`) | Local rig file inspection & stolen loot archive |
+| `cat <file>` | Inspect local cyberdeck files or remote breached host files | Data surveillance & loot inspection |
 | `probe <ip>` / `nmap <ip>` | Scan open network ports, service banners, and software versions | Reconnaissance & vulnerability detection |
+| `phish <ip>` | Dispatch targeted spear-phishing credential lure to compromise target | Social engineering & security downgrade |
 | `exploit <ip> <port>` | Inject zero-day payload against vulnerable open port to acquire root shell | System penetration & breach |
 | `ls [ip]` | List virtual directory contents on breached host (`/etc`, `/home`, `/data`) | Target file discovery & intel gathering |
-| `cat <ip> <file>` | Inspect configuration files, transaction logs, and credentials | Data surveillance & credential extraction |
-| `steal <file>` / `download` | Exfiltrate valuable corporate data files for darknet credits & contract bounties | Data theft & primary heist objective |
+| `steal <file>` / `download` | Exfiltrate data for credits; auto-archives copy to local rig `/loot/` | Data theft & primary heist objective |
+| `keylogger [ip]` | Deploy passive background keylogger daemon on breached host (+25 CR/turn) | In-game persistent background surveillance |
+| `daemons` | Monitor all active background listener daemons and their credit yields | Passive income & risk telemetry |
+| `workshop` | Inspect malware crafting lab recipes and synthesis requirements | In-game virus & exploit workshop |
+| `craft <recipe>` | Synthesize custom virus chips (`keylogger_daemon`, `worm_replicator`, etc.) | Custom malware creation |
 | `wipe_logs [ip]` | Clear access logs and sanitize intruder timestamps (drops active ICE trace by 20%) | Anti-forensics & trace mitigation |
 | `move <ip>` / `ssh <ip>` | Transfer your active terminal session to an adjacent breached host | Network lateral movement |
 | `scan` | Scan surrounding connected nodes to reveal topology and IP addresses | Information foraging & strategic autonomy |
-| `exploit <chip_name>` | Deploy executable exploit chip (`logic_bomb`, `ghost_protocol`, `brute_miner`) | Tactical leverage & consumable empowerment |
+| `exploit <chip_name>` | Deploy executable exploit chip (`logic_bomb`, `ghost_protocol`, `worm_replicator`) | Tactical leverage & consumable empowerment |
 | `spoof` | Burn 3 CPU cycles to bounce your proxy and reduce security trace by 25% | Risk mitigation & resource trade-offs |
 | `cash_out` / `jackout` | Safely disconnect, bank all unbanked credits, and update career dossier | Loss aversion & push-your-luck extraction |
 | `shop` | Open the Black Market vendor to inspect permanent hardware upgrades | Anticipation of reward & meta-progression |
@@ -122,11 +129,13 @@ python -m cyberpulse.cli --seed 42069
 | `quit` | Sever connection and terminate terminal link | Clean exit |
 
 ### 🕹️ Authentic Hacker Simulation Workflow
-1. **Discover & Probe**: Discover subnet routing table via `scan` or `/etc/hosts`. Port scan target with `probe 10.0.4.15` to detect vulnerable services (e.g. MariaDB on port 3306).
-2. **Exploit & Breach**: Exploit the vulnerable service via `exploit 10.0.4.15 3306` to gain root access.
-3. **Lateral Movement**: Transfer your shell session via `move 10.0.4.15` or `ssh 10.0.4.15`.
-4. **Inspect & Exfiltrate**: Explore directories with `ls`, view contents with `cat /data/corporate_slush_fund.csv`, and steal data with `steal /data/corporate_slush_fund.csv` to claim bounty rewards.
-5. **Sanitize & Cash Out**: Erase intruder traces with `wipe_logs` to drop active ICE trace, then safely extract via `cash_out` to bank your stolen wealth into permanent career meta-progression!
+1. **Discover & Phish**: Discover subnet routing table via `scan` or `/etc/hosts`. Dispatch social engineering lures with `phish 192.168.1.10` to downgrade security and harvest tokens into local `/loot/`.
+2. **Recon & Port Scan**: Scan services with `probe 192.168.1.10` to discover vulnerable ports (e.g. FTP on port 21, MariaDB on port 3306).
+3. **Exploit & Breach**: Exploit the vulnerable service via `exploit 192.168.1.10 21` to gain root access.
+4. **Deploy Background Daemons**: Plant a listener with `keylogger 192.168.1.10` to passively siphon +25 Creds on every future turn.
+5. **Inspect & Steal**: Explore remote directories with `ls`, view contents with `cat /data/corporate_slush_fund.csv`, and steal data with `steal /data/corporate_slush_fund.csv`. The file is automatically archived to your local rig `/loot/`!
+6. **Malware Workshop**: Access the malware workshop via `workshop` and synthesize custom viruses with `craft worm_replicator` or `craft keylogger_daemon`.
+7. **Sanitize & Cash Out**: Erase intruder traces with `wipe_logs` to drop active ICE trace, then safely extract via `cash_out` to bank your stolen wealth into permanent career meta-progression!
 
 ## 🛡️ Architecture & Guarantees
 

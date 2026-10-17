@@ -48,6 +48,14 @@ class CyberdeckSession:
             "nodes": {nid: n.to_dict() for nid, n in self.engine.nodes.items()},
             "career": career.to_dict(),
             "shop_items": self.shop.list_available(self.engine.deck),
+            "workshop_recipes": self.engine.list_crafting_recipes(),
+            "local_rig": {
+                "ip": self.engine.deck.local_ip,
+                "hostname": self.engine.deck.local_hostname,
+                "model": self.engine.deck.model_name,
+                "files": [f.to_dict() for f in self.engine.deck.local_filesystem],
+                "daemons": [d.to_dict() for d in self.engine.deck.active_daemons],
+            },
         }
 
     def reset_game(self, seed: Optional[int] = None) -> Dict[str, Any]:
@@ -101,6 +109,20 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
         if path == "/api/career":
             profile = self.server_session.save_mgr.load_career()
             self.send_json_response(profile.to_dict())
+            return
+
+        if path == "/api/workshop":
+            recipes = self.server_session.engine.list_crafting_recipes()
+            self.send_json_response({"recipes": recipes})
+            return
+
+        if path == "/api/local_files":
+            self.send_json_response({
+                "ip": self.server_session.engine.deck.local_ip,
+                "hostname": self.server_session.engine.deck.local_hostname,
+                "files": [f.to_dict() for f in self.server_session.engine.deck.local_filesystem],
+                "daemons": [d.to_dict() for d in self.server_session.engine.deck.active_daemons],
+            })
             return
 
         if path == "/api/puzzle":
@@ -304,6 +326,25 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
             if action == "wipe_logs":
                 target = payload.get("target") or engine.state.current_node_id
                 ok, msg = engine.wipe_logs(target)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action == "phish":
+                target = payload.get("target") or engine.state.current_node_id
+                ok, msg, report = engine.phish_target(target)
+                self.send_json_response({"ok": ok, "message": msg, "report": report, "state": self.server_session.get_full_state()})
+                return
+
+            if action == "craft":
+                recipe = payload.get("recipe") or payload.get("recipe_id") or ""
+                ok, msg = engine.craft_virus(recipe)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action == "deploy_daemon":
+                target = payload.get("target") or engine.state.current_node_id
+                daemon_type = payload.get("daemon_type", "keylogger")
+                ok, msg = engine.deploy_daemon(target, daemon_type)
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 
