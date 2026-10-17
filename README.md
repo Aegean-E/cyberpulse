@@ -86,6 +86,7 @@ python -m cyberpulse.cli --seed 42069
 |---|---|---|
 | `scan` | Scan surrounding connected nodes to reveal security levels and puzzle types | Information foraging & strategic autonomy |
 | `hack <node_id>` | Initiate cyber-attack mini-game on discovered target | Competence & skill expression |
+| `exploit <name> [target]` | Deploy executable exploit chip (`logic_bomb`, `ghost_protocol`, `brute_miner`) | Tactical leverage & consumable empowerment |
 | `move <node_id>` | Jack your terminal session into an adjacent breached node | Territory expansion & spatial agency |
 | `spoof` | Burn 3 CPU cycles to bounce your proxy and reduce security trace by 25% | Risk mitigation & resource trade-offs |
 | `jackout` | Safely disconnect, bank all unbanked credits, and update career dossier | Loss aversion & push-your-luck extraction |
@@ -107,6 +108,8 @@ python -m cyberpulse.cli --seed 42069
 
 - **Zero Undeclared Dependencies**: Built with 100% pure Python standard library modules (`random`, `json`, `dataclasses`, `pathlib`, `argparse`).
 - **Deterministic State Engine**: Every network grid and puzzle sequence can be reproduced using `--seed <int>`.
-- **Power-Loss Safe Savegames & Dossiers**: Uses atomic temporary file writes, `fsync`, and replace to eliminate corrupted state risk.
+- **Power-Loss Safe Savegames & Shadow Backup**: Uses atomic temporary file writes, `fsync`, `.bak` shadow recovery, and corruption quarantine to eliminate state loss risk.
+- **Dynamic Resource Loop**: Turn-based CPU cooling (+1/turn) and hardware RAM constraints (`security_level * 16` MB).
 - **Sub-Second Test Shield**: 100% test pass rate across unit and integration suites in under 0.5s via `python -m unittest discover`.
+
 

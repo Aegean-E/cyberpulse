@@ -51,6 +51,8 @@ def print_hud(engine: GameEngine) -> None:
     print(f"[*] Trace:      {trace_bar} | Turns: {engine.state.turns_elapsed}")
     print(f"[*] Deck:       CPU: {engine.deck.cpu_cycles}/{engine.deck.max_cpu} | RAM: {engine.deck.ram_mb}MB | Creds: {engine.deck.cryptocreds}{unbanked_str}")
     print(f"[*] Upgrades:   ICE Dampener: Lvl {engine.deck.ice_dampener_level} | Overclock: Lvl {engine.deck.overclock_level}")
+    exploits_str = ', '.join(engine.deck.exploits) if engine.deck.exploits else "None"
+    print(f"[*] Exploits:   {exploits_str}")
     print(f"[*] Contract:   {contract_str}")
     if engine.state.near_miss_count > 0:
         print(f"[*] Adrenaline: [NEAR-MISS ENCOUNTERS: {engine.state.near_miss_count}]")
@@ -94,14 +96,12 @@ def print_career(profile: CareerProfile) -> None:
 
 
 def execute_hack_puzzle(engine: GameEngine, target_id: str, auto_solve: bool = False) -> bool:
-    node = engine.nodes.get(target_id)
-    if not node:
-        print(f"Error: Unknown node '{target_id}'.")
+    can_hack, reason = engine.can_hack_node(target_id)
+    if not can_hack:
+        print(f"⚠️ {reason}")
         return False
-    if node.status == NodeStatus.BREACHED:
-        print(f"Node '{node.name}' is already breached!")
-        return True
 
+    node = engine.nodes[target_id]
     print(f"\n⚡ INITIATING CYBER-ATTACK ON: {node.name} (Sec Level: {node.security_level})")
 
     # If auto_solve is True (used in batch/tests)
@@ -202,6 +202,17 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         execute_hack_puzzle(engine, parts[1], auto_solve=auto_solve)
         return True
 
+    if action in ("exploit", "use"):
+        if len(parts) < 2:
+            exploits_list = ', '.join(engine.deck.exploits) if engine.deck.exploits else 'None'
+            print(f"Usage: exploit <name> [target] (Loaded exploits: {exploits_list})")
+            return True
+        exploit_name = parts[1]
+        target = parts[2] if len(parts) > 2 else None
+        ok, msg = engine.use_exploit(exploit_name, target)
+        print(msg)
+        return True
+
     if action == "spoof":
         ok, msg = engine.spoof_ip()
         print(msg)
@@ -258,7 +269,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("No saved game found.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: scan, move, hack, spoof, jackout, shop, buy, career, status, save, load, quit")
+    print(f"Unknown command: '{action}'. Commands: scan, move, hack, exploit, spoof, jackout, shop, buy, career, status, save, load, quit")
     return True
 
 

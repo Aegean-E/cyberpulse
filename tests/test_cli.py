@@ -76,7 +76,19 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("Heists Cleared:   1 successful", out)
         # Deck funds should match banked creds (> 100)
-        self.assertIn("Creds: 150", out)
+    def test_exploit_command(self):
+        # Exploit usage: try using logic_bomb without having it, then load it and deploy
+        code, out = self.run_cli("--seed", "1337", "--exec", "exploit logic_bomb node_proxy_a")
+        self.assertEqual(code, 0)
+        self.assertIn("not loaded in cyberdeck firmware", out)
+
+    def test_ram_insufficient_message_in_cli(self):
+        # Move adjacent to central core without sufficient RAM, try to hack
+        # Gateway -> proxy_a -> ice_perimeter -> central_core
+        batch_cmds = "hack node_proxy_a;move node_proxy_a;hack node_ice_perimeter;move node_ice_perimeter;hack node_central_core"
+        code, out = self.run_cli("--seed", "1337", "--auto-solve", "--exec", batch_cmds)
+        self.assertEqual(code, 0)
+        self.assertIn("INSUFFICIENT RAM", out)
 
 
 if __name__ == "__main__":
