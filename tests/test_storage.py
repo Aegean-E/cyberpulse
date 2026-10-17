@@ -1,4 +1,4 @@
-"""Unit tests for CyberPulse savegame persistence."""
+"""Unit tests for CyberPulse savegame and career profile persistence."""
 
 import shutil
 import tempfile
@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from cyberpulse.engine import GameEngine
+from cyberpulse.models import CareerProfile
 from cyberpulse.storage import SaveManager
 
 
@@ -31,6 +32,30 @@ class TestStorage(unittest.TestCase):
 
     def test_load_nonexistent(self):
         self.assertIsNone(self.save_mgr.load())
+
+    def test_career_save_and_load(self):
+        profile = CareerProfile(
+            alias="CrashOverride",
+            banked_creds=450,
+            lifetime_creds=1250,
+            successful_runs=4,
+            current_streak=2,
+            purchased_upgrades=["overclock_cpu"],
+        )
+        path = self.save_mgr.save_career(profile)
+        self.assertTrue(path.exists())
+
+        restored = self.save_mgr.load_career()
+        self.assertEqual(restored.alias, "CrashOverride")
+        self.assertEqual(restored.banked_creds, 450)
+        self.assertEqual(restored.successful_runs, 4)
+        self.assertEqual(restored.current_streak, 2)
+        self.assertIn("overclock_cpu", restored.purchased_upgrades)
+
+    def test_career_default_fallback(self):
+        fallback = self.save_mgr.load_career()
+        self.assertEqual(fallback.alias, "ZeroCool")
+        self.assertEqual(fallback.successful_runs, 0)
 
 
 if __name__ == "__main__":
