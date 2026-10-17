@@ -30,6 +30,8 @@ class TestCLI(unittest.TestCase):
         code, out = self.run_cli("--help")
         self.assertEqual(code, 0)
         self.assertIn("cyberpulse", out)
+        self.assertIn("--web", out)
+        self.assertIn("--port", out)
 
     def test_batch_infiltration_playthrough(self):
         # Scan, hack proxy a, move to proxy a, spoof trace, save game

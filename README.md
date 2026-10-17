@@ -76,13 +76,25 @@ CyberPulse's mechanics are grounded in cognitive neuroscience and behavioral gam
 
 ## 🎮 How to Play
 
-Launch the interactive neural intrusion harness directly:
+### 1. Web Cyberdeck (Visual CRT & Web Audio)
+Launch the visual browser-based cyberpunk cyberdeck with interactive 2D node matrix canvas, visual oscilloscope/buffer mini-games, and synthesized 8-bit sound FX:
 
 ```bash
-# Launch interactive game with default seed
+# Launch interactive Web Cyberdeck (auto-opens browser at http://127.0.0.1:8420)
+python -m cyberpulse.cli --web
+
+# Launch with custom world seed and port
+python -m cyberpulse.cli --web --port 9000 --seed 42069
+```
+
+### 2. Interactive Terminal CLI
+Or operate purely in the retro terminal REPL harness:
+
+```bash
+# Launch interactive terminal game with default seed
 python -m cyberpulse.cli
 
-# Launch with a specific world seed
+# Launch terminal game with custom world seed
 python -m cyberpulse.cli --seed 42069
 ```
 

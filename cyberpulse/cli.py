@@ -286,9 +286,26 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--data-dir", type=Path, default=None, help="Savegame data directory")
     parser.add_argument("--exec", dest="commands", default=None, help="Execute semicolon-separated commands and exit")
     parser.add_argument("--auto-solve", action="store_true", help="Auto-solve hacking minigames (for testing/automation)")
+    parser.add_argument("--web", action="store_true", help="Launch interactive Web Cyberdeck browser interface")
+    parser.add_argument("--host", default="127.0.0.1", help="Web server bind host (default: 127.0.0.1)")
+    parser.add_argument("--port", type=int, default=8420, help="Web server bind port (default: 8420)")
+    parser.add_argument("--no-browser", action="store_true", help="Do not automatically launch system web browser")
 
     args = parser.parse_args(argv)
     data_dir = args.data_dir or get_default_data_dir()
+
+    # Web Cyberdeck execution mode
+    if args.web:
+        from cyberpulse.server import run_web
+        run_web(
+            host=args.host,
+            port=args.port,
+            data_dir=data_dir,
+            seed=args.seed,
+            open_browser=not args.no_browser,
+        )
+        return 0
+
     save_mgr = SaveManager(data_dir)
     career = save_mgr.load_career()
     engine = GameEngine(seed=args.seed, career_profile=career)
