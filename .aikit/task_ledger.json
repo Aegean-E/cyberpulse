@@ -5,19 +5,9 @@
     "last_phase": "phase 3",
     "active_phase": 3,
     "status": "in_progress",
-    "updated_at": 1792267937.5089111
+    "updated_at": 1792268043.001301
   },
   "checkpoints": [
-    {
-      "task_id": "task-web-cyberdeck-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[2/4] Web Cyberdeck frontend core: HTML structure, CSS design system, and Web Audio API synthesizer",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792262918.8617883,
-      "timestamp_str": "2026-10-17 21:48:38"
-    },
     {
       "task_id": "task-web-cyberdeck-v1",
       "phase": "phase 3",
@@ -227,6 +217,16 @@
       "status": "in_progress",
       "timestamp": 1792267937.5089111,
       "timestamp_str": "2026-10-17 23:12:17"
+    },
+    {
+      "task_id": "task-hardening-and-evolution-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[milestone 2/4] complete weaponized CVE exploit catalog with full network coverage",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792268043.001301,
+      "timestamp_str": "2026-10-17 23:14:03"
     }
   ]
 }

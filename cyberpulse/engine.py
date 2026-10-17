@@ -89,6 +89,26 @@ KNOWN_CVES: Dict[str, ExploitPayload] = {
         damage_trace=14,
         description="Legacy backdoor payload triggering root shell on port 6200.",
     ),
+    "cve-2022-0778": ExploitPayload(
+        cve_id="CVE-2022-0778",
+        name="OpenSSL BN_mod_sqrt Parsing Loop",
+        target_service="https",
+        required_ram_mb=32,
+        cpu_cost=2,
+        stealth_rating=4,
+        damage_trace=10,
+        description="Infinite loop parsing invalid elliptic curve parameters triggering TLS root shell.",
+    ),
+    "cve-2025-9901": ExploitPayload(
+        cve_id="CVE-2025-9901",
+        name="Project Omega Quantum Zero-Day",
+        target_service="any",
+        required_ram_mb=64,
+        cpu_cost=3,
+        stealth_rating=5,
+        damage_trace=5,
+        description="Universal quantum zero-day payload overriding neural subroutines and central cores.",
+    ),
 }
 
 CRAFTING_RECIPES: Dict[str, VirusCraftRecipe] = {

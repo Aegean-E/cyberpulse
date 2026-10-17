@@ -293,20 +293,23 @@ class TestEngine(unittest.TestCase):
 
     def test_cve_catalog_and_exploit_execution(self):
         cves = self.engine.list_cves()
-        self.assertGreaterEqual(len(cves), 4)
+        self.assertEqual(len(cves), 8)
         cve_ids = [c["cve_id"] for c in cves]
         self.assertIn("CVE-2011-2523", cve_ids)
+        self.assertIn("CVE-2022-0778", cve_ids)
+        self.assertIn("CVE-2025-9901", cve_ids)
 
         # Exploit with mismatched service
         err_ok, err_msg = self.engine.exploit_service("192.168.1.10", 21, cve_id="cve-2024-6387")
         self.assertFalse(err_ok)
         self.assertIn("Exploit mismatch", err_msg)
 
-        # Exploit with matched service (vsftpd on port 21)
-        self.engine.deck.cpu_cycles = 4
-        ok, msg = self.engine.exploit_service("192.168.1.10", 21, cve_id="cve-2011-2523")
+        # Universal CVE-2025-9901 works on any vulnerable port
+        self.engine.deck.cpu_cycles = 5
+        self.engine.deck.ram_mb = 128
+        ok, msg = self.engine.exploit_service("192.168.1.10", 21, cve_id="cve-2025-9901")
         self.assertTrue(ok)
-        self.assertIn("CVE-2011-2523", msg)
+        self.assertIn("CVE-2025-9901", msg)
         self.assertIn("EXPLOIT SUCCESSFUL", msg)
 
     def test_social_engineering_vectors(self):

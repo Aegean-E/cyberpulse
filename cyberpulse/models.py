@@ -340,7 +340,14 @@ class CyberDeck:
     ])
     active_daemons: List[MalwareDaemon] = field(default_factory=list)
     known_cves: List[str] = field(default_factory=lambda: [
-        "CVE-2024-38812", "CVE-2023-22515", "CVE-2024-21413", "CVE-2025-9901"
+        "CVE-2024-38812",
+        "CVE-2023-22515",
+        "CVE-2024-21413",
+        "CVE-2024-6387",
+        "CVE-2023-38606",
+        "CVE-2011-2523",
+        "CVE-2022-0778",
+        "CVE-2025-9901",
     ])
 
     def to_dict(self) -> Dict[str, Any]:

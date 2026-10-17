@@ -206,6 +206,16 @@ class TestModels(unittest.TestCase):
         self.assertEqual(len(restored.employees), 1)
         self.assertEqual(restored.employees[0].name, "Bob Smith")
 
+    def test_known_cves_deck_and_catalog(self):
+        deck = CyberDeck()
+        self.assertIn("CVE-2025-9901", deck.known_cves)
+        self.assertIn("CVE-2022-0778", deck.known_cves)
+        self.assertEqual(len(deck.known_cves), 8)
+
+        data = deck.to_dict()
+        restored = CyberDeck.from_dict(data)
+        self.assertEqual(restored.known_cves, deck.known_cves)
+
 
 if __name__ == "__main__":
     unittest.main()
