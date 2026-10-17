@@ -44,16 +44,19 @@ def print_hud(engine: GameEngine) -> None:
 
     unbanked_str = f" [PUSH-YOUR-LUCK: +{engine.state.unbanked_creds} UNBANKED!]" if engine.state.unbanked_creds > 0 else ""
     contract = engine.state.active_contract
-    contract_str = (
-        f"{contract.title} (+{contract.reward_creds} Creds) [COMPLETED]"
-        if contract and contract.completed
-        else (f"{contract.title} (+{contract.reward_creds} Creds) [ACTIVE]" if contract else "None")
-    )
+    if contract:
+        target_info = f" -> Target: {contract.target_ip or contract.target_node_type}"
+        if contract.target_file:
+            target_info += f" ({contract.target_file})"
+        status_tag = "[COMPLETED]" if contract.completed else "[ACTIVE]"
+        contract_str = f"{contract.title}{target_info} (+{contract.reward_creds} Creds) {status_tag}"
+    else:
+        contract_str = "None"
 
     print("\n+==========================================================================+")
-    print("|          >> CYBERPULSE // NEURAL INTRUSION HARNESS v0.2.0 <<             |")
+    print("|          >> CYBERPULSE // NEURAL INTRUSION HARNESS v0.3.0 <<             |")
     print("+==========================================================================+")
-    print(f"[*] Location:   {curr.name} [{curr.node_id}] ({curr.node_type})")
+    print(f"[*] Location:   {curr.name} | {curr.hostname} ({curr.ip_address}) [{curr.node_id}]")
     print(f"[*] Trace:      {trace_bar} | Turns: {engine.state.turns_elapsed}")
     print(f"[*] Deck:       CPU: {engine.deck.cpu_cycles}/{engine.deck.max_cpu} | RAM: {engine.deck.ram_mb}MB | Creds: {engine.deck.cryptocreds}{unbanked_str}")
     print(f"[*] Upgrades:   ICE Dampener: Lvl {engine.deck.ice_dampener_level} | Overclock: Lvl {engine.deck.overclock_level}")
@@ -63,12 +66,12 @@ def print_hud(engine: GameEngine) -> None:
     if engine.state.near_miss_count > 0:
         print(f"[*] Adrenaline: [NEAR-MISS ENCOUNTERS: {engine.state.near_miss_count}]")
     print("--------------------------------------------------------------------------")
-    print("Network Connections:")
+    print("Discovered Subnet Nodes:")
     for cid in curr.connected_ids:
         adj = engine.nodes.get(cid)
         if adj:
             icon = "[BREACHED]" if adj.status == NodeStatus.BREACHED else ("[DISCOVERED]" if adj.status == NodeStatus.DISCOVERED else "[LOCKED]")
-            print(f"   * {adj.node_id:<20} | {adj.name:<32} | {icon} (Sec: {adj.security_level})")
+            print(f"   * {adj.ip_address:<15} | {adj.hostname:<24} | {icon} (Sec: {adj.security_level})")
     print("+==========================================================================+")
 
 
@@ -193,29 +196,93 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         print(msg)
         return True
 
-    if action == "move":
+    if action in ("move", "cd", "ssh"):
         if len(parts) < 2:
-            print("Usage: move <node_id>")
+            print("Usage: move <ip | hostname | node_id>")
             return True
-        ok, msg = engine.move_to(parts[1])
+        node = engine.find_node(parts[1])
+        target_id = node.node_id if node else parts[1]
+        ok, msg = engine.move_to(target_id)
         print(msg)
+        return True
+
+    if action in ("probe", "nmap"):
+        if len(parts) < 2:
+            print("Usage: probe <ip | hostname | node_id> (e.g. `probe 192.168.1.10`)")
+            return True
+        ok, summary, _ = engine.probe_host(parts[1])
+        print(summary)
         return True
 
     if action in ("hack", "breach"):
         if len(parts) < 2:
-            print("Usage: hack <node_id>")
+            print("Usage: hack <node_id | ip> [port]")
             return True
-        execute_hack_puzzle(engine, parts[1], auto_solve=auto_solve)
+        target_query = parts[1]
+        # If user passed a port number (e.g. hack 192.168.1.10 21)
+        if len(parts) >= 3 and parts[2].isdigit():
+            ok, msg = engine.exploit_service(target_query, int(parts[2]))
+            print(msg)
+            return True
+        # Resolve node_id if target_query is IP or hostname
+        node = engine.find_node(target_query)
+        target_id = node.node_id if node else target_query
+        execute_hack_puzzle(engine, target_id, auto_solve=auto_solve)
         return True
 
     if action in ("exploit", "use"):
         if len(parts) < 2:
             exploits_list = ', '.join(engine.deck.exploits) if engine.deck.exploits else 'None'
-            print(f"Usage: exploit <name> [target] (Loaded exploits: {exploits_list})")
+            print(f"Usage: exploit <ip> <port> (e.g. `exploit 192.168.1.10 21`)\n       exploit <chip_name> [target] (Loaded chips: {exploits_list})")
+            return True
+        # Check if second arg is digit -> service port exploit
+        if len(parts) >= 3 and parts[2].isdigit():
+            ok, msg = engine.exploit_service(parts[1], int(parts[2]))
+            print(msg)
             return True
         exploit_name = parts[1]
         target = parts[2] if len(parts) > 2 else None
         ok, msg = engine.use_exploit(exploit_name, target)
+        print(msg)
+        return True
+
+    if action in ("ls", "dir"):
+        target = parts[1] if len(parts) > 1 else None
+        ok, output, _ = engine.list_files(target)
+        print(output)
+        return True
+
+    if action == "cat":
+        if len(parts) < 2:
+            print("Usage: cat [ip] <filepath> (e.g. `cat /etc/hosts` or `cat 192.168.1.10 /home/admin/network_map.txt`)")
+            return True
+        if len(parts) == 2:
+            target = engine.state.current_node_id
+            filepath = parts[1]
+        else:
+            target = parts[1]
+            filepath = parts[2]
+        ok, output, _ = engine.read_file(target, filepath)
+        print(output)
+        return True
+
+    if action in ("download", "steal"):
+        if len(parts) < 2:
+            print("Usage: steal [ip] <filepath> (e.g. `steal /data/corporate_slush_fund.csv`)")
+            return True
+        if len(parts) == 2:
+            target = engine.state.current_node_id
+            filepath = parts[1]
+        else:
+            target = parts[1]
+            filepath = parts[2]
+        ok, msg, _ = engine.download_file(target, filepath)
+        print(msg)
+        return True
+
+    if action in ("wipe_logs", "wipe", "clean_logs"):
+        target = parts[1] if len(parts) > 1 else engine.state.current_node_id
+        ok, msg = engine.wipe_logs(target)
         print(msg)
         return True
 
@@ -224,7 +291,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         print(msg)
         return True
 
-    if action == "jackout":
+    if action in ("jackout", "cash_out"):
         ok, msg = engine.jackout()
         print(msg)
         if ok:
@@ -275,7 +342,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("No saved game found.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: scan, move, hack, exploit, spoof, jackout, shop, buy, career, status, save, load, quit")
+    print(f"Unknown command: '{action}'. Commands: probe <ip>, exploit <ip> <port>, ls [ip], cat <file>, steal <file>, wipe_logs [ip], move <ip>, scan, spoof, jackout, shop, buy, career, status, save, load, quit")
     return True
 
 

@@ -5,19 +5,9 @@
     "last_phase": "phase 3",
     "active_phase": 3,
     "status": "in_progress",
-    "updated_at": 1792263889.915851
+    "updated_at": 1792264071.5817773
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-engine-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[3/4] Hacking mini-games (frequency alignment, buffer overflow, hash crack) with unit tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792260973.7983975,
-      "timestamp_str": "2026-10-17 21:16:13"
-    },
     {
       "task_id": "task-cyberpulse-engine-v1",
       "phase": "phase 3",
@@ -227,6 +217,16 @@
       "status": "in_progress",
       "timestamp": 1792263889.915851,
       "timestamp_str": "2026-10-17 22:04:49"
+    },
+    {
+      "task_id": "task-hacker-simulation-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[3/4] Interactive CLI commands for hacker simulation (nmap/probe/exploit/ls/cat/download/wipe_logs/jackout) with unit & integration tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792264071.5817773,
+      "timestamp_str": "2026-10-17 22:07:51"
     }
   ]
 }

@@ -92,6 +92,29 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("INSUFFICIENT RAM", out)
 
+    def test_simulation_cli_workflow(self):
+        batch_cmds = (
+            "probe 192.168.1.10;"
+            "exploit 192.168.1.10 21;"
+            "move 192.168.1.10;"
+            "ls;"
+            "cat /home/admin/network_map.txt;"
+            "steal /home/admin/network_map.txt;"
+            "wipe_logs;"
+            "cash_out"
+        )
+        code, out = self.run_cli("--seed", "1337", "--exec", batch_cmds)
+        self.assertEqual(code, 0)
+        self.assertIn("Nmap scan report for alpha.internal", out)
+        self.assertIn("EXPLOIT SUCCESSFUL", out)
+        self.assertIn("Transferred terminal session to 'Subnet Router Alpha'", out)
+        self.assertIn("Directory listing for alpha.internal", out)
+        self.assertIn("Subnet topology routing table", out)
+        self.assertIn("EXFILTRATION COMPLETE: Stole '/home/admin/network_map.txt'", out)
+        self.assertIn("LOGS SANITIZED", out)
+        self.assertIn("SAFE EXTRACTION", out)
+
 
 if __name__ == "__main__":
     unittest.main()
+
