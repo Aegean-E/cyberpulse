@@ -1690,5 +1690,165 @@ body:not(.crt-effects) .crt-flicker {
   font-weight: 700;
 }
 
+/* ==========================================================================
+   Probed Ports & Exploits Bay & Keyboard Badges
+   ========================================================================== */
+
+.kbd-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 1px 4px;
+  margin-left: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--c-border);
+  border-radius: 2px;
+  color: var(--c-accent);
+  vertical-align: middle;
+}
+
+.probed-ports-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--c-bg-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+
+.probed-ports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--c-border);
+  padding-bottom: 6px;
+}
+
+.probed-title {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--c-accent);
+  letter-spacing: 0.5px;
+}
+
+.probed-badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--c-border);
+  border-radius: 2px;
+  color: var(--c-primary);
+}
+
+.probed-ports-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.probed-port-card {
+  background: rgba(10, 15, 20, 0.7);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  transition: all var(--transition-fast);
+}
+
+.probed-port-card:hover {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 8px rgba(0, 220, 255, 0.2);
+}
+
+.port-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.port-card-title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-text-bright);
+}
+
+.port-card-service {
+  font-size: 10px;
+  color: var(--c-text-dim);
+}
+
+.port-status-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-weight: 700;
+  display: inline-block;
+  width: fit-content;
+}
+
+.badge-vuln {
+  background: rgba(255, 60, 60, 0.2);
+  color: var(--c-danger);
+  border: 1px solid var(--c-danger);
+}
+
+.badge-secure {
+  background: rgba(100, 100, 100, 0.2);
+  color: #888;
+  border: 1px solid #555;
+}
+
+.badge-breached {
+  background: rgba(0, 255, 120, 0.2);
+  color: var(--c-primary);
+  border: 1px solid var(--c-primary);
+}
+
+.badge-blocked {
+  background: rgba(255, 180, 0, 0.2);
+  color: var(--c-warning);
+  border: 1px solid var(--c-warning);
+}
+
+.port-card-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.port-action-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+  border: 1px solid var(--c-border);
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--c-text-main);
+  transition: all var(--transition-fast);
+}
+
+.port-action-btn:hover {
+  background: var(--c-primary);
+  color: #000;
+  border-color: var(--c-primary);
+  box-shadow: 0 0 8px var(--c-primary-glow);
+}
+
+.port-action-btn.bypass-btn:hover {
+  background: var(--c-warning);
+  color: #000;
+  border-color: var(--c-warning);
+}
+
 
 

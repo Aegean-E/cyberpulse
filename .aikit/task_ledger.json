@@ -5,18 +5,9 @@
     "last_phase": "phase 3",
     "active_phase": 3,
     "status": "in_progress",
-    "updated_at": 1792268168.046961
+    "updated_at": 1792268383.7344043
   },
   "checkpoints": [
-    {
-      "task_id": "task-web-cyberdeck-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-web-cyberdeck-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792263195.4337804,
-      "timestamp_str": "2026-10-17 21:53:15"
-    },
     {
       "task_id": "task-hacker-simulation-v1",
       "phase": "phase 2",
@@ -227,6 +218,16 @@
       "status": "in_progress",
       "timestamp": 1792268168.046961,
       "timestamp_str": "2026-10-17 23:16:08"
+    },
+    {
+      "task_id": "task-hardening-and-evolution-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[milestone 4/4] add visual Probed Ports bay, keyboard navigation, and UI polish to Web Cyberdeck",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792268383.7344043,
+      "timestamp_str": "2026-10-17 23:19:43"
     }
   ]
 }

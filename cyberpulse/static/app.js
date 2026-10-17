@@ -264,6 +264,72 @@ function initUIEvents() {
     document.getElementById("announcement-banner").classList.add("hidden");
     handleReset();
   });
+
+  // Global Keyboard Navigation
+  window.addEventListener("keydown", (e) => {
+    if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
+      return;
+    }
+
+    if (e.key === "Escape") {
+      closeAllModals();
+      return;
+    }
+
+    const key = e.code;
+    if (key === "KeyS") {
+      e.preventDefault();
+      handleScan();
+    } else if (key === "KeyP") {
+      e.preventDefault();
+      handleProbeNode();
+    } else if (key === "KeyE") {
+      e.preventDefault();
+      handleStartHack();
+    } else if (key === "KeyJ") {
+      e.preventDefault();
+      handleJackout();
+    } else if (key === "KeyC") {
+      e.preventDefault();
+      toggleModal("modal-cves", openCvesModal);
+    } else if (key === "KeyR") {
+      e.preventDefault();
+      toggleModal("modal-rig", openRigModal);
+    } else if (key === "KeyM") {
+      e.preventDefault();
+      toggleModal("modal-workshop", openWorkshopModal);
+    } else if (key === "KeyB") {
+      e.preventDefault();
+      toggleModal("modal-shop", openShopModal);
+    } else if (key === "KeyD") {
+      e.preventDefault();
+      toggleModal("modal-career", openCareerModal);
+    } else if (key === "KeyF") {
+      e.preventDefault();
+      openBypassModal();
+    } else if (key === "KeyA") {
+      e.preventDefault();
+      handleEvadeAv();
+    }
+  });
+}
+
+function closeAllModals() {
+  document.querySelectorAll(".modal-overlay").forEach(m => m.classList.add("hidden"));
+  const viewer = document.getElementById("fs-file-viewer");
+  if (viewer) viewer.classList.add("hidden");
+  sfx.click();
+}
+
+function toggleModal(modalId, openFn) {
+  const el = document.getElementById(modalId);
+  if (!el) return;
+  if (el.classList.contains("hidden")) {
+    openFn();
+  } else {
+    el.classList.add("hidden");
+    sfx.click();
+  }
 }
 
 // ==========================================================================
@@ -568,6 +634,115 @@ function updateTargetCard(nodeId) {
   if (btnSocial) {
     btnSocial.disabled = isBreached || (node.status === "LOCKED" && !isAdjacent);
   }
+
+  if (isBreached) {
+    document.getElementById("probed-ports-container").classList.add("hidden");
+    loadFilesystemView(nodeId);
+  } else if (node.ports && node.ports.length > 0 && node.status !== "LOCKED") {
+    renderProbedPortsBay(node);
+  } else {
+    document.getElementById("probed-ports-container").classList.add("hidden");
+    document.getElementById("filesystem-container").classList.add("hidden");
+    document.getElementById("puzzle-idle").classList.remove("hidden");
+  }
+}
+
+function renderProbedPortsBay(node) {
+  const container = document.getElementById("probed-ports-container");
+  const grid = document.getElementById("probed-ports-grid");
+  document.getElementById("probed-target-host").textContent = `${node.hostname} (${node.ip_address})`;
+
+  document.getElementById("puzzle-idle").classList.add("hidden");
+  document.getElementById("filesystem-container").classList.add("hidden");
+  document.getElementById("puzzle-frequency").classList.add("hidden");
+  document.getElementById("puzzle-buffer").classList.add("hidden");
+  document.getElementById("puzzle-hash").classList.add("hidden");
+  container.classList.remove("hidden");
+
+  grid.innerHTML = "";
+  if (!node.ports || node.ports.length === 0) {
+    grid.innerHTML = '<div style="color:var(--c-text-dim); font-size:11px; padding:6px;">No open ports identified. Click PROBE PORTS [P] to scan.</div>';
+    return;
+  }
+
+  node.ports.forEach((p) => {
+    const card = document.createElement("div");
+    card.className = "probed-port-card";
+
+    let fwBlocked = false;
+    let fwBypassed = false;
+    if (node.firewall && node.firewall.enabled) {
+      const rule = (node.firewall.rules || []).find(r => r.port === p.port);
+      if (rule) {
+        if (rule.bypassed) fwBypassed = true;
+        else if (rule.action === "BLOCK") fwBlocked = true;
+      }
+    }
+
+    let badgeClass = "badge-secure";
+    let badgeText = "SECURE";
+    if (p.breached) {
+      badgeClass = "badge-breached";
+      badgeText = "BREACHED";
+    } else if (fwBlocked) {
+      badgeClass = "badge-blocked";
+      badgeText = "FW BLOCKED";
+    } else if (p.vulnerable) {
+      badgeClass = "badge-vuln";
+      badgeText = "VULNERABLE";
+    }
+
+    const fwNotice = fwBypassed ? '<span style="color:var(--c-warning); font-size:9px;">[FW BYPASSED]</span> ' : '';
+
+    card.innerHTML = `
+      <div class="port-card-info">
+        <div class="port-card-title">PORT ${p.port}/tcp : ${p.service.toUpperCase()} ${fwNotice}</div>
+        <div class="port-card-service">${p.version || "Service Banner"}</div>
+        <span class="port-status-badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="port-card-actions">
+        ${fwBlocked ? `<button class="port-action-btn bypass-btn" data-port="${p.port}">BYPASS FW</button>` : ''}
+        ${p.vulnerable && !p.breached && !fwBlocked ? `<button class="port-action-btn exploit-btn" data-port="${p.port}">💥 EXPLOIT</button>` : ''}
+      </div>
+    `;
+
+    const bypassBtn = card.querySelector(".bypass-btn");
+    if (bypassBtn) {
+      bypassBtn.onclick = (e) => {
+        e.stopPropagation();
+        openBypassModal();
+      };
+    }
+
+    const exploitBtn = card.querySelector(".exploit-btn");
+    if (exploitBtn) {
+      exploitBtn.onclick = async (e) => {
+        e.stopPropagation();
+        sfx.click();
+        addTerminalLog(`⚡ Launching targeted exploit against port ${p.port}/tcp (${p.service})...`, "info");
+        const res = await apiPost("/api/action", {
+          action: "exploit_service",
+          target: node.node_id,
+          port: p.port,
+        });
+        if (res && res.ok) {
+          sfx.success();
+          addTerminalLog(res.message, "success");
+          state.data = res.state;
+          renderHUD(res.state);
+          updateTargetCard(node.node_id);
+          loadFilesystemView(node.node_id);
+        } else if (res) {
+          sfx.failure();
+          addTerminalLog(res.message || "Exploit execution failed.", "danger");
+          state.data = res.state;
+          renderHUD(res.state);
+        }
+      };
+    }
+
+    grid.appendChild(card);
+  });
 }
 
 async function loadFilesystemView(nodeId) {
@@ -767,6 +942,9 @@ async function handleProbeNode() {
     state.data = res.state;
     renderHUD(res.state);
     updateTargetCard(state.selectedNodeId);
+    if (state.data.nodes[state.selectedNodeId] && state.data.nodes[state.selectedNodeId].status !== "BREACHED") {
+      renderProbedPortsBay(state.data.nodes[state.selectedNodeId]);
+    }
     if (res.report && res.report.ports) {
       res.report.ports.forEach((p) => {
         addTerminalLog(`  [PORT ${p.port}/tcp] ${p.service} (${p.version}) - ${p.vulnerable ? 'VULNERABLE' : 'SECURE'}`, p.vulnerable ? 'warn' : 'info');

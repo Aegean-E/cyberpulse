@@ -88,14 +88,14 @@
 
         <!-- Tactical Command Deck -->
         <div class="quick-actions">
-          <button class="action-btn" id="btn-scan" title="Scan surrounding nodes (+1 CPU recovery, +5% trace)">📡 SCAN MATRIX</button>
+          <button class="action-btn" id="btn-scan" title="Scan surrounding nodes (+1 CPU recovery, +5% trace)">📡 SCAN MATRIX <span class="kbd-badge">[S]</span></button>
           <button class="action-btn" id="btn-spoof" title="Burn 3 CPU to reduce trace by 25%">🛡️ SPOOF PROXY</button>
-          <button class="action-btn alert-action" id="btn-jackout" title="Safe extraction: bank credits and secure career streak">🚪 JACK OUT</button>
-          <button class="action-btn special-action" id="btn-cves-open" title="Weaponized Zero-Day CVE Exploit Arsenal">🎯 CVE ARSENAL</button>
-          <button class="action-btn info-action" id="btn-rig-open" title="Inspect player CyberDeck virtual rig, local files & daemons">💻 LOCAL RIG</button>
-          <button class="action-btn special-action" id="btn-workshop-open" title="Synthesize custom viruses & keyloggers">🧪 MALWARE LAB</button>
-          <button class="action-btn special-action" id="btn-shop-open">🛒 BLACK MARKET</button>
-          <button class="action-btn info-action" id="btn-career-open">👤 CAREER DOSSIER</button>
+          <button class="action-btn alert-action" id="btn-jackout" title="Safe extraction: bank credits and secure career streak">🚪 JACK OUT <span class="kbd-badge">[J]</span></button>
+          <button class="action-btn special-action" id="btn-cves-open" title="Weaponized Zero-Day CVE Exploit Arsenal">🎯 CVE ARSENAL <span class="kbd-badge">[C]</span></button>
+          <button class="action-btn info-action" id="btn-rig-open" title="Inspect player CyberDeck virtual rig, local files & daemons">💻 LOCAL RIG <span class="kbd-badge">[R]</span></button>
+          <button class="action-btn special-action" id="btn-workshop-open" title="Synthesize custom viruses & keyloggers">🧪 MALWARE LAB <span class="kbd-badge">[M]</span></button>
+          <button class="action-btn special-action" id="btn-shop-open">🛒 BLACK MARKET <span class="kbd-badge">[B]</span></button>
+          <button class="action-btn info-action" id="btn-career-open">👤 CAREER DOSSIER <span class="kbd-badge">[D]</span></button>
           <button class="action-btn reset-action" id="btn-reset-run">🔄 NEW SEED</button>
         </div>
 
@@ -152,10 +152,10 @@
             <div class="meta-item"><span class="lbl">TRACE RISK:</span> <span class="val" id="target-trace">--</span></div>
           </div>
           <div class="target-actions" id="target-actions">
-            <button class="hack-btn" id="btn-probe-node" disabled>📡 PROBE PORTS</button>
-            <button class="hack-btn" id="btn-init-hack" disabled>💥 EXPLOIT SERVICE</button>
-            <button class="action-btn" id="btn-bypass-fw" disabled title="Inject port-knocking or fragmentation to bypass blocked firewall ports">🛡️ BYPASS FW</button>
-            <button class="action-btn" id="btn-evade-av" disabled title="Deploy kernel rootkit or signature morphing to blind host Antivirus">👁️‍🗨️ EVADE AV</button>
+            <button class="hack-btn" id="btn-probe-node" disabled>📡 PROBE PORTS <span class="kbd-badge">[P]</span></button>
+            <button class="hack-btn" id="btn-init-hack" disabled>💥 EXPLOIT SERVICE <span class="kbd-badge">[E]</span></button>
+            <button class="action-btn" id="btn-bypass-fw" disabled title="Inject port-knocking or fragmentation to bypass blocked firewall ports">🛡️ BYPASS FW <span class="kbd-badge">[F]</span></button>
+            <button class="action-btn" id="btn-evade-av" disabled title="Deploy kernel rootkit or signature morphing to blind host Antivirus">👁️‍🗨️ EVADE AV <span class="kbd-badge">[A]</span></button>
             <button class="action-btn" id="btn-social-eng" disabled title="Multi-vector social engineering against target employees">🎭 SOCIAL ENG</button>
             <button class="move-btn" id="btn-move-node" disabled>🚀 JACK INTO NODE</button>
             <button class="action-btn" id="btn-phish-node" style="display:none;" disabled></button>
@@ -169,6 +169,15 @@
           <div class="puzzle-idle" id="puzzle-idle">
             <div class="idle-icon">⚡</div>
             <div class="idle-text">SELECT AN ADJACENT NODE AND PROBE PORTS OR EXPLOIT</div>
+          </div>
+
+          <!-- Probed Ports & Exploits Bay (Unbreached Target Intrusion) -->
+          <div class="probed-ports-container hidden" id="probed-ports-container">
+            <div class="probed-ports-header">
+              <span class="probed-title">🎯 ACTIVE SERVICE PORTS // EXPLOIT BAY</span>
+              <span class="probed-badge" id="probed-target-host">127.0.0.1</span>
+            </div>
+            <div class="probed-ports-grid" id="probed-ports-grid"></div>
           </div>
 
           <!-- Virtual Filesystem Container -->
