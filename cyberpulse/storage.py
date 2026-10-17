@@ -45,6 +45,32 @@ class SaveManager:
             temp_path.unlink(missing_ok=True)
         return target_path
 
+    def _read_json_with_backup(self, target_path: Path) -> Optional[Any]:
+        """Read JSON from target_path, falling back to shadow .bak if corrupted or missing."""
+        backup_path = target_path.with_suffix(".bak")
+
+        if target_path.exists():
+            try:
+                with open(target_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, OSError):
+                # Quarantine corrupted file
+                corrupt_path = self.data_dir / f"{target_path.name}.corrupt_{int(time.time())}"
+                try:
+                    shutil.move(target_path, corrupt_path)
+                except OSError:
+                    pass
+
+        # Attempt recovery from shadow backup
+        if backup_path.exists():
+            try:
+                with open(backup_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, OSError):
+                pass
+
+        return None
+
     def save(self, engine: GameEngine) -> Path:
         """Atomically persist engine state to disk."""
         data = {
@@ -56,34 +82,36 @@ class SaveManager:
         return self._write_atomic(self.save_file, data)
 
     def load(self) -> Optional[GameEngine]:
-        """Load and restore engine state from savegame."""
-        if not self.save_file.exists():
+        """Load and restore engine state from savegame with backup recovery."""
+        data = self._read_json_with_backup(self.save_file)
+        if not data or not isinstance(data, dict):
             return None
 
         try:
-            with open(self.save_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-        except (json.JSONDecodeError, OSError):
+            engine = GameEngine(seed=data["seed"])
+            engine.deck = CyberDeck.from_dict(data["deck"])
+            engine.state = GameState.from_dict(data["state"])
+            engine.nodes = {nid: Node.from_dict(ndata) for nid, ndata in data["nodes"].items()}
+            return engine
+        except (KeyError, TypeError):
             return None
 
-        engine = GameEngine(seed=data["seed"])
-        engine.deck = CyberDeck.from_dict(data["deck"])
-        engine.state = GameState.from_dict(data["state"])
-        engine.nodes = {nid: Node.from_dict(ndata) for nid, ndata in data["nodes"].items()}
-        return engine
+    def delete_save(self) -> None:
+        """Remove savegame and its shadow backup after completed or failed run."""
+        self.save_file.unlink(missing_ok=True)
+        self.save_file.with_suffix(".bak").unlink(missing_ok=True)
 
     def save_career(self, profile: CareerProfile) -> Path:
         """Atomically persist career meta-progression profile."""
         return self._write_atomic(self.career_file, profile.to_dict())
 
     def load_career(self) -> CareerProfile:
-        """Load persistent career profile or return fresh profile."""
-        if not self.career_file.exists():
+        """Load persistent career profile with backup recovery or return fresh profile."""
+        data = self._read_json_with_backup(self.career_file)
+        if not data or not isinstance(data, dict):
             return CareerProfile()
 
         try:
-            with open(self.career_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
             return CareerProfile.from_dict(data)
-        except (json.JSONDecodeError, OSError):
+        except (KeyError, TypeError):
             return CareerProfile()

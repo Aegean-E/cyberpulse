@@ -1,7 +1,7 @@
 """Black market cyberdeck upgrades and exploit vendor for CyberPulse."""
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from cyberpulse.models import CyberDeck
 

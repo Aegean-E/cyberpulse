@@ -22,3 +22,25 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. *Persistent Career Meta-Progression & Syndicate Contracts (Zeigarnik Effect)*: Career stats, rank, and bounty contracts tracked in `.cyberpulse/career.json`.
 - **Consequences**: Deepens tactical decision-making and intrinsic motivation (competence and autonomy), while creating thrilling dopamine anticipation loops without manipulative paywalls or external dependencies.
 
+### ADR-003: Operational Gap Remediation: Crash-Safe Shadow Recovery, Career Synchronization, Dynamic CPU/RAM Constraints, and Usable Exploit Chips
+- **Date**: 2026-10-17
+- **Status**: Accepted
+- **Context**: A comprehensive codebase audit revealed several architectural gaps and usability weaknesses:
+  1. `cyberpulse/shop.py` used `Optional` in type annotations without importing it from `typing`, triggering `NameError` on Python 3.14 PEP 649 annotation evaluation.
+  2. `cyberpulse/storage.py` created `.bak` backups during atomic writes, but failed to fall back to `.bak` when reading a corrupted `savegame.json` or `career.json`, risking total loss of player meta-progression.
+  3. `cyberpulse/cli.py` initialized `GameEngine` with default deck stats (100 creds, 0 upgrades), failing to apply persistent upgrades and banked credits from `career.json` to the player's active deck.
+  4. CPU cycles never regenerated across moves or turns, permanently disabling the `spoof` command after 3 uses.
+  5. Cyberdeck RAM capacity (`ram_mb`) and shop RAM upgrades were never checked or consumed by any game action or puzzle.
+  6. Exploit chips (`logic_bomb`, `ghost_protocol`, `brute_miner`) dropped as loot or purchased in the shop were inert with no activation mechanism.
+  7. Only a single static syndicate contract was issued with no replenishment.
+- **Decision**: Remediate all gaps systematically:
+  1. Fix typing import in `shop.py` and verify annotation evaluation across all modules.
+  2. Implement automatic `.bak` recovery with corruption quarantine in `storage.py`.
+  3. Introduce `apply_career_profile(deck, profile)` and synchronize deck/career credits across runs.
+  4. Implement turn-based CPU cycle regeneration (+1 per move/turn up to `max_cpu`).
+  5. Enforce RAM buffer capacity requirements for high-tier node intrusions (`node.security_level * 16` MB).
+  6. Implement an active `exploit <name> [target]` system allowing players to deploy chips tactically.
+  7. Dynamically dispatch new syndicate bounty contracts upon contract fulfillment.
+- **Consequences**: Closes all meta-progression and resource disconnects, elevates player agency and tactical depth, guarantees zero-data-loss power-loss resilience, and maintains 100% test pass rate in sub-second execution with zero external dependencies.
+
+

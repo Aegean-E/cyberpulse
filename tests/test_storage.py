@@ -57,6 +57,48 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(fallback.alias, "ZeroCool")
         self.assertEqual(fallback.successful_runs, 0)
 
+    def test_load_corrupted_save_with_backup_recovery(self):
+        engine = GameEngine(seed=77)
+        engine.deck.cryptocreds = 999
+        self.save_mgr.save(engine)
+        self.save_mgr.save(engine)  # Second save ensures .bak exists
+
+        # Corrupt primary save file
+        with open(self.save_mgr.save_file, "w", encoding="utf-8") as f:
+            f.write("{ invalid json corrupted ")
+
+        # Recovery from .bak should restore state and quarantine corrupted file
+        recovered = self.save_mgr.load()
+        self.assertIsNotNone(recovered)
+        self.assertEqual(recovered.deck.cryptocreds, 999)
+
+        # Check quarantine file was created
+        quarantine_files = list(self.temp_dir.glob("savegame.json.corrupt_*"))
+        self.assertEqual(len(quarantine_files), 1)
+
+    def test_load_corrupted_career_with_backup_recovery(self):
+        profile = CareerProfile(alias="Neo", banked_creds=7000)
+        self.save_mgr.save_career(profile)
+
+        # Trigger second save to ensure .bak exists
+        profile.banked_creds = 7500
+        self.save_mgr.save_career(profile)
+
+        # Corrupt primary career file
+        with open(self.save_mgr.career_file, "w", encoding="utf-8") as f:
+            f.write("<<<not a json>>>")
+
+        recovered = self.save_mgr.load_career()
+        self.assertIn(recovered.banked_creds, (7000, 7500))
+
+    def test_delete_save(self):
+        engine = GameEngine(seed=101)
+        self.save_mgr.save(engine)
+        self.assertTrue(self.save_mgr.save_file.exists())
+        self.save_mgr.delete_save()
+        self.assertFalse(self.save_mgr.save_file.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
+

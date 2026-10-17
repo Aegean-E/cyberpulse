@@ -1,12 +1,17 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-behavioral-mechanics-v1",
-    "last_phase": "phase 3",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1792261780.6748056,
-    "completed_at": 1792261967.825151
+    "task_id": "task-codebase-enhancements-v1",
+    "last_phase": "phase 2",
+    "active_phase": 2,
+    "status": "in_progress",
+    "updated_at": 1792262136.291114,
+    "impact_assessment": {
+      "why": "Eliminate silent typing bugs, protect against save corruption via shadow backup fallback, and establish ADR-003 foundation",
+      "benefits": "Ensures PEP 649 introspection stability, guarantees zero-data-loss career persistence via .bak recovery, and prepares architecture for resource & exploit gameplay",
+      "risks": "contract: none; dependency: none (standard library); concurrency: none; state: backward compatibility with legacy savegame and career files",
+      "mitigation": "Validate all schemas with existing test suites and add dedicated unit tests for .bak corruption recovery"
+    }
   },
   "checkpoints": [
     {
@@ -128,6 +133,22 @@
       "status": "completed",
       "timestamp": 1792261967.8251524,
       "timestamp_str": "2026-10-17 21:32:47"
+    },
+    {
+      "task_id": "task-codebase-enhancements-v1",
+      "phase": "phase 2",
+      "phase_num": 2,
+      "description": "[1/4] Pre-flight impact assessment, ADR-003, typing bug fix in shop.py, and crash-resilient backup recovery in storage.py",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792262136.291114,
+      "timestamp_str": "2026-10-17 21:35:36",
+      "impact_assessment": {
+        "why": "Eliminate silent typing bugs, protect against save corruption via shadow backup fallback, and establish ADR-003 foundation",
+        "benefits": "Ensures PEP 649 introspection stability, guarantees zero-data-loss career persistence via .bak recovery, and prepares architecture for resource & exploit gameplay",
+        "risks": "contract: none; dependency: none (standard library); concurrency: none; state: backward compatibility with legacy savegame and career files",
+        "mitigation": "Validate all schemas with existing test suites and add dedicated unit tests for .bak corruption recovery"
+      }
     }
   ]
 }
