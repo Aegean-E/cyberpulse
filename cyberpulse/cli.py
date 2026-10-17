@@ -1,4 +1,4 @@
-"""Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse."""
+"""Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics."""
 
 import argparse
 import sys
@@ -6,8 +6,9 @@ from pathlib import Path
 from typing import List, Optional
 
 from cyberpulse.engine import GameEngine
-from cyberpulse.models import NodeStatus, NodeType
+from cyberpulse.models import CareerProfile, CyberDeck, NodeStatus, NodeType
 from cyberpulse.puzzles import BufferPuzzle, FrequencyPuzzle, HashCrackPuzzle
+from cyberpulse.shop import BlackMarketShop
 from cyberpulse.storage import SaveManager
 
 
@@ -35,12 +36,24 @@ def print_hud(engine: GameEngine) -> None:
     curr = engine.get_current_node()
     trace_bar = render_trace_bar(engine.state.trace_percent)
 
+    unbanked_str = f" [PUSH-YOUR-LUCK: +{engine.state.unbanked_creds} UNBANKED!]" if engine.state.unbanked_creds > 0 else ""
+    contract = engine.state.active_contract
+    contract_str = (
+        f"{contract.title} (+{contract.reward_creds} Creds) [COMPLETED]"
+        if contract and contract.completed
+        else (f"{contract.title} (+{contract.reward_creds} Creds) [ACTIVE]" if contract else "None")
+    )
+
     print("\n+==========================================================================+")
-    print("|          >> CYBERPULSE // NEURAL INTRUSION HARNESS v0.1.0 <<             |")
+    print("|          >> CYBERPULSE // NEURAL INTRUSION HARNESS v0.2.0 <<             |")
     print("+==========================================================================+")
     print(f"[*] Location:   {curr.name} [{curr.node_id}] ({curr.node_type})")
     print(f"[*] Trace:      {trace_bar} | Turns: {engine.state.turns_elapsed}")
-    print(f"[*] Deck:       CPU: {engine.deck.cpu_cycles}/{engine.deck.max_cpu} | RAM: {engine.deck.ram_mb}MB | Creds: {engine.deck.cryptocreds}")
+    print(f"[*] Deck:       CPU: {engine.deck.cpu_cycles}/{engine.deck.max_cpu} | RAM: {engine.deck.ram_mb}MB | Creds: {engine.deck.cryptocreds}{unbanked_str}")
+    print(f"[*] Upgrades:   ICE Dampener: Lvl {engine.deck.ice_dampener_level} | Overclock: Lvl {engine.deck.overclock_level}")
+    print(f"[*] Contract:   {contract_str}")
+    if engine.state.near_miss_count > 0:
+        print(f"[*] Adrenaline: [NEAR-MISS ENCOUNTERS: {engine.state.near_miss_count}]")
     print("--------------------------------------------------------------------------")
     print("Network Connections:")
     for cid in curr.connected_ids:
@@ -48,6 +61,35 @@ def print_hud(engine: GameEngine) -> None:
         if adj:
             icon = "[BREACHED]" if adj.status == NodeStatus.BREACHED else ("[DISCOVERED]" if adj.status == NodeStatus.DISCOVERED else "[LOCKED]")
             print(f"   * {adj.node_id:<20} | {adj.name:<32} | {icon} (Sec: {adj.security_level})")
+    print("+==========================================================================+")
+
+
+def print_shop(shop: BlackMarketShop, deck: CyberDeck) -> None:
+    items = shop.list_available(deck)
+    print("\n+==========================================================================+")
+    print("|                   >> BLACK MARKET CYBER-VENDOR <<                        |")
+    print("+==========================================================================+")
+    print(f"[*] Available Funds: {deck.cryptocreds} CryptoCreds\n")
+    for it in items:
+        status = f"Lvl {it['current_level']}/{it['max_level']}" if it['max_level'] > 1 else ("OWNED" if it['current_level'] > 0 else "AVAILABLE")
+        buy_tag = "[AFFORDABLE]" if it['can_buy'] else "[LOCKED]"
+        print(f"   * {it['item_id']:<18} | Cost: {it['cost']:<4} Creds | {status:<12} | {buy_tag}")
+        print(f"     Description: {it['description']}")
+    print("--------------------------------------------------------------------------")
+    print("Buy with: buy <item_id> (e.g. `buy overclock_cpu` or `buy ice_dampener`)")
+    print("+==========================================================================+")
+
+
+def print_career(profile: CareerProfile) -> None:
+    print("\n+==========================================================================+")
+    print(f"|               >> HACKER CAREER DOSSIER: {profile.alias} <<                  |")
+    print("+==========================================================================+")
+    print(f"[*] Banked Funds:     {profile.banked_creds} CryptoCreds")
+    print(f"[*] Lifetime Stolen:  {profile.lifetime_creds} CryptoCreds")
+    print(f"[*] Heists Cleared:   {profile.successful_runs} successful | {profile.failed_runs} severed")
+    print(f"[*] Infiltration Run: Streak: {profile.current_streak} (Best: {profile.best_streak})")
+    upgrades = ', '.join(profile.purchased_upgrades) if profile.purchased_upgrades else "None"
+    print(f"[*] Hardware Rig:     {upgrades}")
     print("+==========================================================================+")
 
 
@@ -79,6 +121,8 @@ def execute_hack_puzzle(engine: GameEngine, target_id: str, auto_solve: bool = F
                 guess = float(val_str)
                 ok, msg = puzzle.tune(guess)
                 print(msg)
+                if puzzle.near_miss:
+                    engine.state.near_miss_count += 1
                 if ok:
                     engine.complete_breach(target_id)
                     return True
@@ -95,6 +139,8 @@ def execute_hack_puzzle(engine: GameEngine, target_id: str, auto_solve: bool = F
         player_seq = seq_str.split()
         ok, msg = puzzle.verify_sequence(player_seq)
         print(msg)
+        if puzzle.near_miss:
+            engine.state.near_miss_count += 1
         if ok:
             engine.complete_breach(target_id)
             return True
@@ -108,6 +154,8 @@ def execute_hack_puzzle(engine: GameEngine, target_id: str, auto_solve: bool = F
             guess = input(f"Guess keyword [{puzzle.attempts_left} tries left]: ").strip()
             ok, msg = puzzle.guess(guess)
             print(msg)
+            if puzzle.near_miss:
+                engine.state.near_miss_count += 1
             if ok:
                 engine.complete_breach(target_id)
                 return True
@@ -124,6 +172,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
     if not parts:
         return True
     action = parts[0].lower()
+    shop = BlackMarketShop()
 
     if action in ("q", "quit", "exit"):
         print("👋 Neural link terminated.")
@@ -158,6 +207,42 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         print(msg)
         return True
 
+    if action == "jackout":
+        ok, msg = engine.jackout()
+        print(msg)
+        if ok:
+            # Update career meta-progression
+            profile = save_mgr.load_career()
+            profile.successful_runs += 1
+            profile.current_streak += 1
+            profile.best_streak = max(profile.best_streak, profile.current_streak)
+            profile.banked_creds = engine.deck.cryptocreds
+            profile.lifetime_creds += engine.deck.cryptocreds
+            save_mgr.save_career(profile)
+            print("📂 Career progression profile updated.")
+        return True
+
+    if action == "shop":
+        print_shop(shop, engine.deck)
+        return True
+
+    if action == "buy":
+        if len(parts) < 2:
+            print("Usage: buy <item_id> (e.g. `buy overclock_cpu`)")
+            return True
+        ok, msg = shop.purchase(engine.deck, parts[1])
+        print(msg)
+        if ok:
+            profile = save_mgr.load_career()
+            if parts[1] not in profile.purchased_upgrades:
+                profile.purchased_upgrades.append(parts[1])
+            save_mgr.save_career(profile)
+        return True
+
+    if action == "career":
+        print_career(save_mgr.load_career())
+        return True
+
     if action == "save":
         path = save_mgr.save(engine)
         print(f"💾 Infiltration progress saved to {path}.")
@@ -172,7 +257,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("No saved game found.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: scan, move, hack, spoof, status, save, load, quit")
+    print(f"Unknown command: '{action}'. Commands: scan, move, hack, spoof, jackout, shop, buy, career, status, save, load, quit")
     return True
 
 
@@ -200,7 +285,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     # Interactive mode
     print("Initializing CyberPulse...")
     print_hud(engine)
-    while not engine.state.is_game_over and not engine.state.is_victory:
+    while not engine.state.is_game_over and not engine.state.is_victory and not engine.state.is_jacked_out:
         try:
             line = input("\ncyberpulse> ")
             if not run_command(line, engine, save_mgr, auto_solve=args.auto_solve):
@@ -209,10 +294,18 @@ def main(argv: Optional[List[str]] = None) -> int:
             print("\n👋 Disconnected.")
             break
 
+    profile = save_mgr.load_career()
     if engine.state.is_victory:
         print("\n🎉 MISSION SUCCESSFUL: System Core infiltrated. You escaped without detection.")
+        profile.successful_runs += 1
+        profile.current_streak += 1
+        profile.best_streak = max(profile.best_streak, profile.current_streak)
+        save_mgr.save_career(profile)
     elif engine.state.is_game_over:
         print("\n💀 CONNECTION TERMINATED: Security ICE traced and burned your cyberdeck.")
+        profile.failed_runs += 1
+        profile.current_streak = 0
+        save_mgr.save_career(profile)
 
     return 0
 

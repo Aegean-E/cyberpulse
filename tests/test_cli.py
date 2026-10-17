@@ -48,6 +48,25 @@ class TestCLI(unittest.TestCase):
         self.assertIn("Loaded saved infiltration session", out_load)
         self.assertIn("Subnet Router Alpha", out_load)
 
+    def test_jackout_command(self):
+        # Hack proxy a, then jack out safely
+        batch_cmds = "hack node_proxy_a;jackout;career"
+        code, out = self.run_cli("--seed", "1337", "--auto-solve", "--exec", batch_cmds)
+        self.assertEqual(code, 0)
+        self.assertIn("SAFE EXTRACTION", out)
+        self.assertIn("Career progression profile updated", out)
+        self.assertIn("HACKER CAREER DOSSIER", out)
+        self.assertIn("Heists Cleared:   1 successful", out)
+
+    def test_shop_and_buy_command(self):
+        # View shop and buy overclock_cpu
+        batch_cmds = "shop;buy overclock_cpu;status"
+        code, out = self.run_cli("--seed", "1337", "--exec", batch_cmds)
+        self.assertEqual(code, 0)
+        self.assertIn("BLACK MARKET CYBER-VENDOR", out)
+        # Deck starts with 100 creds, overclock_cpu costs 150 creds -> should report insufficient funds
+        self.assertIn("Insufficient funds", out)
+
 
 if __name__ == "__main__":
     unittest.main()
