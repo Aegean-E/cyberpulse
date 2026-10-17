@@ -1,34 +1,73 @@
-"""Deterministic cyberspace game engine managing player movement, trace, and breach states."""
+"""Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback."""
 
+import random
 from typing import Dict, List, Optional, Tuple
 
-from cyberpulse.models import CyberDeck, GameState, Node, NodeStatus, NodeType
+from cyberpulse.models import (
+    BountyContract,
+    CyberDeck,
+    GameState,
+    Node,
+    NodeStatus,
+    NodeType,
+)
 from cyberpulse.network import generate_network
+from cyberpulse.rewards import roll_breach_reward
 
 
 class GameEngine:
-    """Manages gameplay rules, movement across network topology, and victory/defeat conditions."""
+    """Manages gameplay rules, push-your-luck risk, and victory/defeat conditions."""
 
     def __init__(self, seed: int = 1337):
         self.seed = seed
+        self.rng = random.Random(seed)
         self.nodes: Dict[str, Node] = generate_network(seed)
         self.deck: CyberDeck = CyberDeck()
+
+        # Generate a procedural Syndicate Bounty Contract (Zeigarnik Effect)
+        contract = BountyContract(
+            contract_id=f"cnt_{seed % 1000:03d}",
+            title="Syndicate Infiltration Order: Data Extraction",
+            target_node_type=NodeType.DATA_VAULT,
+            max_trace_limit=70,
+            reward_creds=200,
+        )
+
         self.state: GameState = GameState(
             seed=seed,
             current_node_id="node_gateway",
             trace_percent=0,
             turns_elapsed=0,
+            active_contract=contract,
         )
 
     def get_current_node(self) -> Node:
         return self.nodes[self.state.current_node_id]
 
-    def add_trace(self, amount: int) -> None:
-        """Increase system security trace. If 100% is reached, player is locked out."""
+    def add_trace(self, raw_amount: int) -> None:
+        """Increase system trace, mitigated by ICE dampeners. 100% triggers lockout & loss of loot."""
+        # Passive ICE dampener mitigation (20% reduction per dampener level)
+        if self.deck.ice_dampener_level > 0:
+            reduction = min(0.60, 0.20 * self.deck.ice_dampener_level)
+            amount = max(1, int(raw_amount * (1.0 - reduction)))
+        else:
+            amount = raw_amount
+
         self.state.trace_percent = min(100, self.state.trace_percent + amount)
+
+        # High-arousal near-miss tension feedback (Clark et al.)
+        if 80 <= self.state.trace_percent < 100:
+            self.state.near_miss_count += 1
+            self.state.message_log.append(f"⚠️ CRITICAL TRACE WARNING: {self.state.trace_percent}%! Black ICE locks tightening!")
+
         if self.state.trace_percent >= 100:
             self.state.is_game_over = True
-            self.state.message_log.append("🚨 SECURITY TRACE LOCKOUT DETECTED! Connection severed.")
+            lost_loot = self.state.unbanked_creds
+            self.state.unbanked_creds = 0
+            self.state.looted_payloads.clear()
+            self.state.message_log.append(
+                f"🚨 SECURITY TRACE LOCKOUT DETECTED! Connection severed. Lost {lost_loot} unbanked Creds!"
+            )
 
     def spoof_ip(self) -> Tuple[bool, str]:
         """Reduce active trace level by burning CPU cycles."""
@@ -60,6 +99,8 @@ class GameEngine:
         """Verify whether the player can transition to target node."""
         if self.state.is_game_over:
             return False, "Cannot move: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot move: terminal session jacked out."
         if target_id not in self.nodes:
             return False, f"Unknown node: {target_id}"
 
@@ -88,19 +129,33 @@ class GameEngine:
         return True, msg
 
     def complete_breach(self, node_id: str) -> Tuple[bool, str]:
-        """Mark node as breached, award loot, and trigger victory if Central Core."""
+        """Mark node as breached, evaluate variable-ratio rewards, and check contracts."""
         if node_id not in self.nodes:
             return False, f"Invalid node '{node_id}'."
 
         node = self.nodes[node_id]
         node.status = NodeStatus.BREACHED
-        self.deck.cryptocreds += node.credits_reward
-        msg = f"💥 Infiltration successful! '{node.name}' breached."
 
-        if node.credits_reward > 0:
-            msg += f" Extracted {node.credits_reward} CryptoCreds."
+        # Variable-ratio reward roll (Skinner reinforcement schedule)
+        creds_awarded, reward_desc, exploit_drop = roll_breach_reward(node, self.rng)
+        self.state.unbanked_creds += creds_awarded
+
+        if exploit_drop and exploit_drop not in self.deck.exploits:
+            self.deck.exploits.append(exploit_drop)
+
+        msg = f"💥 Infiltration successful! '{node.name}' breached. {reward_desc}"
+
         if node.data_payload:
+            self.state.looted_payloads.append(node.data_payload)
             msg += f" Acquired: [{node.data_payload}]."
+
+        # Syndicate Contract Check (Zeigarnik Effect)
+        contract = self.state.active_contract
+        if contract and not contract.completed:
+            if node.node_type == contract.target_node_type and self.state.trace_percent <= contract.max_trace_limit:
+                contract.completed = True
+                self.state.unbanked_creds += contract.reward_creds
+                msg += f" 🏆 CONTRACT FULFILLED! +{contract.reward_creds} Creds!"
 
         # Unlock adjacent nodes to DISCOVERED
         for adj_id in node.connected_ids:
@@ -112,5 +167,26 @@ class GameEngine:
             self.state.is_victory = True
             msg += " 🏆 CORE INFILTRATED! MISSION ACCOMPLISHED!"
 
+        self.state.message_log.append(msg)
+        return True, msg
+
+    def jackout(self) -> Tuple[bool, str]:
+        """Push-Your-Luck extraction: safely bank all unbanked credits and looted payloads."""
+        if self.state.is_game_over:
+            return False, "Cannot jack out: terminal already locked out."
+        if self.state.is_jacked_out:
+            return False, "Already jacked out."
+
+        curr = self.get_current_node()
+        if curr.status != NodeStatus.BREACHED:
+            return False, "Can only jack out from a securely breached node."
+
+        banked = self.state.unbanked_creds
+        payload_count = len(self.state.looted_payloads)
+        self.deck.cryptocreds += banked
+        self.state.unbanked_creds = 0
+        self.state.is_jacked_out = True
+
+        msg = f"🚪 SAFE EXTRACTION! Banked {banked} CryptoCreds and secured {payload_count} data payloads."
         self.state.message_log.append(msg)
         return True, msg
