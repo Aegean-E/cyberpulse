@@ -121,6 +121,44 @@ class TestCyberdeckServer(unittest.TestCase):
             js = resp.read().decode("utf-8")
             self.assertIn("SoundFX", js)
 
+    def test_server_simulation_actions(self):
+        # 1. Probe proxy a
+        status, probe_res = self._post("/api/action", {"action": "probe", "target": "192.168.1.10"})
+        self.assertEqual(status, 200)
+        self.assertTrue(probe_res["ok"])
+        self.assertIn("Nmap scan report", probe_res["message"])
+
+        # 2. Exploit FTP port 21
+        status, exp_res = self._post("/api/action", {"action": "exploit_service", "target": "192.168.1.10", "port": 21})
+        self.assertEqual(status, 200)
+        self.assertTrue(exp_res["ok"])
+        self.assertIn("EXPLOIT SUCCESSFUL", exp_res["message"])
+
+        # 3. List files
+        status, ls_res = self._post("/api/action", {"action": "list_files", "target": "192.168.1.10"})
+        self.assertEqual(status, 200)
+        self.assertTrue(ls_res["ok"])
+        self.assertTrue(len(ls_res["files"]) >= 1)
+
+        # 4. Read file
+        status, cat_res = self._post("/api/action", {"action": "read_file", "target": "192.168.1.10", "path": "/home/admin/network_map.txt"})
+        self.assertEqual(status, 200)
+        self.assertTrue(cat_res["ok"])
+        self.assertIn("Subnet topology", cat_res["content"])
+
+        # 5. Download file
+        status, dl_res = self._post("/api/action", {"action": "download_file", "target": "192.168.1.10", "path": "/home/admin/network_map.txt"})
+        self.assertEqual(status, 200)
+        self.assertTrue(dl_res["ok"])
+        self.assertIn("EXFILTRATION COMPLETE", dl_res["message"])
+
+        # 6. Wipe logs
+        status, wipe_res = self._post("/api/action", {"action": "wipe_logs", "target": "192.168.1.10"})
+        self.assertEqual(status, 200)
+        self.assertTrue(wipe_res["ok"])
+        self.assertIn("LOGS SANITIZED", wipe_res["message"])
+
 
 if __name__ == "__main__":
     unittest.main()
+

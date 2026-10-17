@@ -98,16 +98,21 @@ python -m cyberpulse.cli
 python -m cyberpulse.cli --seed 42069
 ```
 
-### In-Game Commands
+### In-Game Commands (Authentic Simulation & Tactical Netrunning)
 
-| Command | Action | Behavioral Design Role |
+| Command | Action | Simulation Role |
 |---|---|---|
-| `scan` | Scan surrounding connected nodes to reveal security levels and puzzle types | Information foraging & strategic autonomy |
-| `hack <node_id>` | Initiate cyber-attack mini-game on discovered target | Competence & skill expression |
-| `exploit <name> [target]` | Deploy executable exploit chip (`logic_bomb`, `ghost_protocol`, `brute_miner`) | Tactical leverage & consumable empowerment |
-| `move <node_id>` | Jack your terminal session into an adjacent breached node | Territory expansion & spatial agency |
+| `probe <ip>` / `nmap <ip>` | Scan open network ports, service banners, and software versions | Reconnaissance & vulnerability detection |
+| `exploit <ip> <port>` | Inject zero-day payload against vulnerable open port to acquire root shell | System penetration & breach |
+| `ls [ip]` | List virtual directory contents on breached host (`/etc`, `/home`, `/data`) | Target file discovery & intel gathering |
+| `cat <ip> <file>` | Inspect configuration files, transaction logs, and credentials | Data surveillance & credential extraction |
+| `steal <file>` / `download` | Exfiltrate valuable corporate data files for darknet credits & contract bounties | Data theft & primary heist objective |
+| `wipe_logs [ip]` | Clear access logs and sanitize intruder timestamps (drops active ICE trace by 20%) | Anti-forensics & trace mitigation |
+| `move <ip>` / `ssh <ip>` | Transfer your active terminal session to an adjacent breached host | Network lateral movement |
+| `scan` | Scan surrounding connected nodes to reveal topology and IP addresses | Information foraging & strategic autonomy |
+| `exploit <chip_name>` | Deploy executable exploit chip (`logic_bomb`, `ghost_protocol`, `brute_miner`) | Tactical leverage & consumable empowerment |
 | `spoof` | Burn 3 CPU cycles to bounce your proxy and reduce security trace by 25% | Risk mitigation & resource trade-offs |
-| `jackout` | Safely disconnect, bank all unbanked credits, and update career dossier | Loss aversion & push-your-luck extraction |
+| `cash_out` / `jackout` | Safely disconnect, bank all unbanked credits, and update career dossier | Loss aversion & push-your-luck extraction |
 | `shop` | Open the Black Market vendor to inspect permanent hardware upgrades | Anticipation of reward & meta-progression |
 | `buy <item_id>` | Purchase permanent cyberdeck upgrades with banked career credits | Long-term investment & competence scaling |
 | `career` | View lifetime operative dossier, breach stats, and installed cyberware | Identity, pride & meta-game mastery |
@@ -116,11 +121,12 @@ python -m cyberpulse.cli --seed 42069
 | `load` | Restore previous saved game state | Resumption fidelity |
 | `quit` | Sever connection and terminate terminal link | Clean exit |
 
-### 🧩 Hacking Mini-Games
-
-1. **Frequency Resonance Tuning**: Match target broadcast frequency within designated tolerance range. Narrow misses trigger near-miss excitation alerts.
-2. **Buffer Overflow Sequence**: Match memory buffer payload hex sequence without corruption.
-3. **Cryptographic Hash Cracking**: Terminal Bulls & Cows style keyword decryptor with character feedback.
+### 🕹️ Authentic Hacker Simulation Workflow
+1. **Discover & Probe**: Discover subnet routing table via `scan` or `/etc/hosts`. Port scan target with `probe 10.0.4.15` to detect vulnerable services (e.g. MariaDB on port 3306).
+2. **Exploit & Breach**: Exploit the vulnerable service via `exploit 10.0.4.15 3306` to gain root access.
+3. **Lateral Movement**: Transfer your shell session via `move 10.0.4.15` or `ssh 10.0.4.15`.
+4. **Inspect & Exfiltrate**: Explore directories with `ls`, view contents with `cat /data/corporate_slush_fund.csv`, and steal data with `steal /data/corporate_slush_fund.csv` to claim bounty rewards.
+5. **Sanitize & Cash Out**: Erase intruder traces with `wipe_logs` to drop active ICE trace, then safely extract via `cash_out` to bank your stolen wealth into permanent career meta-progression!
 
 ## 🛡️ Architecture & Guarantees
 

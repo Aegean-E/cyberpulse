@@ -258,6 +258,55 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 
+            if action == "probe":
+                target = payload.get("target") or engine.state.current_node_id
+                ok, msg, report = engine.probe_host(target)
+                self.send_json_response({"ok": ok, "message": msg, "report": report, "state": self.server_session.get_full_state()})
+                return
+
+            if action == "exploit_service":
+                target = payload.get("target") or engine.state.current_node_id
+                port = int(payload.get("port", 0))
+                ok, msg = engine.exploit_service(target, port)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action == "list_files":
+                target = payload.get("target")
+                ok, msg, files = engine.list_files(target)
+                self.send_json_response({
+                    "ok": ok,
+                    "message": msg,
+                    "files": [f.to_dict() if hasattr(f, "to_dict") else f for f in files],
+                    "state": self.server_session.get_full_state(),
+                })
+                return
+
+            if action == "read_file":
+                target = payload.get("target") or engine.state.current_node_id
+                file_path = payload.get("path", "")
+                ok, msg, content = engine.read_file(target, file_path)
+                self.send_json_response({"ok": ok, "message": msg, "content": content, "state": self.server_session.get_full_state()})
+                return
+
+            if action in ("download_file", "steal"):
+                target = payload.get("target") or engine.state.current_node_id
+                file_path = payload.get("path", "")
+                ok, msg, vfile = engine.download_file(target, file_path)
+                self.send_json_response({
+                    "ok": ok,
+                    "message": msg,
+                    "file": vfile.to_dict() if vfile and hasattr(vfile, "to_dict") else None,
+                    "state": self.server_session.get_full_state(),
+                })
+                return
+
+            if action == "wipe_logs":
+                target = payload.get("target") or engine.state.current_node_id
+                ok, msg = engine.wipe_logs(target)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
             if action == "reset":
                 seed = payload.get("seed")
                 state = self.server_session.reset_game(seed)

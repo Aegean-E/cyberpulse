@@ -1102,3 +1102,118 @@ body:not(.crt-effects) .crt-flicker {
   font-size: 13px;
   color: var(--c-text-main);
 }
+
+/* ==========================================================================
+   Virtual Filesystem & Ports View
+   ========================================================================== */
+
+.filesystem-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+}
+
+.fs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--c-border);
+  padding-bottom: 4px;
+}
+
+.fs-title {
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--c-primary);
+  font-weight: 700;
+}
+
+.fs-badge {
+  font-size: 10px;
+  color: var(--c-text-dim);
+}
+
+.ports-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.port-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--c-bg-card);
+  border: 1px solid var(--c-border);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+}
+
+.port-tag-vulnerable {
+  color: var(--c-warning);
+  font-weight: 700;
+}
+
+.port-tag-breached {
+  color: var(--c-primary);
+  font-weight: 700;
+}
+
+.fs-table-wrap {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+}
+
+.fs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.fs-table th {
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 6px;
+  text-align: left;
+  color: var(--c-text-dim);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.fs-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.fs-file-viewer {
+  margin-top: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid var(--c-border-bright);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+}
+
+.viewer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 10px;
+  color: var(--c-primary);
+}
+
+.viewer-content {
+  margin: 0;
+  max-height: 90px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--c-text-main);
+  white-space: pre-wrap;
+}
+

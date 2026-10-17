@@ -139,24 +139,55 @@
         <div class="target-card" id="target-card">
           <div class="target-name" id="target-name">Select a node on the matrix</div>
           <div class="target-meta-grid">
+            <div class="meta-item"><span class="lbl">IPV4 ADDR:</span> <span class="val highlight-value" id="target-ip">--</span></div>
+            <div class="meta-item"><span class="lbl">HOSTNAME:</span> <span class="val" id="target-hostname">--</span></div>
             <div class="meta-item"><span class="lbl">HOST TYPE:</span> <span class="val" id="target-type">--</span></div>
             <div class="meta-item"><span class="lbl">SECURITY:</span> <span class="val" id="target-sec">--</span></div>
             <div class="meta-item"><span class="lbl">RAM BUFFER:</span> <span class="val" id="target-ram">--</span></div>
             <div class="meta-item"><span class="lbl">TRACE RISK:</span> <span class="val" id="target-trace">--</span></div>
-            <div class="meta-item"><span class="lbl">BOUNTY:</span> <span class="val" id="target-bounty">--</span></div>
-            <div class="meta-item"><span class="lbl">PAYLOAD:</span> <span class="val" id="target-payload">--</span></div>
           </div>
           <div class="target-actions" id="target-actions">
-            <button class="hack-btn" id="btn-init-hack" disabled>⚡ COMMENCE INTRUSION</button>
+            <button class="hack-btn" id="btn-probe-node" disabled>📡 PROBE PORTS</button>
+            <button class="hack-btn" id="btn-init-hack" disabled>💥 EXPLOIT SERVICE</button>
             <button class="move-btn" id="btn-move-node" disabled>🚀 JACK INTO NODE</button>
+            <button class="action-btn" id="btn-wipe-logs" disabled>🧹 WIPE LOGS</button>
           </div>
         </div>
 
-        <!-- Dynamic Mini-Game Intrusion Bay -->
+        <!-- Dynamic Intrusion Bay / Filesystem Explorer -->
         <div class="puzzle-bay" id="puzzle-bay">
           <div class="puzzle-idle" id="puzzle-idle">
             <div class="idle-icon">⚡</div>
-            <div class="idle-text">SELECT AN ADJACENT NODE AND COMMENCE INTRUSION</div>
+            <div class="idle-text">SELECT AN ADJACENT NODE AND PROBE PORTS OR EXPLOIT</div>
+          </div>
+
+          <!-- Virtual Filesystem Container -->
+          <div class="filesystem-container hidden" id="filesystem-container">
+            <div class="fs-header">
+              <span class="fs-title">📂 VIRTUAL ROOT FILESYSTEM</span>
+              <span class="fs-badge" id="fs-target-host">127.0.0.1</span>
+            </div>
+            <div class="ports-list" id="target-ports-list"></div>
+            <div class="fs-table-wrap">
+              <table class="fs-table">
+                <thead>
+                  <tr>
+                    <th>PATH</th>
+                    <th>SIZE</th>
+                    <th>VALUE</th>
+                    <th>ACTION</th>
+                  </tr>
+                </thead>
+                <tbody id="fs-file-tbody"></tbody>
+              </table>
+            </div>
+            <div class="fs-file-viewer hidden" id="fs-file-viewer">
+              <div class="viewer-header">
+                <span class="viewer-path" id="viewer-path">/etc/hosts</span>
+                <button class="icon-btn small-btn" id="btn-close-viewer">CLOSE</button>
+              </div>
+              <pre class="viewer-content" id="viewer-content"></pre>
+            </div>
           </div>
 
           <!-- Frequency Tuning Puzzle -->

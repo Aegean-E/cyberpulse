@@ -195,8 +195,14 @@ function initUIEvents() {
   document.getElementById("btn-reset-run").addEventListener("click", handleReset);
 
   // Target Actions
+  document.getElementById("btn-probe-node").addEventListener("click", handleProbeNode);
   document.getElementById("btn-init-hack").addEventListener("click", handleStartHack);
   document.getElementById("btn-move-node").addEventListener("click", handleMoveNode);
+  document.getElementById("btn-wipe-logs").addEventListener("click", handleWipeLogs);
+  document.getElementById("btn-close-viewer").addEventListener("click", () => {
+    document.getElementById("fs-file-viewer").classList.add("hidden");
+    sfx.click();
+  });
 
   // Modals
   document.getElementById("btn-close-shop").addEventListener("click", () => {
@@ -432,6 +438,12 @@ function initMatrixCanvas() {
 function selectNode(nodeId) {
   state.selectedNodeId = nodeId;
   updateTargetCard(nodeId);
+  if (state.data && state.data.nodes[nodeId] && state.data.nodes[nodeId].status === "BREACHED") {
+    loadFilesystemView(nodeId);
+  } else {
+    document.getElementById("filesystem-container").classList.add("hidden");
+    document.getElementById("puzzle-idle").classList.remove("hidden");
+  }
 }
 
 function updateTargetCard(nodeId) {
@@ -442,21 +454,76 @@ function updateTargetCard(nodeId) {
 
   document.getElementById("target-badge").textContent = node.status;
   document.getElementById("target-name").textContent = node.name;
+  document.getElementById("target-ip").textContent = node.ip_address || "127.0.0.1";
+  document.getElementById("target-hostname").textContent = node.hostname || "localhost";
   document.getElementById("target-type").textContent = node.node_type;
   document.getElementById("target-sec").textContent = `LEVEL ${node.security_level}`;
   document.getElementById("target-ram").textContent = `${node.security_level * 16}MB (Deck: ${deck.ram_mb}MB)`;
   document.getElementById("target-trace").textContent = `+${node.trace_rate}%`;
-  document.getElementById("target-bounty").textContent = `${node.credits_reward} CR`;
-  document.getElementById("target-payload").textContent = node.data_payload || "None";
 
+  const btnProbe = document.getElementById("btn-probe-node");
   const btnHack = document.getElementById("btn-init-hack");
   const btnMove = document.getElementById("btn-move-node");
+  const btnWipe = document.getElementById("btn-wipe-logs");
 
   const isAdjacent = curr.connected_ids.includes(nodeId) || curr.node_id === nodeId;
   const isBreached = node.status === "BREACHED";
 
+  btnProbe.disabled = node.status === "LOCKED" && !isAdjacent;
   btnHack.disabled = isBreached || !isAdjacent;
   btnMove.disabled = !isBreached || curr.node_id === nodeId;
+  btnWipe.disabled = !isBreached;
+}
+
+async function loadFilesystemView(nodeId) {
+  const node = state.data.nodes[nodeId];
+  if (!node || node.status !== "BREACHED") {
+    document.getElementById("filesystem-container").classList.add("hidden");
+    return;
+  }
+
+  document.getElementById("puzzle-idle").classList.add("hidden");
+  document.getElementById("puzzle-frequency").classList.add("hidden");
+  document.getElementById("puzzle-buffer").classList.add("hidden");
+  document.getElementById("puzzle-hash").classList.add("hidden");
+  document.getElementById("filesystem-container").classList.remove("hidden");
+  document.getElementById("fs-target-host").textContent = `${node.hostname} (${node.ip_address})`;
+
+  const portsList = document.getElementById("target-ports-list");
+  portsList.innerHTML = "";
+  if (node.ports && node.ports.length > 0) {
+    node.ports.forEach((p) => {
+      const pDiv = document.createElement("div");
+      pDiv.className = "port-item";
+      const tagClass = p.breached ? "port-tag-breached" : (p.vulnerable ? "port-tag-vulnerable" : "");
+      const tagText = p.breached ? "BREACHED" : (p.vulnerable ? "VULNERABLE" : "SECURE");
+      pDiv.innerHTML = `<span><strong>${p.port}/tcp</strong> ${p.service} (${p.version})</span><span class="${tagClass}">[${tagText}]</span>`;
+      portsList.appendChild(pDiv);
+    });
+  }
+
+  const res = await apiPost("/api/action", { action: "list_files", target: nodeId });
+  const tbody = document.getElementById("fs-file-tbody");
+  tbody.innerHTML = "";
+  if (res && res.ok && res.files) {
+    res.files.forEach((f) => {
+      const tr = document.createElement("tr");
+      const targetMark = f.is_target_data ? '<strong class="highlight-value">★ TARGET</strong>' : "";
+      const valStr = f.value_creds > 0 ? `${f.value_creds} CR` : "---";
+      tr.innerHTML = `
+        <td>${f.path} ${targetMark}</td>
+        <td>${f.size_kb}KB</td>
+        <td>${valStr}</td>
+        <td>
+          <button class="icon-btn small-btn btn-cat" data-path="${f.path}">CAT</button>
+          <button class="icon-btn small-btn btn-steal" data-path="${f.path}">STEAL</button>
+        </td>
+      `;
+      tr.querySelector(".btn-cat").addEventListener("click", () => handleCatFile(nodeId, f.path));
+      tr.querySelector(".btn-steal").addEventListener("click", () => handleStealFile(nodeId, f.path));
+      tbody.appendChild(tr);
+    });
+  }
 }
 
 function drawMatrix(ctx, time) {
@@ -543,11 +610,15 @@ function drawMatrix(ctx, time) {
       ctx.setLineDash([]);
     }
 
-    // Node Label
+    // Node Label & IP
     ctx.font = "11px 'Share Tech Mono', monospace";
     ctx.fillStyle = isCurrent ? "hsl(185, 100%, 90%)" : "#aaa";
     ctx.textAlign = "center";
-    ctx.fillText(pos.label, pos.x, pos.y + 36);
+    ctx.fillText(pos.label, pos.x, pos.y + 34);
+
+    ctx.font = "9px 'Share Tech Mono', monospace";
+    ctx.fillStyle = isBreached ? "hsl(140, 80%, 70%)" : (isDiscovered ? "hsl(45, 80%, 70%)" : "#666");
+    ctx.fillText(node.ip_address || "", pos.x, pos.y + 46);
 
     if (isCurrent) {
       ctx.font = "9px 'Orbitron', sans-serif";
@@ -558,7 +629,7 @@ function drawMatrix(ctx, time) {
 }
 
 // ==========================================================================
-// 8. Move & Intrusion Handlers
+// 8. Move, Probe & Intrusion Handlers
 // ==========================================================================
 async function handleMoveNode() {
   if (!state.selectedNodeId) return;
@@ -570,14 +641,70 @@ async function handleMoveNode() {
     state.data = res.state;
     renderHUD(res.state);
     updateTargetCard(state.selectedNodeId);
+    if (state.data.nodes[state.selectedNodeId].status === "BREACHED") {
+      loadFilesystemView(state.selectedNodeId);
+    }
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || "Move disallowed.", "warn");
   }
 }
 
+async function handleProbeNode() {
+  if (!state.selectedNodeId) return;
+  sfx.scan();
+  addTerminalLog(`Scanning open ports on ${state.selectedNodeId}...`, "info");
+  const res = await apiPost("/api/action", { action: "probe", target: state.selectedNodeId });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+    updateTargetCard(state.selectedNodeId);
+    if (res.report && res.report.ports) {
+      res.report.ports.forEach((p) => {
+        addTerminalLog(`  [PORT ${p.port}/tcp] ${p.service} (${p.version}) - ${p.vulnerable ? 'VULNERABLE' : 'SECURE'}`, p.vulnerable ? 'warn' : 'info');
+      });
+    }
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "Port scan failed.", "warn");
+  }
+}
+
 async function handleStartHack() {
   if (!state.selectedNodeId) return;
+  const node = state.data.nodes[state.selectedNodeId];
+  if (!node) return;
+
+  // 1-Click Zero-Day Exploit if vulnerable port is present
+  const vulnPort = (node.ports || []).find(p => p.vulnerable && !p.breached);
+  if (vulnPort) {
+    sfx.click();
+    addTerminalLog(`⚡ Infiltrating via port ${vulnPort.port}/tcp (${vulnPort.service})...`, "info");
+    const res = await apiPost("/api/action", {
+      action: "exploit_service",
+      target: state.selectedNodeId,
+      port: vulnPort.port,
+    });
+    if (res && res.ok) {
+      sfx.success();
+      addTerminalLog(res.message, "success");
+      state.data = res.state;
+      renderHUD(res.state);
+      updateTargetCard(state.selectedNodeId);
+      loadFilesystemView(state.selectedNodeId);
+      return;
+    } else if (res) {
+      sfx.failure();
+      addTerminalLog(res.message || "Exploit payload failed.", "danger");
+      state.data = res.state;
+      renderHUD(res.state);
+      return;
+    }
+  }
+
+  // Fallback to minigame puzzle
   sfx.click();
   const data = await apiGet(`/api/puzzle?node_id=${state.selectedNodeId}`);
   if (!data || !data.ok) {
@@ -590,6 +717,45 @@ async function handleStartHack() {
   addTerminalLog(`⚡ Commencing cyber-attack on ${data.node_name}...`, "info");
   state.activePuzzle = data;
   displayPuzzle(data);
+}
+
+async function handleCatFile(nodeId, path) {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "read_file", target: nodeId, path });
+  if (res && res.ok) {
+    document.getElementById("viewer-path").textContent = path;
+    document.getElementById("viewer-content").textContent = res.content || "(empty file)";
+    document.getElementById("fs-file-viewer").classList.remove("hidden");
+  }
+}
+
+async function handleStealFile(nodeId, path) {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "download_file", target: nodeId, path });
+  if (res && res.ok) {
+    sfx.jackpot();
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "Failed to steal file.", "warn");
+  }
+}
+
+async function handleWipeLogs() {
+  if (!state.selectedNodeId) return;
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "wipe_logs", target: state.selectedNodeId });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "Failed to wipe logs.", "warn");
+  }
 }
 
 function closePuzzleBay() {
