@@ -141,6 +141,43 @@ class Node:
 
 
 @dataclass
+class MalwareDaemon:
+    """An active background script deployed on a compromised host (e.g. keylogger, siphon)."""
+    daemon_id: str
+    daemon_type: str  # "keylogger", "siphon", "worm"
+    target_node_id: str
+    target_ip: str
+    yield_per_turn: int = 25
+    detection_risk: int = 4
+    turns_active: int = 0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "MalwareDaemon":
+        return cls(**data)
+
+
+@dataclass
+class VirusCraftRecipe:
+    """A crafting recipe to synthesize custom virus/malware chips in the netrunner workshop."""
+    name: str
+    vector: str   # "stealth", "brute", "worm"
+    payload: str  # "keylogger", "credit_siphon", "trace_wipe", "logic_overload"
+    cost_creds: int = 100
+    cpu_cost: int = 2
+    description: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "VirusCraftRecipe":
+        return cls(**data)
+
+
+@dataclass
 class CyberDeck:
     """The player's hardware deck used to execute hacking exploits."""
     model_name: str = "Onyx-Vortex 400"
@@ -153,13 +190,33 @@ class CyberDeck:
     ice_dampener_level: int = 0
     overclock_level: int = 0
     ram_boost_level: int = 0
+    local_ip: str = "10.99.0.2"
+    local_hostname: str = "rig.netrunner.local"
+    local_filesystem: List[VirtualFile] = field(default_factory=lambda: [
+        VirtualFile(path="/home/deck/notes.txt", size_kb=2, content="NETRUNNER LOG:\n- Target Alpha router: 192.168.1.10\n- Target Finance Vault: 10.0.4.15\n- Target Supercore: 172.16.80.1"),
+        VirtualFile(path="/bin/netrunner.sh", size_kb=4, content="#!/bin/sh\n# Cyberdeck intrusion helper matrix\necho 'Rig online. Neural link active.'"),
+        VirtualFile(path="/loot/README.md", size_kb=1, content="# Loot Directory\nExfiltrated target data files are saved here automatically."),
+    ])
+    active_daemons: List[MalwareDaemon] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        res = asdict(self)
+        res["local_filesystem"] = [f.to_dict() if hasattr(f, "to_dict") else f for f in self.local_filesystem]
+        res["active_daemons"] = [d.to_dict() if hasattr(d, "to_dict") else d for d in self.active_daemons]
+        return res
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "CyberDeck":
-        return cls(**data)
+        clean = dict(data)
+        if "local_filesystem" in clean and isinstance(clean["local_filesystem"], list):
+            clean["local_filesystem"] = [
+                VirtualFile.from_dict(f) if isinstance(f, dict) else f for f in clean["local_filesystem"]
+            ]
+        if "active_daemons" in clean and isinstance(clean["active_daemons"], list):
+            clean["active_daemons"] = [
+                MalwareDaemon.from_dict(d) if isinstance(d, dict) else d for d in clean["active_daemons"]
+            ]
+        return cls(**clean)
 
 
 def apply_career_profile(deck: CyberDeck, profile: CareerProfile) -> None:

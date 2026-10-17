@@ -6,12 +6,14 @@ from cyberpulse.models import (
     CareerProfile,
     CyberDeck,
     GameState,
+    MalwareDaemon,
     Node,
     NodeStatus,
     NodeType,
     PortService,
     RewardType,
     VirtualFile,
+    VirusCraftRecipe,
     apply_career_profile,
 )
 
@@ -62,12 +64,25 @@ class TestModels(unittest.TestCase):
         self.assertTrue(f_restored.is_target_data)
 
     def test_deck_roundtrip(self):
-        deck = CyberDeck(cryptocreds=500, cpu_cycles=8, ice_dampener_level=1)
+        daemon = MalwareDaemon(daemon_id="d1", daemon_type="keylogger", target_node_id="n1", target_ip="192.168.1.10")
+        deck = CyberDeck(cryptocreds=500, cpu_cycles=8, ice_dampener_level=1, active_daemons=[daemon])
         data = deck.to_dict()
         restored = CyberDeck.from_dict(data)
         self.assertEqual(restored.cryptocreds, 500)
         self.assertEqual(restored.cpu_cycles, 8)
         self.assertEqual(restored.ice_dampener_level, 1)
+        self.assertEqual(restored.local_ip, "10.99.0.2")
+        self.assertTrue(len(restored.local_filesystem) >= 1)
+        self.assertEqual(len(restored.active_daemons), 1)
+        self.assertEqual(restored.active_daemons[0].daemon_type, "keylogger")
+
+    def test_recipe_roundtrip(self):
+        recipe = VirusCraftRecipe(name="worm_prime", vector="worm", payload="credit_siphon", cost_creds=120)
+        r_dict = recipe.to_dict()
+        restored = VirusCraftRecipe.from_dict(r_dict)
+        self.assertEqual(restored.name, "worm_prime")
+        self.assertEqual(restored.vector, "worm")
+        self.assertEqual(restored.payload, "credit_siphon")
 
     def test_game_state_roundtrip(self):
         contract = BountyContract(contract_id="c1", title="Heist", target_node_type=NodeType.DATA_VAULT)
