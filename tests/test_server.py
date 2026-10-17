@@ -96,6 +96,31 @@ class TestCyberdeckServer(unittest.TestCase):
             self._get("/missing_asset.xyz")
         self.assertEqual(ctx.exception.code, 404)
 
+    def test_static_assets_served(self):
+        # GET /
+        url = f"{self.base_url}/"
+        with urllib.request.urlopen(url, timeout=3.0) as resp:
+            self.assertEqual(resp.status, 200)
+            self.assertIn("text/html", resp.headers.get("Content-Type", ""))
+            html = resp.read().decode("utf-8")
+            self.assertIn("CYBERPULSE", html)
+
+        # GET /style.css
+        url_css = f"{self.base_url}/style.css"
+        with urllib.request.urlopen(url_css, timeout=3.0) as resp:
+            self.assertEqual(resp.status, 200)
+            self.assertIn("text/css", resp.headers.get("Content-Type", ""))
+            css = resp.read().decode("utf-8")
+            self.assertIn("--font-mono", css)
+
+        # GET /app.js
+        url_js = f"{self.base_url}/app.js"
+        with urllib.request.urlopen(url_js, timeout=3.0) as resp:
+            self.assertEqual(resp.status, 200)
+            self.assertIn("javascript", resp.headers.get("Content-Type", ""))
+            js = resp.read().decode("utf-8")
+            self.assertIn("SoundFX", js)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -37,6 +37,10 @@ cyberpulse/
 │   ├── rewards.py            <- variable-ratio loot tables & reward schedules
 │   ├── server.py             <- zero-dependency HTTP REST & cyberdeck server
 │   ├── shop.py               <- black market tech vendor & hardware catalog
+│   ├── static/               <- Web Cyberdeck UI (HTML, CSS, JS)
+│   │   ├── app.js
+│   │   ├── index.html
+│   │   └── style.css
 │   └── storage.py            <- atomic persistence & career dossier management
 └── tests/                    <- sub-second unit & integration test suite
     ├── __init__.py
