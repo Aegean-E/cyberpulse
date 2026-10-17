@@ -1,4 +1,4 @@
-"""Domain models for CyberPulse cyberspace nodes, decks, and game state."""
+"""Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles."""
 
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
@@ -16,6 +16,50 @@ class NodeStatus:
     LOCKED = "LOCKED"
     DISCOVERED = "DISCOVERED"
     BREACHED = "BREACHED"
+
+
+class RewardType:
+    STANDARD = "STANDARD"
+    CRITICAL_JACKPOT = "CRITICAL_JACKPOT"
+    CHIP_DROP = "CHIP_DROP"
+
+
+@dataclass
+class BountyContract:
+    """A syndicate-issued objective with bonus rewards upon fulfillment (Zeigarnik Effect)."""
+    contract_id: str
+    title: str
+    target_node_type: str
+    max_trace_limit: int = 75
+    reward_creds: int = 150
+    completed: bool = False
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "BountyContract":
+        return cls(**data)
+
+
+@dataclass
+class CareerProfile:
+    """Persistent meta-progression profile tracking permanent stats and upgrades."""
+    alias: str = "ZeroCool"
+    banked_creds: int = 100
+    lifetime_creds: int = 100
+    successful_runs: int = 0
+    failed_runs: int = 0
+    current_streak: int = 0
+    best_streak: int = 0
+    purchased_upgrades: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "CareerProfile":
+        return cls(**data)
 
 
 @dataclass
@@ -50,6 +94,9 @@ class CyberDeck:
     max_ram: int = 64
     cryptocreds: int = 100
     exploits: List[str] = field(default_factory=lambda: ["port_scan", "buffer_overflow", "spoof_ip"])
+    ice_dampener_level: int = 0
+    overclock_level: int = 0
+    ram_boost_level: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -68,11 +115,23 @@ class GameState:
     turns_elapsed: int = 0
     is_game_over: bool = False
     is_victory: bool = False
+    is_jacked_out: bool = False
+    unbanked_creds: int = 0
+    looted_payloads: List[str] = field(default_factory=list)
+    active_contract: Optional[BountyContract] = None
+    near_miss_count: int = 0
     message_log: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        res = asdict(self)
+        if self.active_contract:
+            res["active_contract"] = self.active_contract.to_dict()
+        return res
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "GameState":
-        return cls(**data)
+        contract_data = data.get("active_contract")
+        contract = BountyContract.from_dict(contract_data) if isinstance(contract_data, dict) else None
+        data_clean = dict(data)
+        data_clean["active_contract"] = contract
+        return cls(**data_clean)
