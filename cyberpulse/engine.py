@@ -7,18 +7,89 @@ from cyberpulse.models import (
     BountyContract,
     CareerProfile,
     CyberDeck,
+    EmployeeProfile,
+    ExploitPayload,
+    FirewallPolicy,
+    FirewallRule,
     GameState,
+    HostAntivirus,
+    HostFirewall,
     MalwareDaemon,
     Node,
     NodeStatus,
     NodeType,
     PortService,
+    SecurityAwarenessLevel,
+    SocialVectorType,
     VirtualFile,
     VirusCraftRecipe,
     apply_career_profile,
 )
 from cyberpulse.network import generate_network
 from cyberpulse.rewards import roll_breach_reward
+
+KNOWN_CVES: Dict[str, ExploitPayload] = {
+    "cve-2024-38812": ExploitPayload(
+        cve_id="CVE-2024-38812",
+        name="Heap Overflow Zero-Day",
+        target_service="http",
+        required_ram_mb=32,
+        cpu_cost=2,
+        stealth_rating=4,
+        damage_trace=8,
+        description="Remote code execution heap corruption in network packet parser.",
+    ),
+    "cve-2023-22515": ExploitPayload(
+        cve_id="CVE-2023-22515",
+        name="Broken Auth Privilege Escalation",
+        target_service="http",
+        required_ram_mb=16,
+        cpu_cost=2,
+        stealth_rating=5,
+        damage_trace=5,
+        description="Zero-day unauthorized administrator account creation flaw.",
+    ),
+    "cve-2024-21413": ExploitPayload(
+        cve_id="CVE-2024-21413",
+        name="Outlook Moniker Link Bypass",
+        target_service="smtp",
+        required_ram_mb=16,
+        cpu_cost=1,
+        stealth_rating=3,
+        damage_trace=10,
+        description="Remote credential theft and code execution via moniker parsing.",
+    ),
+    "cve-2024-6387": ExploitPayload(
+        cve_id="CVE-2024-6387",
+        name="RegreSSHion Race Condition",
+        target_service="ssh",
+        required_ram_mb=48,
+        cpu_cost=2,
+        stealth_rating=4,
+        damage_trace=12,
+        description="Signal handler race condition leading to unauthenticated root RCE.",
+    ),
+    "cve-2023-38606": ExploitPayload(
+        cve_id="CVE-2023-38606",
+        name="Blind SQL Injection",
+        target_service="mysql",
+        required_ram_mb=32,
+        cpu_cost=2,
+        stealth_rating=4,
+        damage_trace=8,
+        description="Blind SQL injection bypassing WAF filters to extract root hashes.",
+    ),
+    "cve-2011-2523": ExploitPayload(
+        cve_id="CVE-2011-2523",
+        name="vsftpd Backdoor Payload",
+        target_service="ftp",
+        required_ram_mb=16,
+        cpu_cost=1,
+        stealth_rating=2,
+        damage_trace=14,
+        description="Legacy backdoor payload triggering root shell on port 6200.",
+    ),
+}
 
 CRAFTING_RECIPES: Dict[str, VirusCraftRecipe] = {
     "keylogger_daemon": VirusCraftRecipe(
@@ -446,8 +517,8 @@ class GameEngine:
         self.state.message_log.append(f"Probed {node.ip_address} ({node.hostname}). Found {len(node.ports)} open port(s).")
         return True, summary, report
 
-    def exploit_service(self, target_query: str, port_num: int) -> Tuple[bool, str]:
-        """Launch an exploit payload against an open service port on target host."""
+    def exploit_service(self, target_query: str, port_num: int, cve_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Launch an exploit payload (generic zero-day or targeted CVE) against an open service port on target host."""
         if self.state.is_game_over:
             return False, "Cannot exploit: system lockout in effect."
         if self.state.is_jacked_out:
@@ -464,27 +535,64 @@ class GameEngine:
         if node.node_id not in curr.connected_ids and node.node_id != curr.node_id:
             return False, f"Host {node.hostname} ({node.ip_address}) is not in direct subnet routing range."
 
-        required_ram = node.security_level * 16
-        if self.deck.ram_mb < required_ram:
-            return False, f"INSUFFICIENT RAM: Infiltration requires {required_ram}MB buffer memory (deck has {self.deck.ram_mb}MB)."
-
-        if self.deck.cpu_cycles < 2:
-            return False, "INSUFFICIENT CPU: Launching zero-day exploit requires at least 2 CPU cycles."
-
         target_port = next((p for p in node.ports if p.port == port_num), None)
         if not target_port:
             self.add_trace(8)
             return False, f"Port {port_num}/tcp is closed or filtered on {node.ip_address}."
 
+        # 1. Network Firewall Ingress Filter Check
+        if node.firewall and node.firewall.is_port_blocked(port_num):
+            self.add_trace(10)
+            return False, f"🛡️ FIREWALL BLOCKED: Port {port_num}/tcp on {node.hostname} is actively blocked by {node.firewall.firewall_type}. Bypass the firewall (bypass {node.ip_address} {port_num}) or use social engineering."
+
+        # 2. Match Exploit Payload / CVE
+        selected_cve: Optional[ExploitPayload] = None
+        if cve_id:
+            cve_key = cve_id.lower().strip()
+            selected_cve = KNOWN_CVES.get(cve_key)
+            if not selected_cve:
+                avail = ", ".join(k.upper() for k in KNOWN_CVES.keys())
+                return False, f"Unknown exploit payload '{cve_id}'. Available CVEs: {avail}"
+
+            if selected_cve.target_service != "any" and selected_cve.target_service != target_port.service:
+                return False, f"Exploit mismatch: {selected_cve.cve_id} targets '{selected_cve.target_service}', but port {port_num} runs '{target_port.service}'."
+
+            required_ram = selected_cve.required_ram_mb
+            cpu_needed = selected_cve.cpu_cost
+            trace_add = selected_cve.damage_trace
+            exploit_label = f"{selected_cve.cve_id} ({selected_cve.name})"
+        else:
+            required_ram = node.security_level * 16
+            cpu_needed = 2
+            trace_add = node.trace_rate
+            exploit_label = f"Zero-Day Buffer Exploit on {target_port.service}"
+
+        if self.deck.ram_mb < required_ram:
+            return False, f"INSUFFICIENT RAM: Infiltration requires {required_ram}MB buffer memory (deck has {self.deck.ram_mb}MB)."
+
+        if self.deck.cpu_cycles < cpu_needed:
+            return False, f"INSUFFICIENT CPU: Launching exploit requires at least {cpu_needed} CPU cycles (deck has {self.deck.cpu_cycles})."
+
         if not target_port.vulnerable:
             self.add_trace(12)
             return False, f"Exploit failed: Service '{target_port.service}' on port {port_num} has no known vulnerabilities. IDS alert triggered!"
 
-        self.deck.cpu_cycles -= 2
+        # 3. Host Antivirus Heuristics Check
+        av_notice = ""
+        if node.antivirus and node.antivirus.enabled and not node.antivirus.evaded:
+            stealth = selected_cve.stealth_rating if selected_cve else 3
+            if stealth < 3:
+                node.antivirus.alert_level = min(100, node.antivirus.alert_level + 25)
+                self.add_trace(8)
+                av_notice = f"\n⚠️ [ANTIVIRUS WARNING] {node.antivirus.name} detected noisy exploit signature! Alert level spiked to {node.antivirus.alert_level}%."
+            else:
+                node.antivirus.alert_level = min(100, node.antivirus.alert_level + 5)
+
+        self.deck.cpu_cycles -= cpu_needed
         target_port.breached = True
-        self.add_trace(node.trace_rate)
+        self.add_trace(trace_add)
         _, breach_msg = self.complete_breach(node.node_id)
-        msg = f"💥 EXPLOIT SUCCESSFUL! Injected payload via port {port_num} ({target_port.service}). Root access acquired on {node.hostname} ({node.ip_address})!\n{breach_msg}"
+        msg = f"💥 EXPLOIT SUCCESSFUL! Injected {exploit_label} via port {port_num} ({target_port.service}). Root access acquired on {node.hostname} ({node.ip_address})!\n{breach_msg}{av_notice}"
         return True, msg
 
     def list_files(self, target_query: Optional[str] = None) -> Tuple[bool, str, List[VirtualFile]]:
@@ -617,13 +725,28 @@ class GameEngine:
         return True, msg
 
     def tick_daemons(self) -> List[str]:
-        """Process active background malware daemons (e.g. keyloggers)."""
+        """Process active background malware daemons (e.g. keyloggers) and host antivirus sweeps."""
         messages = []
         for daemon in list(self.deck.active_daemons):
             daemon.turns_active += 1
             node = self.nodes.get(daemon.target_node_id)
             if not node or node.status != NodeStatus.BREACHED:
                 continue
+
+            # Check Antivirus heuristic sweep
+            if node.antivirus and node.antivirus.enabled and not node.antivirus.evaded:
+                node.antivirus.alert_level = min(100, node.antivirus.alert_level + (node.antivirus.heuristic_sensitivity * 4))
+                if node.antivirus.alert_level >= 50:
+                    quarantine_roll = self.rng.random()
+                    if quarantine_roll <= (node.antivirus.alert_level / 100.0):
+                        if daemon in self.deck.active_daemons:
+                            self.deck.active_daemons.remove(daemon)
+                        self.add_trace(15)
+                        node.antivirus.quarantine_log.append(f"Quarantined {daemon.daemon_type} on turn {self.state.turns_elapsed}")
+                        q_msg = f"🛡️ [ANTIVIRUS QUARANTINE] {node.antivirus.name} on {node.hostname} detected and terminated background {daemon.daemon_type}! Alert Level: {node.antivirus.alert_level}%. Active Trace +15%!"
+                        messages.append(q_msg)
+                        self.state.message_log.append(q_msg)
+                        continue
 
             self.state.unbanked_creds += daemon.yield_per_turn
             self.add_trace(daemon.detection_risk)
@@ -686,12 +809,17 @@ class GameEngine:
             return False, f"File '{file_path}' not found on local deck.", None
         return True, f"=== [cat {vfile.path}] ===\n{vfile.content}\n=== [EOF] ===", vfile.content
 
-    def phish_target(self, target_query: str) -> Tuple[bool, str, Dict[str, Any]]:
-        """Dispatch a simulated social engineering spear-phishing campaign to target host employees."""
+    def social_engineer(self, target_query: str, vector: str = "spear_phish", employee_name: Optional[str] = None) -> Tuple[bool, str, Dict[str, Any]]:
+        """Launch an interactive social engineering attack (pretext, bait, spear_phish, vishing) against target employees."""
+        vector_key = vector.lower().strip()
+        valid_vectors = [SocialVectorType.PRETEXT, SocialVectorType.BAIT, SocialVectorType.SPEAR_PHISH, SocialVectorType.VISHING]
+        if vector_key not in valid_vectors:
+            return False, f"Invalid vector '{vector}'. Valid options: pretext, bait, spear_phish, vishing.", {}
+
         if self.state.is_game_over:
-            return False, "Cannot phish: system lockout in effect.", {}
+            return False, "Cannot engage: system lockout in effect.", {}
         if self.state.is_jacked_out:
-            return False, "Cannot phish: terminal session jacked out.", {}
+            return False, "Cannot engage: terminal session jacked out.", {}
 
         node = self.find_node(target_query)
         if not node:
@@ -707,24 +835,48 @@ class GameEngine:
         if self.deck.cpu_cycles < 1:
             return False, "Insufficient CPU cycles (need 1 CPU).", {}
 
+        # Pick target employee
+        emp = None
+        if employee_name and node.employees:
+            emp = next((e for e in node.employees if e.name.lower() == employee_name.lower()), None)
+        if not emp and node.employees:
+            emp = node.employees[0]
+        if not emp:
+            emp = EmployeeProfile(name="Staff Associate", role="Operations", email=f"staff@{node.hostname}", awareness_level=SecurityAwarenessLevel.STANDARD)
+
         self.deck.cpu_cycles -= 1
         self.state.turns_elapsed += 1
         self.add_trace(6)
         self.tick_daemons()
 
-        base_chance = max(0.40, 0.90 - (node.security_level * 0.12))
+        # Calculate success probability based on vector vs employee security awareness
+        awareness = emp.awareness_level
+        if vector_key == SocialVectorType.SPEAR_PHISH:
+            base_chance = max(0.40, 0.90 - (node.security_level * 0.12))
+        elif vector_key == SocialVectorType.PRETEXT:
+            base_chance = 0.90 if awareness == SecurityAwarenessLevel.NAIVE else (0.75 if awareness == SecurityAwarenessLevel.STANDARD else 0.40)
+        elif vector_key == SocialVectorType.BAIT:
+            base_chance = 0.85 if awareness == SecurityAwarenessLevel.NAIVE else (0.70 if awareness == SecurityAwarenessLevel.STANDARD else 0.45)
+        else:  # VISHING
+            base_chance = 0.90 if awareness == SecurityAwarenessLevel.NAIVE else (0.70 if awareness == SecurityAwarenessLevel.STANDARD else 0.50)
+
         roll = self.rng.random()
         success = roll <= base_chance
 
         report = {
             "target_ip": node.ip_address,
             "target_hostname": node.hostname,
+            "vector": vector_key,
+            "employee": emp.name,
+            "role": emp.role,
+            "awareness": emp.awareness_level,
             "success": success,
             "roll": round(roll, 2),
             "chance": round(base_chance, 2),
         }
 
         if success:
+            emp.compromised = True
             if node.status == NodeStatus.LOCKED:
                 node.status = NodeStatus.DISCOVERED
 
@@ -733,24 +885,174 @@ class GameEngine:
                 node.security_level -= 1
                 lowered = True
 
+            # If host firewall has blocked rules, auto-bypass a blocked rule!
+            fw_bypass_notice = ""
+            if node.firewall and node.firewall.enabled:
+                blocked_rule = next((r for r in node.firewall.rules if r.action == "BLOCK" and not r.bypassed), None)
+                if blocked_rule:
+                    blocked_rule.bypassed = True
+                    blocked_rule.bypass_method = f"social_{vector_key}"
+                    fw_bypass_notice = f"   * Leaked security override: Firewall port {blocked_rule.port}/tcp rule bypassed!\n"
+
             cred_file = f"/loot/{node.hostname}_credentials.token"
-            token_content = f"HARVESTED EMPLOYEE CREDENTIALS\nHost: {node.hostname} ({node.ip_address})\nAuth Token: PHISH-TOKEN-{self.rng.randint(1000, 9999)}-X\nAccess: Backdoor port clearance granted."
+            token_content = (
+                f"HARVESTED SOCIAL CREDENTIALS\n"
+                f"Target: {emp.name} ({emp.role})\n"
+                f"Host: {node.hostname} ({node.ip_address})\n"
+                f"Vector: {vector_key.upper()}\n"
+                f"Credential: {emp.leaked_credential or f'TOKEN-{self.rng.randint(1000, 9999)}-SEC'}\n"
+            )
             if not any(f.path == cred_file for f in self.deck.local_filesystem):
                 self.deck.local_filesystem.append(
                     VirtualFile(path=cred_file, size_kb=1, content=token_content, value_creds=40)
                 )
 
-            msg = f"🎣 PHISHING SUCCESS: Employee at {node.hostname} clicked credential lure!\n"
+            tag = "🎣 PHISHING SUCCESS" if vector_key == SocialVectorType.SPEAR_PHISH else f"🎭 SOCIAL ENGINEERING SUCCESS [{vector_key.upper()}]"
+            msg = f"{tag}: Employee at {node.hostname} clicked credential lure!\n" if vector_key == SocialVectorType.SPEAR_PHISH else f"{tag}: Compromised {emp.name} ({emp.role}) at {node.hostname}!\n"
             if lowered:
                 msg += f"   * Security tier downgraded to Level {node.security_level} (Buffer RAM required reduced to {node.security_level * 16}MB)!\n"
+            if fw_bypass_notice:
+                msg += fw_bypass_notice
             msg += f"   * Harvested auth token saved to local rig at {cred_file}."
-            self.state.message_log.append(f"Phishing success against {node.hostname}.")
+            self.state.message_log.append(f"Social engineering [{vector_key}] success on {node.hostname}.")
             return True, msg, report
         else:
             self.add_trace(8)
-            msg = f"🎣 PHISHING FAILED: IT security on {node.hostname} flagged spear-phishing lure. IDS alert triggered (Trace +8%)!"
+            if node.antivirus:
+                node.antivirus.alert_level = min(100, node.antivirus.alert_level + 20)
+            tag = "🎣 PHISHING FAILED" if vector_key == SocialVectorType.SPEAR_PHISH else f"🎭 SOCIAL ENGINEERING FAILED [{vector_key.upper()}]"
+            msg = f"{tag}: {emp.name} on {node.hostname} flagged lure. IDS alert triggered (Trace +8%)!"
             self.state.message_log.append(msg)
             return False, msg, report
+
+    def phish_target(self, target_query: str) -> Tuple[bool, str, Dict[str, Any]]:
+        """Dispatch a simulated social engineering spear-phishing campaign to target host employees (backward compatible)."""
+        return self.social_engineer(target_query, vector=SocialVectorType.SPEAR_PHISH)
+
+    def get_firewall_status(self, target_query: str) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+        """Inspect the network firewall rules defending a target host."""
+        node = self.find_node(target_query)
+        if not node:
+            return False, f"Target '{target_query}' not found.", None
+        if not node.firewall:
+            return True, f"Host {node.hostname} ({node.ip_address}) has no active network firewall.", None
+
+        rules_desc = []
+        for r in node.firewall.rules:
+            status = "BYPASSED" if r.bypassed else ("BLOCKED" if r.action == "BLOCK" else "ALLOWED")
+            rules_desc.append(f"  * Port {r.port}/tcp: [{status}] (Method: {r.bypass_method or 'None'})")
+
+        msg = f"🛡️ [FIREWALL REPORT] {node.hostname} ({node.ip_address})\n"
+        msg += f"Type: {node.firewall.firewall_type} | Policy: {node.firewall.policy} | Tampered: {node.firewall.tampered}\n"
+        msg += "\n".join(rules_desc) if rules_desc else "  * No active port filtering rules."
+        return True, msg, node.firewall.to_dict()
+
+    def bypass_firewall(self, target_query: str, port: int, method: str = "knock") -> Tuple[bool, str]:
+        """Execute a firewall bypass against a blocked port via port-knocking, packet fragmentation, or proxy-tunneling."""
+        if self.state.is_game_over:
+            return False, "Cannot bypass firewall: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot bypass firewall: terminal session jacked out."
+
+        node = self.find_node(target_query)
+        if not node:
+            return False, f"Target '{target_query}' not found."
+
+        if not node.firewall or not node.firewall.enabled:
+            return False, f"Host {node.hostname} has no active firewall."
+
+        method_key = method.lower().strip()
+        costs = {
+            "knock": {"cpu": 1, "trace": 5, "name": "Port Knocking Sequence"},
+            "fragment": {"cpu": 1, "trace": 7, "name": "MTU Packet Fragmentation"},
+            "tunnel": {"cpu": 2, "trace": 9, "name": "Encapsulated Proxy Tunneling"},
+        }
+        if method_key not in costs:
+            return False, f"Unknown bypass method '{method}'. Valid methods: knock, fragment, tunnel."
+
+        spec = costs[method_key]
+        if self.deck.cpu_cycles < spec["cpu"]:
+            return False, f"INSUFFICIENT CPU: {spec['name']} requires {spec['cpu']} CPU cycles."
+
+        rule = next((r for r in node.firewall.rules if r.port == port and r.action == "BLOCK"), None)
+        if not rule:
+            return False, f"Port {port}/tcp is not currently blocked by {node.hostname}'s firewall."
+
+        if rule.bypassed:
+            return False, f"Port {port}/tcp is already bypassed on {node.hostname}."
+
+        self.deck.cpu_cycles -= spec["cpu"]
+        self.state.turns_elapsed += 1
+        self.add_trace(spec["trace"])
+        self.tick_daemons()
+
+        rule.bypassed = True
+        rule.bypass_method = method_key
+        msg = f"🔓 FIREWALL BYPASSED: Injected {spec['name']} into {node.hostname} ({node.ip_address}).\n"
+        msg += f"   * Port {port}/tcp rule deactivated! Direct service exploitation is now enabled (Trace +{spec['trace']}%)."
+        self.state.message_log.append(f"Bypassed firewall port {port} on {node.hostname}.")
+        return True, msg
+
+    def get_antivirus_status(self, target_query: str) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+        """Inspect the active Antivirus / EDR status on a target host."""
+        node = self.find_node(target_query)
+        if not node:
+            return False, f"Target '{target_query}' not found.", None
+        if not node.antivirus:
+            return True, f"Host {node.hostname} ({node.ip_address}) has no active Antivirus software.", None
+
+        status_str = "HOOKED / EVADED" if node.antivirus.evaded else ("ACTIVE / HUNTING" if node.antivirus.enabled else "DISABLED")
+        msg = f"🛡️ [ANTIVIRUS REPORT] {node.hostname} ({node.ip_address})\n"
+        msg += f"Engine: {node.antivirus.name} ({node.antivirus.version})\n"
+        msg += f"Status: [{status_str}]\n"
+        msg += f"Alert Level: {node.antivirus.alert_level}% (Sensitivity: {node.antivirus.heuristic_sensitivity}/5)\n"
+        msg += f"Quarantined Daemons: {len(node.antivirus.quarantine_log)}"
+        return True, msg, node.antivirus.to_dict()
+
+    def evade_antivirus(self, target_query: str, method: str = "rootkit") -> Tuple[bool, str]:
+        """Inject a stealth evasion hook or memory-patch into a target host's Antivirus suite."""
+        if self.state.is_game_over:
+            return False, "Cannot evade AV: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot evade AV: terminal session jacked out."
+
+        node = self.find_node(target_query)
+        if not node:
+            return False, f"Target '{target_query}' not found."
+
+        if not node.antivirus or not node.antivirus.enabled:
+            return False, f"Host {node.hostname} has no active Antivirus to evade."
+
+        if node.antivirus.evaded:
+            return False, f"Antivirus on {node.hostname} ({node.antivirus.name}) is already evaded and blinded."
+
+        method_key = method.lower().strip()
+        costs = {
+            "rootkit": {"cpu": 2, "trace": 6, "name": "Kernel Rootkit Hook"},
+            "spoof": {"cpu": 1, "trace": 8, "name": "Signature Morphing Shifter"},
+        }
+        if method_key not in costs:
+            return False, f"Unknown evasion method '{method}'. Valid methods: rootkit, spoof."
+
+        spec = costs[method_key]
+        if self.deck.cpu_cycles < spec["cpu"]:
+            return False, f"INSUFFICIENT CPU: {spec['name']} requires {spec['cpu']} CPU cycles."
+
+        self.deck.cpu_cycles -= spec["cpu"]
+        self.state.turns_elapsed += 1
+        self.add_trace(spec["trace"])
+        self.tick_daemons()
+
+        node.antivirus.evaded = True
+        node.antivirus.alert_level = max(0, node.antivirus.alert_level - 35)
+        msg = f"👁️‍🗨️ ANTIVIRUS EVADED: Deployed {spec['name']} against {node.antivirus.name} on {node.hostname}.\n"
+        msg += f"   * EDR scanner blinded! Memory sweeps suppressed for active daemons (Alert reduced to {node.antivirus.alert_level}%)."
+        self.state.message_log.append(f"Blinded AV on {node.hostname}.")
+        return True, msg
+
+    def list_cves(self) -> List[Dict[str, Any]]:
+        """Return the catalog of weaponized CVE exploit payloads."""
+        return [cve.to_dict() for cve in KNOWN_CVES.values()]
 
     def craft_virus(self, recipe_name: str) -> Tuple[bool, str]:
         """Assemble a custom virus chip in the netrunner workshop."""

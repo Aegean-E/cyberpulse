@@ -253,8 +253,78 @@ class TestEngine(unittest.TestCase):
         self.assertTrue(len(msgs) >= 1)
         self.assertGreater(self.engine.state.unbanked_creds, unbanked_before)
 
+    def test_firewall_inspection_and_bypass(self):
+        # 1. Inspect firewall on node_proxy_b
+        ok, msg, fw_dict = self.engine.get_firewall_status("192.168.1.20")
+        self.assertTrue(ok)
+        self.assertIn("FIREWALL REPORT", msg)
+        self.assertIn("Port 22/tcp: [BLOCKED]", msg)
+
+        # 2. Exploit blocked by firewall
+        exp_ok, exp_msg = self.engine.exploit_service("192.168.1.20", 22)
+        self.assertFalse(exp_ok)
+        self.assertIn("FIREWALL BLOCKED", exp_msg)
+
+        # 3. Bypass firewall via port-knocking
+        self.engine.deck.cpu_cycles = 4
+        by_ok, by_msg = self.engine.bypass_firewall("192.168.1.20", 22, "knock")
+        self.assertTrue(by_ok)
+        self.assertIn("FIREWALL BYPASSED", by_msg)
+
+        # 4. Exploit now reaches service without firewall block
+        self.engine.deck.cpu_cycles = 4
+        exp_ok2, exp_msg2 = self.engine.exploit_service("192.168.1.20", 22)
+        self.assertTrue(exp_ok2)
+        self.assertIn("EXPLOIT SUCCESSFUL", exp_msg2)
+
+    def test_antivirus_status_and_evasion(self):
+        # 1. Check AV status
+        ok, msg, av_dict = self.engine.get_antivirus_status("192.168.1.20")
+        self.assertTrue(ok)
+        self.assertIn("ANTIVIRUS REPORT", msg)
+        self.assertIn("SentinelCore", msg)
+
+        # 2. Evade AV
+        self.engine.deck.cpu_cycles = 4
+        ev_ok, ev_msg = self.engine.evade_antivirus("192.168.1.20", "rootkit")
+        self.assertTrue(ev_ok)
+        self.assertIn("ANTIVIRUS EVADED", ev_msg)
+        self.assertTrue(self.engine.nodes["node_proxy_b"].antivirus.evaded)
+
+    def test_cve_catalog_and_exploit_execution(self):
+        cves = self.engine.list_cves()
+        self.assertGreaterEqual(len(cves), 4)
+        cve_ids = [c["cve_id"] for c in cves]
+        self.assertIn("CVE-2011-2523", cve_ids)
+
+        # Exploit with mismatched service
+        err_ok, err_msg = self.engine.exploit_service("192.168.1.10", 21, cve_id="cve-2024-6387")
+        self.assertFalse(err_ok)
+        self.assertIn("Exploit mismatch", err_msg)
+
+        # Exploit with matched service (vsftpd on port 21)
+        self.engine.deck.cpu_cycles = 4
+        ok, msg = self.engine.exploit_service("192.168.1.10", 21, cve_id="cve-2011-2523")
+        self.assertTrue(ok)
+        self.assertIn("CVE-2011-2523", msg)
+        self.assertIn("EXPLOIT SUCCESSFUL", msg)
+
+    def test_social_engineering_vectors(self):
+        self.engine.deck.cpu_cycles = 5
+        # 1. Invalid vector
+        inv_ok, inv_msg, _ = self.engine.social_engineer("192.168.1.1", vector="invalid_vector")
+        self.assertFalse(inv_ok)
+        self.assertIn("Invalid vector", inv_msg)
+
+        # 2. Pretext vector against junior admin
+        ok, msg, report = self.engine.social_engineer("192.168.1.10", vector="pretext")
+        self.assertIn("SOCIAL ENGINEERING", msg)
+        self.assertEqual(report["vector"], "pretext")
+        self.assertEqual(report["employee"], "Alice Vance")
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
 
