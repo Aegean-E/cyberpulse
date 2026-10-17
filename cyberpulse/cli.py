@@ -57,11 +57,14 @@ def print_hud(engine: GameEngine) -> None:
     print("|          >> CYBERPULSE // NEURAL INTRUSION HARNESS v0.3.0 <<             |")
     print("+==========================================================================+")
     print(f"[*] Location:   {curr.name} | {curr.hostname} ({curr.ip_address}) [{curr.node_id}]")
+    print(f"[*] Local Rig:  {engine.deck.local_hostname} ({engine.deck.local_ip}) [{engine.deck.model_name}]")
     print(f"[*] Trace:      {trace_bar} | Turns: {engine.state.turns_elapsed}")
     print(f"[*] Deck:       CPU: {engine.deck.cpu_cycles}/{engine.deck.max_cpu} | RAM: {engine.deck.ram_mb}MB | Creds: {engine.deck.cryptocreds}{unbanked_str}")
     print(f"[*] Upgrades:   ICE Dampener: Lvl {engine.deck.ice_dampener_level} | Overclock: Lvl {engine.deck.overclock_level}")
     exploits_str = ', '.join(engine.deck.exploits) if engine.deck.exploits else "None"
     print(f"[*] Exploits:   {exploits_str}")
+    if engine.deck.active_daemons:
+        print(f"[*] Daemons:    {len(engine.deck.active_daemons)} background listener(s) active")
     print(f"[*] Contract:   {contract_str}")
     if engine.state.near_miss_count > 0:
         print(f"[*] Adrenaline: [NEAR-MISS ENCOUNTERS: {engine.state.near_miss_count}]")
@@ -101,6 +104,38 @@ def print_career(profile: CareerProfile) -> None:
     print(f"[*] Infiltration Run: Streak: {profile.current_streak} (Best: {profile.best_streak})")
     upgrades = ', '.join(profile.purchased_upgrades) if profile.purchased_upgrades else "None"
     print(f"[*] Hardware Rig:     {upgrades}")
+    print("+==========================================================================+")
+
+
+def print_workshop(engine: GameEngine) -> None:
+    recipes = engine.list_crafting_recipes()
+    total_funds = engine.deck.cryptocreds + engine.state.unbanked_creds
+    print("\n+==========================================================================+")
+    print("|               >> NETRUNNER MALWARE SYNTHESIS BAY <<                      |")
+    print("+==========================================================================+")
+    print(f"[*] Available Funds: {total_funds} CryptoCreds (Banked: {engine.deck.cryptocreds}, Unbanked: {engine.state.unbanked_creds})\n")
+    for r in recipes:
+        can_afford = total_funds >= r["cost_creds"]
+        afford_tag = "[AFFORDABLE]" if can_afford else "[INSUFFICIENT FUNDS]"
+        print(f"   * {r['name']:<18} | Cost: {r['cost_creds']:<3}cr | Vector: {r['vector']:<7} | {afford_tag}")
+        print(f"     Payload: {r['payload']} | {r['description']}")
+    print("--------------------------------------------------------------------------")
+    print("Synthesize with: craft <recipe_name> (e.g. `craft worm_replicator` or `craft keylogger_daemon`)")
+    print("+==========================================================================+")
+
+
+def print_daemons(engine: GameEngine) -> None:
+    print("\n+==========================================================================+")
+    print("|              >> ACTIVE BACKGROUND MALWARE DAEMONS <<                     |")
+    print("+==========================================================================+")
+    if not engine.deck.active_daemons:
+        print("   No background daemons currently deployed.")
+    else:
+        for d in engine.deck.active_daemons:
+            node = engine.nodes.get(d.target_node_id)
+            hname = node.hostname if node else d.target_ip
+            print(f"   * {d.daemon_id} [{d.daemon_type.upper()}] on {hname} ({d.target_ip})")
+            print(f"     Yield: +{d.yield_per_turn} unbanked creds/turn | Detection Trace: +{d.detection_risk}%/turn | Turns Active: {d.turns_active}")
     print("+==========================================================================+")
 
 
@@ -254,15 +289,20 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
 
     if action == "cat":
         if len(parts) < 2:
-            print("Usage: cat [ip] <filepath> (e.g. `cat /etc/hosts` or `cat 192.168.1.10 /home/admin/network_map.txt`)")
+            print("Usage: cat [ip] <filepath> (e.g. `cat /etc/hosts` or `cat local /home/deck/notes.txt`)")
             return True
         if len(parts) == 2:
-            target = engine.state.current_node_id
-            filepath = parts[1]
+            path_arg = parts[1]
+            if path_arg.startswith(("/home/deck", "/loot", "/bin")):
+                ok, output, _ = engine.read_local_file(path_arg)
+            else:
+                ok, output, _ = engine.read_file(engine.state.current_node_id, path_arg)
         else:
-            target = parts[1]
-            filepath = parts[2]
-        ok, output, _ = engine.read_file(target, filepath)
+            target_arg = parts[1].lower()
+            if target_arg in ("local", "localhost", "myip", "deck", "10.99.0.2", "127.0.0.1"):
+                ok, output, _ = engine.read_local_file(parts[2])
+            else:
+                ok, output, _ = engine.read_file(parts[1], parts[2])
         print(output)
         return True
 
@@ -322,6 +362,43 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             profile.purchased_upgrades.append(parts[1])
             profile.banked_creds = engine.deck.cryptocreds
             save_mgr.save_career(profile)
+    if action in ("myip", "whoami"):
+        print(f"[*] Cyberdeck Local Identity: {engine.deck.local_hostname} ({engine.deck.local_ip}) [{engine.deck.model_name}]")
+        return True
+
+    if action in ("myfiles", "local_ls", "myloot"):
+        ok, out, _ = engine.list_local_files()
+        print(out)
+        return True
+
+    if action in ("phish", "spearphish"):
+        if len(parts) < 2:
+            print("Usage: phish <ip | hostname>")
+            return True
+        ok, msg, _ = engine.phish_target(parts[1])
+        print(msg)
+        return True
+
+    if action in ("workshop", "recipes"):
+        print_workshop(engine)
+        return True
+
+    if action == "craft":
+        if len(parts) < 2:
+            print_workshop(engine)
+            return True
+        ok, msg = engine.craft_virus(parts[1])
+        print(msg)
+        return True
+
+    if action in ("keylogger", "deploy_keylogger"):
+        target = parts[1] if len(parts) > 1 else engine.state.current_node_id
+        ok, msg = engine.deploy_daemon(target, "keylogger")
+        print(msg)
+        return True
+
+    if action in ("daemons", "ps"):
+        print_daemons(engine)
         return True
 
     if action == "career":
@@ -342,7 +419,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("No saved game found.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: probe <ip>, exploit <ip> <port>, ls [ip], cat <file>, steal <file>, wipe_logs [ip], move <ip>, scan, spoof, jackout, shop, buy, career, status, save, load, quit")
+    print(f"Unknown command: '{action}'. Commands: probe, exploit, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, spoof, cash_out, shop, buy, career, status, save, load, quit")
     return True
 
 

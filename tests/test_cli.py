@@ -114,7 +114,29 @@ class TestCLI(unittest.TestCase):
         self.assertIn("LOGS SANITIZED", out)
         self.assertIn("SAFE EXTRACTION", out)
 
+    def test_cli_virtual_rig_and_phishing_commands(self):
+        batch_cmds = (
+            "myip;"
+            "myfiles;"
+            "cat /home/deck/notes.txt;"
+            "phish 192.168.1.10;"
+            "workshop;"
+            "craft trace_cleaner;"
+            "daemons"
+        )
+        code, out = self.run_cli("--seed", "1337", "--exec", batch_cmds)
+        self.assertEqual(code, 0)
+        self.assertIn("Cyberdeck Local Identity", out)
+        self.assertIn("10.99.0.2", out)
+        self.assertIn("Local Rig Filesystem", out)
+        self.assertIn("NETRUNNER LOG", out)
+        self.assertIn("PHISHING", out)
+        self.assertIn("NETRUNNER MALWARE SYNTHESIS BAY", out)
+        self.assertIn("WORKSHOP SYNTHESIS COMPLETE", out)
+        self.assertIn("ACTIVE BACKGROUND MALWARE DAEMONS", out)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
