@@ -78,6 +78,32 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. *Strict Synthetic Sandbox Isolation*: All files, IPs, and payloads are strictly simulated in-memory Python dataclasses; no real-world host files, network sockets, or external systems are ever accessed.
 - **Consequences**: Deepens tactical variety, strategic pre-planning, and immersion while maintaining pure Python 3 standard library zero-dependency constraints and sub-second test execution.
 
-
-
-
+### ADR-007: Tactical Exploits, Host Antivirus Detection, Network Firewalls, and Multi-Vector Social Engineering
+- **Date**: 2026-10-17
+- **Status**: Accepted
+- **Context**: Players requested deeper tactical cyber-warfare layers: "Add Exploits, Add Antivirus Mechanics, Add Firewalls, Add Social Engineering Component to the GAME". Straightforward open-port zero-days and single-tier phishing need to evolve into an interlocking tactical system featuring stateful network firewalls, active host antivirus heuristics and daemon quarantine sweeps, a diverse catalog of specialized exploit CVE payloads, and interactive multi-vector social engineering campaigns (pretexting IT support, baiting USB drops, executive impersonation).
+- **Decision**: Introduce four interlocking tactical simulation systems:
+  1. *Network Firewalls (`FirewallRule`, `HostFirewall`)*:
+     - Hosts can run active packet-filtering firewalls with rules (`DEFAULT_DROP`, `PORT_FILTER`, `STATEFUL_IDS`).
+     - Ports can be `FILTERED` by firewalls, preventing direct exploitation unless bypassed or knocked.
+     - Mechanics: `firewall <ip>` to inspect rules, `bypass <ip> [method]` via port knocking, packet fragmentation, or proxy tunneling.
+  2. *Host Antivirus Systems (`HostAntivirus`, `AVStatus`)*:
+     - Target hosts (especially Tier 2+ enterprise nodes) run active Antivirus suites (e.g. *SentinelCore*, *AegisShield*, *CyberDefender*).
+     - AV maintains an `alert_level` (0 to 100%) and runs periodic memory heuristic scans.
+     - If alert level exceeds threshold, AV quarantines/kills active background daemons (`keyloggers`, `worms`) and triggers an immediate spike in ICE trace.
+     - Mechanics: `av <ip>` to inspect AV status, `evade <ip>` / `kill_av <ip>` to inject rootkit evasion hooks or suppress AV processes.
+  3. *Expanded Exploit Payload Matrix (`ExploitPayload`, `CVE`)*:
+     - Players discover and weaponize specific vulnerability CVEs (`CVE-2024-SHELLSHOCK`, `CVE-2023-MEMCORRUPT`, `CVE-2025-SQLINJECT`, `CVE-2024-BUFFERLEAK`).
+     - Each exploit payload has specific RAM requirements, target service affinities, stealth ratings (affecting AV detection), and payload yields.
+     - Commands: `cve` / `exploits` to view catalog, `exploit <ip> <port> [cve_id]` to select matched exploit payloads.
+  4. *Multi-Vector Social Engineering Component (`SocialVector`, `EmployeeProfile`)*:
+     - Expands beyond basic phishing into multi-vector social engineering:
+       - `pretext`: Masquerading as internal IT support requesting emergency access.
+       - `bait`: Dropping infected simulated USB drives / payload PDFs.
+       - `spear_phish`: Executive CEO fraud urgent wire / credential lure.
+       - `vishing`: Voice-phishing helpdesk operator for MFA token bypass.
+     - Hosts feature dynamic employee security awareness profiles (Naive, Standard, Paranoid).
+     - Commands: `social <ip> [vector]` (e.g. `social 192.168.1.10 pretext`).
+  5. *Zero External Dependencies & Synthetic Invariant*:
+     - 100% in-memory standard library dataclasses, deterministic RNG generation, zero external pip dependencies, sub-second test execution.
+- **Consequences**: Deepens the hacker simulation with strategic counters (Firewalls block ports -> require Bypass or Social Eng; Antivirus hunts Keyloggers -> requires Evade or Rootkit; CVEs give tactical choices).

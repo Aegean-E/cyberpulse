@@ -101,6 +101,131 @@ class CareerProfile:
         return cls(**data)
 
 
+class FirewallPolicy:
+    ALLOW_ALL = "ALLOW_ALL"
+    FILTER_PORTS = "FILTER_PORTS"
+    STRICT_DROP = "STRICT_DROP"
+
+
+@dataclass
+class FirewallRule:
+    """A packet filtering or port access rule enforced by a host firewall."""
+    rule_id: str
+    port: int
+    action: str = "BLOCK"  # "BLOCK", "ALLOW"
+    bypassed: bool = False
+    bypass_method: Optional[str] = None  # "knock", "fragment", "tunnel"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "FirewallRule":
+        return cls(**data)
+
+
+@dataclass
+class HostFirewall:
+    """A network firewall defending a host's open ports against unauthorized ingress."""
+    enabled: bool = True
+    policy: str = FirewallPolicy.FILTER_PORTS
+    firewall_type: str = "Stateful-Packet-Filter"
+    rules: List[FirewallRule] = field(default_factory=list)
+    tampered: bool = False
+
+    def is_port_blocked(self, port: int) -> bool:
+        if not self.enabled or self.tampered:
+            return False
+        for rule in self.rules:
+            if rule.port == port and rule.action == "BLOCK" and not rule.bypassed:
+                return True
+        return False
+
+    def to_dict(self) -> Dict[str, Any]:
+        res = asdict(self)
+        res["rules"] = [r.to_dict() if hasattr(r, "to_dict") else r for r in self.rules]
+        return res
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "HostFirewall":
+        clean = dict(data)
+        if "rules" in clean and isinstance(clean["rules"], list):
+            clean["rules"] = [
+                FirewallRule.from_dict(r) if isinstance(r, dict) else r for r in clean["rules"]
+            ]
+        return cls(**clean)
+
+
+@dataclass
+class HostAntivirus:
+    """An active endpoint detection and response (EDR) / antivirus service on a target host."""
+    name: str = "SentinelCore EDR"
+    version: str = "v4.2"
+    enabled: bool = True
+    alert_level: int = 0          # 0% to 100%
+    heuristic_sensitivity: int = 3 # 1 (low) to 5 (high)
+    evaded: bool = False           # True if player has hooked/blinded the AV
+    quarantine_log: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "HostAntivirus":
+        return cls(**data)
+
+
+@dataclass
+class ExploitPayload:
+    """A weaponized vulnerability exploit / CVE targeting specific network services."""
+    cve_id: str                    # e.g. "CVE-2024-38812"
+    name: str                      # e.g. "SSH Buffer Overflow"
+    target_service: str            # "ssh", "ftp", "http", "mysql", "smtp", "any"
+    required_ram_mb: int = 16
+    cpu_cost: int = 2
+    stealth_rating: int = 3        # 1 (noisy, triggers AV) to 5 (stealthy zero-day)
+    damage_trace: int = 10         # Trace generated on launch
+    description: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ExploitPayload":
+        return cls(**data)
+
+
+class SocialVectorType:
+    PRETEXT = "pretext"         # Impersonating Internal IT support requesting urgent cred reset
+    BAIT = "bait"               # Dropping infected simulated USB / trojan PDF document
+    SPEAR_PHISH = "spear_phish" # Executive CEO fraud urgent wire / credential lure
+    VISHING = "vishing"         # Voice-phishing helpdesk operator for MFA token
+
+
+class SecurityAwarenessLevel:
+    NAIVE = "NAIVE"             # 85% success on all vectors
+    STANDARD = "STANDARD"       # 55% success, requires pretext/bait
+    PARANOID = "PARANOID"       # 25% success, requires spear_phish/vishing
+
+
+@dataclass
+class EmployeeProfile:
+    """Target organization employee persona susceptible to social engineering attacks."""
+    name: str
+    role: str                   # "Helpdesk Operator", "DevOps Engineer", "CFO", "Marketing Intern"
+    email: str
+    awareness_level: str = SecurityAwarenessLevel.STANDARD
+    compromised: bool = False
+    leaked_credential: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "EmployeeProfile":
+        return cls(**data)
+
+
 @dataclass
 class Node:
     """A target host or infrastructure subsystem on the network grid."""
@@ -119,11 +244,19 @@ class Node:
     ports: List[PortService] = field(default_factory=list)
     filesystem: List[VirtualFile] = field(default_factory=list)
     logs_cleared: bool = False
+    firewall: Optional[HostFirewall] = None
+    antivirus: Optional[HostAntivirus] = None
+    employees: List[EmployeeProfile] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         res = asdict(self)
         res["ports"] = [p.to_dict() if hasattr(p, "to_dict") else p for p in self.ports]
         res["filesystem"] = [f.to_dict() if hasattr(f, "to_dict") else f for f in self.filesystem]
+        if self.firewall:
+            res["firewall"] = self.firewall.to_dict() if hasattr(self.firewall, "to_dict") else self.firewall
+        if self.antivirus:
+            res["antivirus"] = self.antivirus.to_dict() if hasattr(self.antivirus, "to_dict") else self.antivirus
+        res["employees"] = [e.to_dict() if hasattr(e, "to_dict") else e for e in self.employees]
         return res
 
     @classmethod
@@ -136,6 +269,14 @@ class Node:
         if "filesystem" in data_clean and isinstance(data_clean["filesystem"], list):
             data_clean["filesystem"] = [
                 VirtualFile.from_dict(f) if isinstance(f, dict) else f for f in data_clean["filesystem"]
+            ]
+        if "firewall" in data_clean and isinstance(data_clean["firewall"], dict):
+            data_clean["firewall"] = HostFirewall.from_dict(data_clean["firewall"])
+        if "antivirus" in data_clean and isinstance(data_clean["antivirus"], dict):
+            data_clean["antivirus"] = HostAntivirus.from_dict(data_clean["antivirus"])
+        if "employees" in data_clean and isinstance(data_clean["employees"], list):
+            data_clean["employees"] = [
+                EmployeeProfile.from_dict(e) if isinstance(e, dict) else e for e in data_clean["employees"]
             ]
         return cls(**data_clean)
 
@@ -198,6 +339,9 @@ class CyberDeck:
         VirtualFile(path="/loot/README.md", size_kb=1, content="# Loot Directory\nExfiltrated target data files are saved here automatically."),
     ])
     active_daemons: List[MalwareDaemon] = field(default_factory=list)
+    known_cves: List[str] = field(default_factory=lambda: [
+        "CVE-2024-38812", "CVE-2023-22515", "CVE-2024-21413", "CVE-2025-9901"
+    ])
 
     def to_dict(self) -> Dict[str, Any]:
         res = asdict(self)
@@ -216,6 +360,8 @@ class CyberDeck:
             clean["active_daemons"] = [
                 MalwareDaemon.from_dict(d) if isinstance(d, dict) else d for d in clean["active_daemons"]
             ]
+        if "known_cves" not in clean:
+            clean["known_cves"] = ["CVE-2024-38812", "CVE-2023-22515", "CVE-2024-21413", "CVE-2025-9901"]
         return cls(**clean)
 
 
