@@ -1,69 +1,14 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-netrunner-workshop-v1",
+    "task_id": "task-cyber-warfare-v1",
     "last_phase": "phase 3",
     "active_phase": 5,
     "status": "completed",
-    "updated_at": 1792265146.614726,
-    "completed_at": 1792265661.4689245
+    "updated_at": 1792266473.571191,
+    "completed_at": 1792267088.2662451
   },
   "checkpoints": [
-    {
-      "task_id": "task-behavioral-mechanics-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-behavioral-mechanics-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792261967.8251524,
-      "timestamp_str": "2026-10-17 21:32:47"
-    },
-    {
-      "task_id": "task-codebase-enhancements-v1",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/4] Pre-flight impact assessment, ADR-003, typing bug fix in shop.py, and crash-resilient backup recovery in storage.py",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792262136.291114,
-      "timestamp_str": "2026-10-17 21:35:36",
-      "impact_assessment": {
-        "why": "Eliminate silent typing bugs, protect against save corruption via shadow backup fallback, and establish ADR-003 foundation",
-        "benefits": "Ensures PEP 649 introspection stability, guarantees zero-data-loss career persistence via .bak recovery, and prepares architecture for resource & exploit gameplay",
-        "risks": "contract: none; dependency: none (standard library); concurrency: none; state: backward compatibility with legacy savegame and career files",
-        "mitigation": "Validate all schemas with existing test suites and add dedicated unit tests for .bak corruption recovery"
-      }
-    },
-    {
-      "task_id": "task-codebase-enhancements-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[2/4] Seamless career profile meta-progression: bridge persistent career.json upgrades and banked funds into CyberDeck on run initialization",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792262247.686913,
-      "timestamp_str": "2026-10-17 21:37:27"
-    },
-    {
-      "task_id": "task-codebase-enhancements-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[3/4] Dynamic resource mechanics: CPU cycle cooling/regeneration, RAM hardware requirements for high-tier nodes, and executable exploit chips in engine.py",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792262358.4156678,
-      "timestamp_str": "2026-10-17 21:39:18"
-    },
-    {
-      "task_id": "task-codebase-enhancements-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[4/4] Interactive CLI commands for exploits and RAM checks, integration tests, and README documentation",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792262448.5014799,
-      "timestamp_str": "2026-10-17 21:40:48"
-    },
     {
       "task_id": "task-codebase-enhancements-v1",
       "phase": "completed",
@@ -227,6 +172,61 @@
       "status": "completed",
       "timestamp": 1792265661.4689257,
       "timestamp_str": "2026-10-17 22:34:21"
+    },
+    {
+      "task_id": "task-cyber-warfare-v1",
+      "phase": "phase 2",
+      "phase_num": 2,
+      "description": "[1/4] Add domain models and serialization tests for Firewalls, Antivirus, CVE Exploits, and Social Engineering",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792265771.104285,
+      "timestamp_str": "2026-10-17 22:36:11",
+      "impact_assessment": {
+        "why": "Deepen tactical realism with Firewalls, Antivirus, specialized CVE exploits, and multi-vector Social Engineering",
+        "benefits": "Enriches gameplay depth, strategic counters, and authentic hacker simulation variety",
+        "risks": "contract: existing API endpoints and engine methods remain fully backward compatible; dependency: none, pure standard library Python; concurrency: none, deterministic turn-based execution; state: new dataclass fields have default values preserving save/load compatibility",
+        "mitigation": "Default dataclass attributes, comprehensive serialization unit tests, strict AST syntax and sub-second test execution"
+      }
+    },
+    {
+      "task_id": "task-cyber-warfare-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[2/4] Implement engine mechanics for Firewalls, Antivirus sweeps/evasion, specialized CVE exploit execution, and multi-vector Social Engineering in engine.py and network.py",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792265918.7616313,
+      "timestamp_str": "2026-10-17 22:38:38"
+    },
+    {
+      "task_id": "task-cyber-warfare-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[3/4] Implement interactive CLI commands for firewalls, antivirus, CVE exploits, and social engineering in cli.py with integration tests in test_cli.py",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792266308.9558039,
+      "timestamp_str": "2026-10-17 22:45:08"
+    },
+    {
+      "task_id": "task-cyber-warfare-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[4/4] Web Cyberdeck REST endpoints, UI modal panels, target action buttons, README documentation, and final Phase 4 completion",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792266473.571191,
+      "timestamp_str": "2026-10-17 22:47:53"
+    },
+    {
+      "task_id": "task-cyber-warfare-v1",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyber-warfare-v1' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792267088.2662463,
+      "timestamp_str": "2026-10-17 22:58:08"
     }
   ]
 }
