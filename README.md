@@ -24,6 +24,7 @@ CyberPulse is a retro-cyberpunk terminal hacking simulation game with procedural
 cyberpulse/
 ├── .aikit/                   <- this project's memory: record, ledger, decisions
 ├── .gitignore                <- transient AIKit state excluded
+├── LICENSE                   <- MIT Open Source License
 ├── README.md
 ├── pyproject.toml            <- build and package configuration
 ├── cyberpulse/               <- core game engine and CLI
