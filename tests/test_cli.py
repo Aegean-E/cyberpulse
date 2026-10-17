@@ -158,6 +158,32 @@ class TestCLI(unittest.TestCase):
         self.assertIn("CVE-2011-2523", out)
         self.assertIn("EXPLOIT SUCCESSFUL", out)
 
+    def test_handle_run_completion_in_batch_mode(self):
+        from cyberpulse.cli import handle_run_completion
+        from cyberpulse.engine import GameEngine
+        from cyberpulse.storage import SaveManager
+
+        save_mgr = SaveManager(self.temp_dir)
+        engine = GameEngine(seed=42)
+
+        # 1. No completion when game is active
+        self.assertIsNone(handle_run_completion(engine, save_mgr))
+
+        # 2. Victory completion
+        engine.state.is_victory = True
+        prof = handle_run_completion(engine, save_mgr)
+        self.assertIsNotNone(prof)
+        self.assertEqual(prof.successful_runs, 1)
+        self.assertEqual(prof.current_streak, 1)
+
+        # 3. Game-over completion
+        engine.state.is_victory = False
+        engine.state.is_game_over = True
+        prof2 = handle_run_completion(engine, save_mgr)
+        self.assertIsNotNone(prof2)
+        self.assertEqual(prof2.failed_runs, 1)
+        self.assertEqual(prof2.current_streak, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

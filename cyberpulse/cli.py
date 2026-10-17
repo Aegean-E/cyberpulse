@@ -28,6 +28,20 @@ def setup_terminal_encoding() -> None:
                 pass
 
 
+def safe_print(msg: str) -> None:
+    """Print message to stdout with graceful fallback for legacy terminal code pages."""
+    try:
+        print(msg)
+    except UnicodeEncodeError:
+        try:
+            print(msg.encode("ascii", errors="replace").decode("ascii"))
+        except Exception:
+            pass
+
+
+setup_terminal_encoding()
+
+
 def get_default_data_dir() -> Path:
     return Path.cwd() / ".cyberpulse"
 
@@ -483,6 +497,29 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
     return True
 
 
+def handle_run_completion(engine: GameEngine, save_mgr: SaveManager) -> Optional[CareerProfile]:
+    """Persist career stats and clean up savegame when run concludes (victory or game-over)."""
+    if not (engine.state.is_victory or engine.state.is_game_over):
+        return None
+
+    profile = save_mgr.load_career()
+    if engine.state.is_victory:
+        safe_print("\n🎉 MISSION SUCCESSFUL: System Core infiltrated. You escaped without detection.")
+        profile.successful_runs += 1
+        profile.current_streak += 1
+        profile.best_streak = max(profile.best_streak, profile.current_streak)
+        profile.banked_creds = engine.deck.cryptocreds
+        profile.lifetime_creds += engine.deck.cryptocreds
+    elif engine.state.is_game_over:
+        safe_print("\n💀 CONNECTION TERMINATED: Security ICE traced and burned your cyberdeck.")
+        profile.failed_runs += 1
+        profile.current_streak = 0
+
+    save_mgr.save_career(profile)
+    save_mgr.delete_save()
+    return profile
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     setup_terminal_encoding()
     parser = argparse.ArgumentParser(prog="cyberpulse", description="Retro-cyberpunk terminal hacking simulation game")
@@ -520,6 +557,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         for c in cmds:
             if not run_command(c, engine, save_mgr, auto_solve=args.auto_solve):
                 break
+        handle_run_completion(engine, save_mgr)
         return 0
 
     # Interactive mode
@@ -534,23 +572,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             print("\n👋 Disconnected.")
             break
 
-    profile = save_mgr.load_career()
-    if engine.state.is_victory:
-        print("\n🎉 MISSION SUCCESSFUL: System Core infiltrated. You escaped without detection.")
-        profile.successful_runs += 1
-        profile.current_streak += 1
-        profile.best_streak = max(profile.best_streak, profile.current_streak)
-        profile.banked_creds = engine.deck.cryptocreds
-        profile.lifetime_creds += engine.deck.cryptocreds
-        save_mgr.save_career(profile)
-        save_mgr.delete_save()
-    elif engine.state.is_game_over:
-        print("\n💀 CONNECTION TERMINATED: Security ICE traced and burned your cyberdeck.")
-        profile.failed_runs += 1
-        profile.current_streak = 0
-        save_mgr.save_career(profile)
-        save_mgr.delete_save()
-
+    handle_run_completion(engine, save_mgr)
     return 0
 
 

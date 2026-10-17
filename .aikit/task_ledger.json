@@ -5,19 +5,9 @@
     "last_phase": "phase 3",
     "active_phase": 3,
     "status": "in_progress",
-    "updated_at": 1792268043.001301
+    "updated_at": 1792268168.046961
   },
   "checkpoints": [
-    {
-      "task_id": "task-web-cyberdeck-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[3/4] CLI --web argument integration, automated browser launching, and end-to-end integration tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792263119.5415332,
-      "timestamp_str": "2026-10-17 21:51:59"
-    },
     {
       "task_id": "task-web-cyberdeck-v1",
       "phase": "completed",
@@ -227,6 +217,16 @@
       "status": "in_progress",
       "timestamp": 1792268043.001301,
       "timestamp_str": "2026-10-17 23:14:03"
+    },
+    {
+      "task_id": "task-hardening-and-evolution-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[milestone 3/4] unify run completion lifecycle and career persistence across CLI modes",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792268168.046961,
+      "timestamp_str": "2026-10-17 23:16:08"
     }
   ]
 }
