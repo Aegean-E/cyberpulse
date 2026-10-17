@@ -35,6 +35,7 @@ cyberpulse/
 │   ├── network.py            <- procedural network grid generator
 │   ├── puzzles.py            <- cyber-intrusion puzzle nodes & near-miss detection
 │   ├── rewards.py            <- variable-ratio loot tables & reward schedules
+│   ├── server.py             <- zero-dependency HTTP REST & cyberdeck server
 │   ├── shop.py               <- black market tech vendor & hardware catalog
 │   └── storage.py            <- atomic persistence & career dossier management
 └── tests/                    <- sub-second unit & integration test suite
@@ -46,6 +47,7 @@ cyberpulse/
     ├── test_network.py
     ├── test_puzzles.py
     ├── test_rewards.py
+    ├── test_server.py
     ├── test_shop.py
     └── test_storage.py
 ```

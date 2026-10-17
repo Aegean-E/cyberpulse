@@ -3,6 +3,12 @@
 import argparse
 import sys
 from pathlib import Path
+
+# Ensure project root is in sys.path when executed directly as a script
+project_root = Path(__file__).resolve().parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from typing import List, Optional
 
 from cyberpulse.engine import GameEngine
