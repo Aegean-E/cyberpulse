@@ -137,6 +137,77 @@ class TestEngine(unittest.TestCase):
         self.assertGreater(self.engine.state.trace_percent, 0)
         self.assertNotIn("brute_miner", self.engine.deck.exploits)
 
+    def test_find_node_by_ip_and_hostname(self):
+        node = self.engine.find_node("192.168.1.10")
+        self.assertIsNotNone(node)
+        self.assertEqual(node.node_id, "node_proxy_a")
+
+        node_host = self.engine.find_node("alpha.internal")
+        self.assertIsNotNone(node_host)
+        self.assertEqual(node_host.node_id, "node_proxy_a")
+
+        node_id = self.engine.find_node("node_proxy_a")
+        self.assertIsNotNone(node_id)
+        self.assertEqual(node_id.ip_address, "192.168.1.10")
+
+    def test_probe_host(self):
+        ok, summary, report = self.engine.probe_host("192.168.1.10")
+        self.assertTrue(ok)
+        self.assertIn("Nmap scan report", summary)
+        self.assertIn("192.168.1.10", summary)
+        self.assertIsNotNone(report)
+        self.assertEqual(report["ip_address"], "192.168.1.10")
+        self.assertTrue(any(p["port"] == 21 for p in report["ports"]))
+        self.assertGreater(self.engine.state.trace_percent, 0)
+
+    def test_exploit_service(self):
+        # Exploit invalid/closed port
+        ok, msg = self.engine.exploit_service("192.168.1.10", 9999)
+        self.assertFalse(ok)
+        self.assertIn("closed or filtered", msg)
+
+        # Exploit open vulnerable FTP port 21
+        self.engine.deck.cpu_cycles = 4
+        ok, msg = self.engine.exploit_service("192.168.1.10", 21)
+        self.assertTrue(ok)
+        self.assertIn("EXPLOIT SUCCESSFUL", msg)
+        node = self.engine.find_node("192.168.1.10")
+        self.assertEqual(node.status, NodeStatus.BREACHED)
+        self.assertEqual(self.engine.deck.cpu_cycles, 2)
+
+    def test_virtual_filesystem_simulation(self):
+        # Breach node_proxy_a
+        self.engine.complete_breach("node_proxy_a")
+
+        # List files
+        ok, output, files = self.engine.list_files("192.168.1.10")
+        self.assertTrue(ok)
+        self.assertIn("Directory listing", output)
+        self.assertTrue(len(files) >= 1)
+
+        # Read file
+        ok, content_view, raw_text = self.engine.read_file("192.168.1.10", "/home/admin/network_map.txt")
+        self.assertTrue(ok)
+        self.assertIn("Subnet topology", raw_text)
+
+        # Download / steal file
+        creds_before = self.engine.state.unbanked_creds
+        ok, dl_msg, vfile = self.engine.download_file("192.168.1.10", "/home/admin/network_map.txt")
+        self.assertTrue(ok)
+        self.assertIn("EXFILTRATION COMPLETE", dl_msg)
+        self.assertIn(vfile.path, self.engine.state.looted_payloads)
+        self.assertGreaterEqual(self.engine.state.unbanked_creds, creds_before + vfile.value_creds)
+
+    def test_wipe_logs_trace_reduction(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.state.trace_percent = 50
+        ok, msg = self.engine.wipe_logs("192.168.1.10")
+        self.assertTrue(ok)
+        self.assertIn("LOGS SANITIZED", msg)
+        self.assertEqual(self.engine.state.trace_percent, 30)
+        self.assertTrue(self.engine.nodes["node_proxy_a"].logs_cleared)
+
 
 if __name__ == "__main__":
     unittest.main()
+
