@@ -11,13 +11,23 @@ from cyberpulse.puzzles import BufferPuzzle, FrequencyPuzzle, HashCrackPuzzle
 from cyberpulse.storage import SaveManager
 
 
+def setup_terminal_encoding() -> None:
+    """Ensure stdout and stderr handle utf-8 safely across all Windows code pages."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
+
+
 def get_default_data_dir() -> Path:
     return Path.cwd() / ".cyberpulse"
 
 
 def render_trace_bar(trace_percent: int, width: int = 20) -> str:
     filled = int((trace_percent / 100) * width)
-    bar = "█" * filled + "░" * (width - filled)
+    bar = "#" * filled + "-" * (width - filled)
     return f"[{bar}] {trace_percent}%"
 
 
@@ -25,20 +35,20 @@ def print_hud(engine: GameEngine) -> None:
     curr = engine.get_current_node()
     trace_bar = render_trace_bar(engine.state.trace_percent)
 
-    print("\n╔══════════════════════════════════════════════════════════════════════════╗")
-    print("║          ⚡ CYBERPULSE // NEURAL INTRUSION HARNESS v0.1.0 ⚡             ║")
-    print("╚══════════════════════════════════════════════════════════════════════════╝")
-    print(f"📍 Location:   {curr.name} [{curr.node_id}] ({curr.node_type})")
-    print(f"🛡️  Trace:      {trace_bar} | Turns: {engine.state.turns_elapsed}")
-    print(f"💻 Deck:       CPU: {engine.deck.cpu_cycles}/{engine.deck.max_cpu} | RAM: {engine.deck.ram_mb}MB | 🪙 {engine.deck.cryptocreds} Creds")
-    print("──────────────────────────────────────────────────────────────────────────")
-    print("🌐 Network Connections:")
+    print("\n+==========================================================================+")
+    print("|          >> CYBERPULSE // NEURAL INTRUSION HARNESS v0.1.0 <<             |")
+    print("+==========================================================================+")
+    print(f"[*] Location:   {curr.name} [{curr.node_id}] ({curr.node_type})")
+    print(f"[*] Trace:      {trace_bar} | Turns: {engine.state.turns_elapsed}")
+    print(f"[*] Deck:       CPU: {engine.deck.cpu_cycles}/{engine.deck.max_cpu} | RAM: {engine.deck.ram_mb}MB | Creds: {engine.deck.cryptocreds}")
+    print("--------------------------------------------------------------------------")
+    print("Network Connections:")
     for cid in curr.connected_ids:
         adj = engine.nodes.get(cid)
         if adj:
-            icon = "🟢 BREACHED" if adj.status == NodeStatus.BREACHED else ("🟡 DISCOVERED" if adj.status == NodeStatus.DISCOVERED else "🔒 LOCKED")
-            print(f"   • {adj.node_id:<20} | {adj.name:<32} | {icon} (Sec: {adj.security_level})")
-    print("══════════════════════════════════════════════════════════════════════════")
+            icon = "[BREACHED]" if adj.status == NodeStatus.BREACHED else ("[DISCOVERED]" if adj.status == NodeStatus.DISCOVERED else "[LOCKED]")
+            print(f"   * {adj.node_id:<20} | {adj.name:<32} | {icon} (Sec: {adj.security_level})")
+    print("+==========================================================================+")
 
 
 def execute_hack_puzzle(engine: GameEngine, target_id: str, auto_solve: bool = False) -> bool:
@@ -167,6 +177,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    setup_terminal_encoding()
     parser = argparse.ArgumentParser(prog="cyberpulse", description="Retro-cyberpunk terminal hacking simulation game")
     parser.add_argument("--seed", type=int, default=1337, help="Deterministic world seed")
     parser.add_argument("--data-dir", type=Path, default=None, help="Savegame data directory")
