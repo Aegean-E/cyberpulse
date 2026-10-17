@@ -49,6 +49,7 @@ class CyberdeckSession:
             "career": career.to_dict(),
             "shop_items": self.shop.list_available(self.engine.deck),
             "workshop_recipes": self.engine.list_crafting_recipes(),
+            "known_cves": self.engine.list_cves(),
             "local_rig": {
                 "ip": self.engine.deck.local_ip,
                 "hostname": self.engine.deck.local_hostname,
@@ -114,6 +115,34 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
         if path == "/api/workshop":
             recipes = self.server_session.engine.list_crafting_recipes()
             self.send_json_response({"recipes": recipes})
+            return
+
+        if path == "/api/cves":
+            self.send_json_response({"cves": self.server_session.engine.list_cves()})
+            return
+
+        if path == "/api/firewall":
+            target = self.server_session.engine.state.current_node_id
+            if "?" in self.path:
+                for pair in self.path.split("?")[1].split("&"):
+                    if "=" in pair:
+                        k, v = pair.split("=", 1)
+                        if k in ("target", "ip", "node_id"):
+                            target = v
+            ok, msg, fw_dict = self.server_session.engine.get_firewall_status(target)
+            self.send_json_response({"ok": ok, "message": msg, "firewall": fw_dict}, HTTPStatus.OK if ok else HTTPStatus.BAD_REQUEST)
+            return
+
+        if path == "/api/antivirus":
+            target = self.server_session.engine.state.current_node_id
+            if "?" in self.path:
+                for pair in self.path.split("?")[1].split("&"):
+                    if "=" in pair:
+                        k, v = pair.split("=", 1)
+                        if k in ("target", "ip", "node_id"):
+                            target = v
+            ok, msg, av_dict = self.server_session.engine.get_antivirus_status(target)
+            self.send_json_response({"ok": ok, "message": msg, "antivirus": av_dict}, HTTPStatus.OK if ok else HTTPStatus.BAD_REQUEST)
             return
 
         if path == "/api/local_files":
@@ -289,8 +318,32 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
             if action == "exploit_service":
                 target = payload.get("target") or engine.state.current_node_id
                 port = int(payload.get("port", 0))
-                ok, msg = engine.exploit_service(target, port)
+                cve_id = payload.get("cve_id")
+                ok, msg = engine.exploit_service(target, port, cve_id=cve_id)
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action in ("bypass_firewall", "bypass"):
+                target = payload.get("target") or engine.state.current_node_id
+                port = int(payload.get("port", 0))
+                method = payload.get("method", "knock")
+                ok, msg = engine.bypass_firewall(target, port, method)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action in ("evade_av", "evade"):
+                target = payload.get("target") or engine.state.current_node_id
+                method = payload.get("method", "rootkit")
+                ok, msg = engine.evade_antivirus(target, method)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action in ("social", "social_engineer"):
+                target = payload.get("target") or engine.state.current_node_id
+                vector = payload.get("vector", "spear_phish")
+                employee = payload.get("employee")
+                ok, msg, report = engine.social_engineer(target, vector, employee)
+                self.send_json_response({"ok": ok, "message": msg, "report": report, "state": self.server_session.get_full_state()})
                 return
 
             if action == "list_files":

@@ -205,7 +205,79 @@ class TestCyberdeckServer(unittest.TestCase):
             # Reset server session state for subsequent test isolation
             self._post("/api/action", {"action": "reset", "seed": 1337})
 
+    def test_get_cves_firewall_antivirus(self):
+        # 1. GET /api/cves
+        status, cve_data = self._get("/api/cves")
+        self.assertEqual(status, 200)
+        self.assertIn("cves", cve_data)
+        self.assertGreaterEqual(len(cve_data["cves"]), 5)
+        cve_ids = [c["cve_id"] for c in cve_data["cves"]]
+        self.assertIn("CVE-2023-38606", cve_ids)
+
+        # 2. GET /api/firewall
+        status, fw_data = self._get("/api/firewall?ip=192.168.1.10")
+        self.assertEqual(status, 200)
+        self.assertTrue(fw_data["ok"])
+        self.assertIn("firewall", fw_data)
+        self.assertTrue(fw_data["firewall"]["enabled"])
+        self.assertGreater(len(fw_data["firewall"]["rules"]), 0)
+
+        # 3. GET /api/antivirus
+        status, av_data = self._get("/api/antivirus?ip=192.168.1.10")
+        self.assertEqual(status, 200)
+        self.assertTrue(av_data["ok"])
+        self.assertIn("antivirus", av_data)
+        self.assertIn("DefenderBasic", av_data["antivirus"]["name"])
+
+    def test_firewall_bypass_evade_and_social(self):
+        try:
+            # 1. Bypass blocked port 22 on proxy_b
+            status, bp_res = self._post("/api/action", {
+                "action": "bypass",
+                "target": "192.168.1.20",
+                "port": 22,
+                "method": "knock",
+            })
+            self.assertEqual(status, 200)
+            self.assertTrue(bp_res["ok"])
+            self.assertIn("FIREWALL BYPASSED", bp_res["message"])
+            self.assertIn("Port 22/tcp rule deactivated", bp_res["message"])
+
+            # 2. Evade AV on proxy_a
+            status, ev_res = self._post("/api/action", {
+                "action": "evade",
+                "target": "192.168.1.10",
+                "method": "rootkit",
+            })
+            self.assertEqual(status, 200)
+            self.assertTrue(ev_res["ok"])
+            self.assertIn("ANTIVIRUS EVADED", ev_res["message"])
+
+            # 3. Multi-vector social engineering on proxy_a
+            status, soc_res = self._post("/api/action", {
+                "action": "social",
+                "target": "192.168.1.10",
+                "vector": "pretext",
+            })
+            self.assertEqual(status, 200)
+            self.assertTrue(soc_res["ok"])
+            self.assertIn("SOCIAL ENGINEERING SUCCESS", soc_res["message"])
+
+            # 4. Exploit service specifying known CVE
+            status, exp_cve = self._post("/api/action", {
+                "action": "exploit_service",
+                "target": "192.168.1.10",
+                "port": 21,
+                "cve_id": "CVE-2011-2523",
+            })
+            self.assertEqual(status, 200)
+            self.assertTrue(exp_cve["ok"])
+            self.assertIn("CVE-2011-2523", exp_cve["message"])
+        finally:
+            self._post("/api/action", {"action": "reset", "seed": 1337})
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

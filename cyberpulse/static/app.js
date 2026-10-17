@@ -107,6 +107,8 @@ const sfx = new SoundFX();
 const state = {
   data: null,
   selectedNodeId: null,
+  selectedEmployee: null,
+  selectedVector: "spear_phish",
   activePuzzle: null,
   bufferInput: [],
   animFrameId: null,
@@ -190,6 +192,7 @@ function initUIEvents() {
   document.getElementById("btn-scan").addEventListener("click", handleScan);
   document.getElementById("btn-spoof").addEventListener("click", handleSpoof);
   document.getElementById("btn-jackout").addEventListener("click", handleJackout);
+  document.getElementById("btn-cves-open").addEventListener("click", openCvesModal);
   document.getElementById("btn-rig-open").addEventListener("click", openRigModal);
   document.getElementById("btn-workshop-open").addEventListener("click", openWorkshopModal);
   document.getElementById("btn-shop-open").addEventListener("click", openShopModal);
@@ -199,8 +202,10 @@ function initUIEvents() {
   // Target Actions
   document.getElementById("btn-probe-node").addEventListener("click", handleProbeNode);
   document.getElementById("btn-init-hack").addEventListener("click", handleStartHack);
+  document.getElementById("btn-bypass-fw").addEventListener("click", openBypassModal);
+  document.getElementById("btn-evade-av").addEventListener("click", handleEvadeAv);
+  document.getElementById("btn-social-eng").addEventListener("click", openSocialModal);
   document.getElementById("btn-move-node").addEventListener("click", handleMoveNode);
-  document.getElementById("btn-phish-node").addEventListener("click", handlePhishNode);
   document.getElementById("btn-keylogger-node").addEventListener("click", handleDeployKeylogger);
   document.getElementById("btn-wipe-logs").addEventListener("click", handleWipeLogs);
   document.getElementById("btn-close-viewer").addEventListener("click", () => {
@@ -225,6 +230,19 @@ function initUIEvents() {
     document.getElementById("modal-workshop").classList.add("hidden");
     sfx.click();
   });
+  document.getElementById("btn-close-cves").addEventListener("click", () => {
+    document.getElementById("modal-cves").classList.add("hidden");
+    sfx.click();
+  });
+  document.getElementById("btn-close-social").addEventListener("click", () => {
+    document.getElementById("modal-social").classList.add("hidden");
+    sfx.click();
+  });
+  document.getElementById("btn-close-bypass").addEventListener("click", () => {
+    document.getElementById("modal-bypass").classList.add("hidden");
+    sfx.click();
+  });
+  document.getElementById("btn-execute-social").addEventListener("click", executeSocialAttack);
 
   // Frequency slider live readout
   const freqSlider = document.getElementById("freq-slider");
@@ -473,12 +491,61 @@ function updateTargetCard(nodeId) {
   document.getElementById("target-ram").textContent = `${node.security_level * 16}MB (Deck: ${deck.ram_mb}MB)`;
   document.getElementById("target-trace").textContent = `+${node.trace_rate}%`;
 
+  // Firewall Status Indicator
+  const fwEl = document.getElementById("target-firewall");
+  if (fwEl) {
+    if (node.firewall && node.firewall.enabled) {
+      const blockedRules = (node.firewall.rules || []).filter(r => r.action === "BLOCK");
+      const activeBlocks = blockedRules.filter(r => !r.bypassed);
+      if (activeBlocks.length > 0) {
+        fwEl.textContent = `FILTERING (${activeBlocks.length} BLOCKED)`;
+        fwEl.className = "val fw-blocked";
+      } else if (blockedRules.length > 0) {
+        fwEl.textContent = "BYPASSED";
+        fwEl.className = "val fw-bypassed";
+      } else {
+        fwEl.textContent = "ALLOW ALL";
+        fwEl.className = "val fw-allowed";
+      }
+    } else {
+      fwEl.textContent = "DISABLED";
+      fwEl.className = "val";
+    }
+  }
+
+  // Antivirus / EDR Indicator
+  const avEl = document.getElementById("target-antivirus");
+  if (avEl) {
+    if (node.antivirus && node.antivirus.enabled) {
+      if (node.antivirus.evaded) {
+        avEl.textContent = `${node.antivirus.name} [EVADED]`;
+        avEl.className = "val av-evaded";
+      } else {
+        const alertLvl = node.antivirus.alert_level || 0;
+        avEl.textContent = `${node.antivirus.name} (${alertLvl}%)`;
+        if (alertLvl >= 50) {
+          avEl.className = "val av-alert-high";
+        } else if (alertLvl >= 20) {
+          avEl.className = "val av-alert-med";
+        } else {
+          avEl.className = "val";
+        }
+      }
+    } else {
+      avEl.textContent = "NONE";
+      avEl.className = "val";
+    }
+  }
+
   const btnProbe = document.getElementById("btn-probe-node");
   const btnHack = document.getElementById("btn-init-hack");
   const btnMove = document.getElementById("btn-move-node");
   const btnPhish = document.getElementById("btn-phish-node");
   const btnKeylogger = document.getElementById("btn-keylogger-node");
   const btnWipe = document.getElementById("btn-wipe-logs");
+  const btnBypass = document.getElementById("btn-bypass-fw");
+  const btnEvade = document.getElementById("btn-evade-av");
+  const btnSocial = document.getElementById("btn-social-eng");
 
   const isAdjacent = curr.connected_ids.includes(nodeId) || curr.node_id === nodeId;
   const isBreached = node.status === "BREACHED";
@@ -486,9 +553,21 @@ function updateTargetCard(nodeId) {
   btnProbe.disabled = node.status === "LOCKED" && !isAdjacent;
   btnHack.disabled = isBreached || !isAdjacent;
   btnMove.disabled = !isBreached || curr.node_id === nodeId;
-  btnPhish.disabled = isBreached || (node.status === "LOCKED" && !isAdjacent);
+  if (btnPhish) btnPhish.disabled = isBreached || (node.status === "LOCKED" && !isAdjacent);
   btnKeylogger.disabled = !isBreached;
   btnWipe.disabled = !isBreached;
+
+  if (btnBypass) {
+    const hasBlocked = node.firewall && node.firewall.enabled && (node.firewall.rules || []).some(r => r.action === "BLOCK" && !r.bypassed);
+    btnBypass.disabled = !isAdjacent || !hasBlocked || isBreached;
+  }
+  if (btnEvade) {
+    const hasAv = node.antivirus && node.antivirus.enabled && !node.antivirus.evaded;
+    btnEvade.disabled = !isAdjacent || !hasAv;
+  }
+  if (btnSocial) {
+    btnSocial.disabled = isBreached || (node.status === "LOCKED" && !isAdjacent);
+  }
 }
 
 async function loadFilesystemView(nodeId) {
@@ -511,9 +590,20 @@ async function loadFilesystemView(nodeId) {
     node.ports.forEach((p) => {
       const pDiv = document.createElement("div");
       pDiv.className = "port-item";
+      let fwTag = "";
+      if (node.firewall && node.firewall.enabled) {
+        const rule = (node.firewall.rules || []).find(r => r.port === p.port);
+        if (rule) {
+          if (rule.bypassed) {
+            fwTag = ' <span style="color:var(--c-warning); font-size:9px;">[FW: BYPASSED]</span>';
+          } else if (rule.action === "BLOCK") {
+            fwTag = ' <span style="color:var(--c-danger); font-size:9px;">[FW: BLOCKED]</span>';
+          }
+        }
+      }
       const tagClass = p.breached ? "port-tag-breached" : (p.vulnerable ? "port-tag-vulnerable" : "");
       const tagText = p.breached ? "BREACHED" : (p.vulnerable ? "VULNERABLE" : "SECURE");
-      pDiv.innerHTML = `<span><strong>${p.port}/tcp</strong> ${p.service} (${p.version})</span><span class="${tagClass}">[${tagText}]</span>`;
+      pDiv.innerHTML = `<span><strong>${p.port}/tcp</strong> ${p.service} (${p.version})${fwTag}</span><span class="${tagClass}">[${tagText}]</span>`;
       portsList.appendChild(pDiv);
     });
   }
@@ -1213,3 +1303,218 @@ async function openWorkshopModal() {
 
   document.getElementById("modal-workshop").classList.remove("hidden");
 }
+
+// ==========================================================================
+// 10. Weaponized CVE Exploit Arsenal Modal
+// ==========================================================================
+async function openCvesModal() {
+  sfx.click();
+  const data = await apiGet("/api/cves");
+  const cves = (data && data.cves) ? data.cves : (state.data && state.data.known_cves ? state.data.known_cves : []);
+
+  document.getElementById("cves-count").textContent = cves.length;
+  const grid = document.getElementById("cves-grid");
+  grid.innerHTML = "";
+
+  cves.forEach((c) => {
+    const card = document.createElement("div");
+    card.className = "cve-card";
+    card.innerHTML = `
+      <div class="cve-header">
+        <span class="cve-id">${c.cve_id}</span>
+        <span class="cve-badge">${c.target_service.toUpperCase()} SERVICE</span>
+      </div>
+      <div class="cve-name">${c.name}</div>
+      <div class="cve-meta-row">
+        <span>RAM: <strong>${c.required_ram_mb}MB</strong></span>
+        <span>CPU: <strong>${c.cpu_cost} Cycles</strong></span>
+        <span>STEALTH: <strong>${c.stealth_rating}/5</strong></span>
+        <span>TRACE: <strong>+${c.damage_trace}%</strong></span>
+      </div>
+      <div class="cve-desc">${c.description}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  document.getElementById("modal-cves").classList.remove("hidden");
+}
+
+// ==========================================================================
+// 11. Multi-Vector Social Engineering Suite
+// ==========================================================================
+function openSocialModal() {
+  if (!state.selectedNodeId) return;
+  const node = state.data.nodes[state.selectedNodeId];
+  if (!node) return;
+
+  sfx.click();
+  document.getElementById("social-target-name").textContent = node.hostname;
+  document.getElementById("social-target-ip").textContent = node.ip_address;
+
+  // Render employees
+  const empGrid = document.getElementById("social-employees-grid");
+  empGrid.innerHTML = "";
+  const employees = node.employees || [];
+
+  if (employees.length === 0) {
+    empGrid.innerHTML = '<span class="empty-chips">No identifiable staff on host. Using default associate.</span>';
+    state.selectedEmployee = null;
+  } else {
+    state.selectedEmployee = employees[0].name;
+    employees.forEach((emp, idx) => {
+      const card = document.createElement("div");
+      card.className = `employee-card ${idx === 0 ? "selected" : ""}`;
+      const badgeClass = (emp.awareness_level || "STANDARD").toLowerCase();
+      card.innerHTML = `
+        <div class="employee-name">${emp.name}</div>
+        <div class="employee-role">${emp.role}</div>
+        <span class="employee-badge ${badgeClass}">${emp.awareness_level}</span>
+      `;
+      card.addEventListener("click", () => {
+        sfx.click();
+        empGrid.querySelectorAll(".employee-card").forEach(c => c.classList.remove("selected"));
+        card.classList.add("selected");
+        state.selectedEmployee = emp.name;
+      });
+      empGrid.appendChild(card);
+    });
+  }
+
+  // Setup vector cards selection
+  const vectorCards = document.querySelectorAll("#social-vectors-grid .vector-card");
+  vectorCards.forEach((card) => {
+    card.onclick = () => {
+      sfx.click();
+      vectorCards.forEach(c => c.classList.remove("selected"));
+      card.classList.add("selected");
+      state.selectedVector = card.dataset.vector;
+    };
+  });
+
+  document.getElementById("modal-social").classList.remove("hidden");
+}
+
+async function executeSocialAttack() {
+  if (!state.selectedNodeId) return;
+  sfx.scan();
+  addTerminalLog(`⚡ Launching ${state.selectedVector.toUpperCase()} campaign against ${state.selectedNodeId}...`, "info");
+  document.getElementById("modal-social").classList.add("hidden");
+
+  const res = await apiPost("/api/action", {
+    action: "social",
+    target: state.selectedNodeId,
+    vector: state.selectedVector || "spear_phish",
+    employee: state.selectedEmployee,
+  });
+
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+    updateTargetCard(state.selectedNodeId);
+  } else if (res) {
+    sfx.alarm();
+    addTerminalLog(res.message || "Social engineering campaign failed.", "danger");
+    if (res.state) {
+      state.data = res.state;
+      renderHUD(res.state);
+      updateTargetCard(state.selectedNodeId);
+    }
+  }
+}
+
+// ==========================================================================
+// 12. Firewall Ingress Bypass & Antivirus Evasion Handlers
+// ==========================================================================
+function openBypassModal() {
+  if (!state.selectedNodeId) return;
+  const node = state.data.nodes[state.selectedNodeId];
+  if (!node || !node.firewall) return;
+
+  sfx.click();
+  const blockedRules = (node.firewall.rules || []).filter(r => r.action === "BLOCK" && !r.bypassed);
+  if (blockedRules.length === 0) {
+    addTerminalLog("No active blocked firewall rules to bypass on this host.", "info");
+    return;
+  }
+
+  const targetPort = blockedRules[0].port;
+  document.getElementById("bypass-target-info").innerHTML = `
+    <div>TARGET HOST: <strong>${node.hostname} (${node.ip_address})</strong></div>
+    <div>BLOCKED PORT: <strong style="color:var(--c-danger);">${targetPort}/tcp</strong> | POLICY: <strong>${node.firewall.policy}</strong></div>
+  `;
+
+  const grid = document.getElementById("bypass-methods-grid");
+  grid.innerHTML = "";
+
+  const methods = [
+    { key: "knock", name: "Port Knocking Sequence (TCP SYN)", cost: "1 CPU", trace: "+5% TRACE", desc: "Craft sequence of closed-port connection attempts to trigger dynamic firewall rule opening." },
+    { key: "fragment", name: "Packet Fragmentation Cloak", cost: "2 CPU", trace: "+3% TRACE", desc: "Split malicious TCP headers across microscopic MTU IP fragments to evade stateful inspection." },
+    { key: "tunnel", name: "Proxy Tunnel Injection", cost: "2 CPU", trace: "+2% TRACE", desc: "Encapsulate port payloads inside legitimate SSH/HTTP tunnel to silently pass ingress inspection." },
+  ];
+
+  methods.forEach((m) => {
+    const card = document.createElement("div");
+    card.className = "bypass-method-card";
+    card.innerHTML = `
+      <div>
+        <div class="bypass-method-name">${m.name}</div>
+        <div class="bypass-method-desc">${m.desc}</div>
+      </div>
+      <div style="text-align:right;">
+        <span style="font-size:10px; color:var(--c-accent);">${m.cost}</span><br>
+        <span style="font-size:9px; color:var(--c-warning);">${m.trace}</span>
+      </div>
+    `;
+    card.addEventListener("click", async () => {
+      sfx.click();
+      document.getElementById("modal-bypass").classList.add("hidden");
+      addTerminalLog(`Injecting ${m.name} on ${node.hostname}:${targetPort}...`, "info");
+      const res = await apiPost("/api/action", {
+        action: "bypass",
+        target: state.selectedNodeId,
+        port: targetPort,
+        method: m.key,
+      });
+      if (res && res.ok) {
+        sfx.success();
+        addTerminalLog(res.message, "success");
+        state.data = res.state;
+        renderHUD(res.state);
+        updateTargetCard(state.selectedNodeId);
+      } else if (res) {
+        sfx.failure();
+        addTerminalLog(res.message || "Firewall bypass failed.", "warn");
+      }
+    });
+    grid.appendChild(card);
+  });
+
+  document.getElementById("modal-bypass").classList.remove("hidden");
+}
+
+async function handleEvadeAv() {
+  if (!state.selectedNodeId) return;
+  const node = state.data.nodes[state.selectedNodeId];
+  if (!node || !node.antivirus) return;
+
+  sfx.click();
+  addTerminalLog(`Deploying Kernel Rootkit Evasion Hook against ${node.antivirus.name}...`, "info");
+  const res = await apiPost("/api/action", {
+    action: "evade",
+    target: state.selectedNodeId,
+    method: "rootkit",
+  });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+    updateTargetCard(state.selectedNodeId);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "AV evasion failed.", "warn");
+  }
+}
+

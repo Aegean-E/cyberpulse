@@ -91,6 +91,7 @@
           <button class="action-btn" id="btn-scan" title="Scan surrounding nodes (+1 CPU recovery, +5% trace)">📡 SCAN MATRIX</button>
           <button class="action-btn" id="btn-spoof" title="Burn 3 CPU to reduce trace by 25%">🛡️ SPOOF PROXY</button>
           <button class="action-btn alert-action" id="btn-jackout" title="Safe extraction: bank credits and secure career streak">🚪 JACK OUT</button>
+          <button class="action-btn special-action" id="btn-cves-open" title="Weaponized Zero-Day CVE Exploit Arsenal">🎯 CVE ARSENAL</button>
           <button class="action-btn info-action" id="btn-rig-open" title="Inspect player CyberDeck virtual rig, local files & daemons">💻 LOCAL RIG</button>
           <button class="action-btn special-action" id="btn-workshop-open" title="Synthesize custom viruses & keyloggers">🧪 MALWARE LAB</button>
           <button class="action-btn special-action" id="btn-shop-open">🛒 BLACK MARKET</button>
@@ -145,14 +146,19 @@
             <div class="meta-item"><span class="lbl">HOSTNAME:</span> <span class="val" id="target-hostname">--</span></div>
             <div class="meta-item"><span class="lbl">HOST TYPE:</span> <span class="val" id="target-type">--</span></div>
             <div class="meta-item"><span class="lbl">SECURITY:</span> <span class="val" id="target-sec">--</span></div>
+            <div class="meta-item"><span class="lbl">FIREWALL:</span> <span class="val" id="target-firewall">--</span></div>
+            <div class="meta-item"><span class="lbl">ANTIVIRUS / EDR:</span> <span class="val" id="target-antivirus">--</span></div>
             <div class="meta-item"><span class="lbl">RAM BUFFER:</span> <span class="val" id="target-ram">--</span></div>
             <div class="meta-item"><span class="lbl">TRACE RISK:</span> <span class="val" id="target-trace">--</span></div>
           </div>
           <div class="target-actions" id="target-actions">
             <button class="hack-btn" id="btn-probe-node" disabled>📡 PROBE PORTS</button>
             <button class="hack-btn" id="btn-init-hack" disabled>💥 EXPLOIT SERVICE</button>
+            <button class="action-btn" id="btn-bypass-fw" disabled title="Inject port-knocking or fragmentation to bypass blocked firewall ports">🛡️ BYPASS FW</button>
+            <button class="action-btn" id="btn-evade-av" disabled title="Deploy kernel rootkit or signature morphing to blind host Antivirus">👁️‍🗨️ EVADE AV</button>
+            <button class="action-btn" id="btn-social-eng" disabled title="Multi-vector social engineering against target employees">🎭 SOCIAL ENG</button>
             <button class="move-btn" id="btn-move-node" disabled>🚀 JACK INTO NODE</button>
-            <button class="action-btn" id="btn-phish-node" disabled title="Send spear-phishing lure to employees">🎣 PHISH</button>
+            <button class="action-btn" id="btn-phish-node" style="display:none;" disabled></button>
             <button class="action-btn" id="btn-keylogger-node" disabled title="Deploy passive keylogger daemon on breached host">👾 KEYLOGGER</button>
             <button class="action-btn" id="btn-wipe-logs" disabled>🧹 WIPE LOGS</button>
           </div>
@@ -339,6 +345,78 @@
         <span>AVAILABLE FUNDS: <strong id="workshop-creds">100</strong> CRYPTOCREDS</span>
       </div>
       <div class="workshop-grid" id="workshop-recipes-grid"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Weaponized CVE Exploit Arsenal -->
+  <div class="modal-overlay hidden" id="modal-cves">
+    <div class="modal-box cve-modal-box">
+      <div class="modal-header">
+        <span class="modal-title">&gt;&gt; WEAPONIZED CVE ARSENAL // ZERO-DAY CATALOG &lt;&lt;</span>
+        <button class="modal-close" id="btn-close-cves">&times;</button>
+      </div>
+      <div class="modal-funds">
+        <span>EXPLOIT PAYLOADS IN FIRMWARE: <strong id="cves-count">0</strong> LOADED</span>
+      </div>
+      <div class="cves-grid" id="cves-grid"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Multi-Vector Social Engineering Suite -->
+  <div class="modal-overlay hidden" id="modal-social">
+    <div class="modal-box social-modal-box">
+      <div class="modal-header">
+        <span class="modal-title">&gt;&gt; MULTI-VECTOR SOCIAL ENGINEERING SUITE &lt;&lt;</span>
+        <button class="modal-close" id="btn-close-social">&times;</button>
+      </div>
+      <div class="social-target-banner">
+        <div><span class="lbl">TARGET HOST:</span> <span class="val highlight-value" id="social-target-name">--</span></div>
+        <div><span class="lbl">IP ADDRESS:</span> <span class="val" id="social-target-ip">--</span></div>
+      </div>
+      <div class="social-section">
+        <div class="social-section-title">1. TARGET EMPLOYEE PERSONNEL</div>
+        <div class="employees-grid" id="social-employees-grid"></div>
+      </div>
+      <div class="social-section">
+        <div class="social-section-title">2. SOCIAL INTRUSION VECTOR</div>
+        <div class="vectors-grid" id="social-vectors-grid">
+          <div class="vector-card selected" data-vector="spear_phish">
+            <div class="vector-icon">🎣</div>
+            <div class="vector-name">Spear-Phishing</div>
+            <div class="vector-desc">Targeted email credential lure. Cost: 1 CPU, Trace +6%.</div>
+          </div>
+          <div class="vector-card" data-vector="pretext">
+            <div class="vector-icon">🎭</div>
+            <div class="vector-name">Pretexting</div>
+            <div class="vector-desc">Executive IT impersonation. High success vs Naive/Standard.</div>
+          </div>
+          <div class="vector-card" data-vector="bait">
+            <div class="vector-icon">💾</div>
+            <div class="vector-name">Baiting Drop</div>
+            <div class="vector-desc">Drop infected USB key on premises. Exploits workplace curiosity.</div>
+          </div>
+          <div class="vector-card" data-vector="vishing">
+            <div class="vector-icon">📞</div>
+            <div class="vector-name">Voice Vishing</div>
+            <div class="vector-desc">Urgent phone helpdesk spoofing to bypass physical verification.</div>
+          </div>
+        </div>
+      </div>
+      <div class="social-action-row">
+        <button class="hack-btn" id="btn-execute-social">EXECUTE SOCIAL CAMPAIGN</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Firewall Bypass Injection -->
+  <div class="modal-overlay hidden" id="modal-bypass">
+    <div class="modal-box bypass-modal-box">
+      <div class="modal-header">
+        <span class="modal-title">&gt;&gt; FIREWALL INGRESS BYPASS // PACKET CRAFTING &lt;&lt;</span>
+        <button class="modal-close" id="btn-close-bypass">&times;</button>
+      </div>
+      <div class="bypass-target-info" id="bypass-target-info"></div>
+      <div class="bypass-methods-grid" id="bypass-methods-grid"></div>
     </div>
   </div>
 
