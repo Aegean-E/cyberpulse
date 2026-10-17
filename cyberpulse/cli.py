@@ -219,6 +219,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             profile.banked_creds = engine.deck.cryptocreds
             profile.lifetime_creds += engine.deck.cryptocreds
             save_mgr.save_career(profile)
+            save_mgr.delete_save()
             print("📂 Career progression profile updated.")
         return True
 
@@ -234,8 +235,8 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         print(msg)
         if ok:
             profile = save_mgr.load_career()
-            if parts[1] not in profile.purchased_upgrades:
-                profile.purchased_upgrades.append(parts[1])
+            profile.purchased_upgrades.append(parts[1])
+            profile.banked_creds = engine.deck.cryptocreds
             save_mgr.save_career(profile)
         return True
 
@@ -272,7 +273,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = parser.parse_args(argv)
     data_dir = args.data_dir or get_default_data_dir()
     save_mgr = SaveManager(data_dir)
-    engine = GameEngine(seed=args.seed)
+    career = save_mgr.load_career()
+    engine = GameEngine(seed=args.seed, career_profile=career)
 
     # Batch script execution mode
     if args.commands:
@@ -300,12 +302,16 @@ def main(argv: Optional[List[str]] = None) -> int:
         profile.successful_runs += 1
         profile.current_streak += 1
         profile.best_streak = max(profile.best_streak, profile.current_streak)
+        profile.banked_creds = engine.deck.cryptocreds
+        profile.lifetime_creds += engine.deck.cryptocreds
         save_mgr.save_career(profile)
+        save_mgr.delete_save()
     elif engine.state.is_game_over:
         print("\n💀 CONNECTION TERMINATED: Security ICE traced and burned your cyberdeck.")
         profile.failed_runs += 1
         profile.current_streak = 0
         save_mgr.save_career(profile)
+        save_mgr.delete_save()
 
     return 0
 

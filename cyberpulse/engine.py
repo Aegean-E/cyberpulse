@@ -5,11 +5,13 @@ from typing import Dict, List, Optional, Tuple
 
 from cyberpulse.models import (
     BountyContract,
+    CareerProfile,
     CyberDeck,
     GameState,
     Node,
     NodeStatus,
     NodeType,
+    apply_career_profile,
 )
 from cyberpulse.network import generate_network
 from cyberpulse.rewards import roll_breach_reward
@@ -18,11 +20,13 @@ from cyberpulse.rewards import roll_breach_reward
 class GameEngine:
     """Manages gameplay rules, push-your-luck risk, and victory/defeat conditions."""
 
-    def __init__(self, seed: int = 1337):
+    def __init__(self, seed: int = 1337, career_profile: Optional[CareerProfile] = None):
         self.seed = seed
         self.rng = random.Random(seed)
         self.nodes: Dict[str, Node] = generate_network(seed)
         self.deck: CyberDeck = CyberDeck()
+        if career_profile:
+            apply_career_profile(self.deck, career_profile)
 
         # Generate a procedural Syndicate Bounty Contract (Zeigarnik Effect)
         contract = BountyContract(

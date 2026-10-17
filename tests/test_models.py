@@ -10,6 +10,7 @@ from cyberpulse.models import (
     NodeStatus,
     NodeType,
     RewardType,
+    apply_career_profile,
 )
 
 
@@ -63,6 +64,21 @@ class TestModels(unittest.TestCase):
         self.assertEqual(restored.alias, "Phantom")
         self.assertEqual(restored.banked_creds, 1200)
         self.assertEqual(restored.current_streak, 3)
+
+    def test_apply_career_profile(self):
+        deck = CyberDeck()
+        profile = CareerProfile(
+            banked_creds=600,
+            purchased_upgrades=["overclock_cpu", "expand_ram", "ice_dampener", "logic_bomb"],
+        )
+        apply_career_profile(deck, profile)
+        self.assertEqual(deck.cryptocreds, 600)
+        self.assertEqual(deck.overclock_level, 1)
+        self.assertEqual(deck.max_cpu, 12)
+        self.assertEqual(deck.ram_boost_level, 1)
+        self.assertEqual(deck.max_ram, 96)
+        self.assertEqual(deck.ice_dampener_level, 1)
+        self.assertIn("logic_bomb", deck.exploits)
 
 
 if __name__ == "__main__":

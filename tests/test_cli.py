@@ -67,6 +67,17 @@ class TestCLI(unittest.TestCase):
         # Deck starts with 100 creds, overclock_cpu costs 150 creds -> should report insufficient funds
         self.assertIn("Insufficient funds", out)
 
+    def test_career_progression_across_sessions(self):
+        # Session 1: Hack proxy a and jackout safely to bank credits
+        self.run_cli("--seed", "1337", "--auto-solve", "--exec", "hack node_proxy_a;jackout")
+
+        # Session 2: Fresh CLI start should load career profile into active deck
+        code, out = self.run_cli("--seed", "9999", "--exec", "status;career")
+        self.assertEqual(code, 0)
+        self.assertIn("Heists Cleared:   1 successful", out)
+        # Deck funds should match banked creds (> 100)
+        self.assertIn("Creds: 150", out)
+
 
 if __name__ == "__main__":
     unittest.main()

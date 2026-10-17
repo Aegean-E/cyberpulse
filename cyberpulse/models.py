@@ -106,6 +106,24 @@ class CyberDeck:
         return cls(**data)
 
 
+def apply_career_profile(deck: CyberDeck, profile: CareerProfile) -> None:
+    """Apply persistent upgrades and synchronize banked funds into an active cyberdeck."""
+    deck.cryptocreds = profile.banked_creds
+    for up in profile.purchased_upgrades:
+        if up == "overclock_cpu":
+            deck.overclock_level += 1
+            deck.max_cpu += 2
+            deck.cpu_cycles = max(deck.cpu_cycles, deck.max_cpu)
+        elif up == "expand_ram":
+            deck.ram_boost_level += 1
+            deck.max_ram += 32
+            deck.ram_mb = max(deck.ram_mb, deck.max_ram)
+        elif up == "ice_dampener":
+            deck.ice_dampener_level += 1
+        elif up not in deck.exploits:
+            deck.exploits.append(up)
+
+
 @dataclass
 class GameState:
     """The full runtime state of a CyberPulse infiltration run."""
