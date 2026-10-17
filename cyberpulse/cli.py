@@ -139,6 +139,20 @@ def print_daemons(engine: GameEngine) -> None:
     print("+==========================================================================+")
 
 
+def print_cves(engine: GameEngine) -> None:
+    print("\n+==========================================================================+")
+    print("|             >> WEAPONIZED CVE VULNERABILITY EXPLOIT CATALOG <<          |")
+    print("+==========================================================================+")
+    cves = engine.list_cves()
+    for c in cves:
+        print(f"   * {c['cve_id']:<15} | {c['name']:<28} | Target: {c['target_service'].upper():<5}")
+        print(f"     RAM: {c['required_ram_mb']}MB | CPU: {c['cpu_cost']} | Stealth: {c['stealth_rating']}/5 | Trace: +{c['damage_trace']}%")
+        print(f"     {c['description']}")
+    print("--------------------------------------------------------------------------")
+    print("Deploy with: exploit <ip> <port> [cve_id] (e.g. `exploit 192.168.1.10 21 cve-2011-2523`)")
+    print("+==========================================================================+")
+
+
 def execute_hack_puzzle(engine: GameEngine, target_id: str, auto_solve: bool = False) -> bool:
     can_hack, reason = engine.can_hack_node(target_id)
     if not can_hack:
@@ -272,7 +286,8 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             return True
         # Check if second arg is digit -> service port exploit
         if len(parts) >= 3 and parts[2].isdigit():
-            ok, msg = engine.exploit_service(parts[1], int(parts[2]))
+            cve_arg = parts[3] if len(parts) > 3 else None
+            ok, msg = engine.exploit_service(parts[1], int(parts[2]), cve_id=cve_arg)
             print(msg)
             return True
         exploit_name = parts[1]
@@ -401,6 +416,51 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         print_daemons(engine)
         return True
 
+    if action in ("cve", "cves", "exploits"):
+        print_cves(engine)
+        return True
+
+    if action in ("firewall", "fw"):
+        target = parts[1] if len(parts) > 1 else engine.state.current_node_id
+        ok, msg, _ = engine.get_firewall_status(target)
+        print(msg)
+        return True
+
+    if action in ("bypass", "bypass_firewall"):
+        if len(parts) < 3:
+            print("Usage: bypass <ip> <port> [knock | fragment | tunnel] (e.g. `bypass 192.168.1.20 22 knock`)")
+            return True
+        target = parts[1]
+        port = int(parts[2])
+        method = parts[3] if len(parts) > 3 else "knock"
+        ok, msg = engine.bypass_firewall(target, port, method)
+        print(msg)
+        return True
+
+    if action in ("av", "antivirus", "edr"):
+        target = parts[1] if len(parts) > 1 else engine.state.current_node_id
+        ok, msg, _ = engine.get_antivirus_status(target)
+        print(msg)
+        return True
+
+    if action in ("evade", "evade_av", "kill_av"):
+        target = parts[1] if len(parts) > 1 else engine.state.current_node_id
+        method = parts[2] if len(parts) > 2 else "rootkit"
+        ok, msg = engine.evade_antivirus(target, method)
+        print(msg)
+        return True
+
+    if action in ("social", "social_engineer", "pretext", "vishing", "bait"):
+        if len(parts) < 2:
+            print("Usage: social <ip> [pretext | bait | spear_phish | vishing] [employee_name]")
+            return True
+        target = parts[1]
+        vector = parts[2] if len(parts) > 2 else (action if action in ("pretext", "vishing", "bait") else "pretext")
+        emp = parts[3] if len(parts) > 3 else None
+        ok, msg, _ = engine.social_engineer(target, vector=vector, employee_name=emp)
+        print(msg)
+        return True
+
     if action == "career":
         print_career(save_mgr.load_career())
         return True
@@ -419,7 +479,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("No saved game found.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: probe, exploit, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, spoof, cash_out, shop, buy, career, status, save, load, quit")
+    print(f"Unknown command: '{action}'. Commands: probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, spoof, cash_out, shop, buy, career, status, save, load, quit")
     return True
 
 

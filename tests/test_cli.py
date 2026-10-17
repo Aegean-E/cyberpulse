@@ -136,7 +136,31 @@ class TestCLI(unittest.TestCase):
         self.assertIn("ACTIVE BACKGROUND MALWARE DAEMONS", out)
 
 
+    def test_cli_cyber_warfare_commands(self):
+        batch_cmds = (
+            "cve;"
+            "firewall 192.168.1.20;"
+            "bypass 192.168.1.20 22 knock;"
+            "av 192.168.1.20;"
+            "evade 192.168.1.20 rootkit;"
+            "social 192.168.1.10 pretext;"
+            "exploit 192.168.1.10 21 cve-2011-2523"
+        )
+        code, out = self.run_cli("--seed", "1337", "--exec", batch_cmds)
+        self.assertEqual(code, 0)
+        self.assertIn("WEAPONIZED CVE VULNERABILITY EXPLOIT CATALOG", out)
+        self.assertIn("FIREWALL REPORT", out)
+        self.assertIn("Port 22/tcp: [BLOCKED]", out)
+        self.assertIn("FIREWALL BYPASSED", out)
+        self.assertIn("ANTIVIRUS REPORT", out)
+        self.assertIn("ANTIVIRUS EVADED", out)
+        self.assertIn("SOCIAL ENGINEERING SUCCESS", out)
+        self.assertIn("CVE-2011-2523", out)
+        self.assertIn("EXPLOIT SUCCESSFUL", out)
+
+
 if __name__ == "__main__":
     unittest.main()
+
 
 
