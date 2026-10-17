@@ -26,6 +26,24 @@ class TestNetwork(unittest.TestCase):
             self.assertEqual(net1[k].name, net2[k].name)
             self.assertEqual(net1[k].connected_ids, net2[k].connected_ids)
 
+    def test_network_simulation_topology(self):
+        nodes = generate_network(seed=42)
+        for node in nodes.values():
+            self.assertTrue(node.ip_address.count(".") == 3, f"{node.node_id} has invalid IP")
+            self.assertTrue(len(node.hostname) > 0, f"{node.node_id} has empty hostname")
+            self.assertTrue(len(node.ports) >= 1, f"{node.node_id} has no open ports")
+            self.assertTrue(len(node.filesystem) >= 1, f"{node.node_id} has empty filesystem")
+
+        # Specific node checks
+        vault = nodes["node_vault_1"]
+        self.assertEqual(vault.ip_address, "10.0.4.15")
+        self.assertTrue(any(p.port == 3306 for p in vault.ports))
+        self.assertTrue(any(f.path == "/data/corporate_slush_fund.csv" and f.is_target_data for f in vault.filesystem))
+
+        proxy_a = nodes["node_proxy_a"]
+        self.assertEqual(proxy_a.ip_address, "192.168.1.10")
+        self.assertTrue(any(p.port == 21 and p.vulnerable for p in proxy_a.ports))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -25,11 +25,50 @@ class RewardType:
 
 
 @dataclass
+class PortService:
+    """An exposed TCP/UDP network service on a target host."""
+    port: int
+    service: str  # "ssh", "ftp", "http", "mysql", "smtp"
+    version: str
+    vulnerable: bool = True
+    exploit_tool: str = "ssh_overflow"
+    breached: bool = False
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "PortService":
+        return cls(**data)
+
+
+@dataclass
+class VirtualFile:
+    """A file stored on a target host's virtual filesystem."""
+    path: str
+    size_kb: int
+    content: str
+    is_target_data: bool = False
+    value_creds: int = 150
+    downloaded: bool = False
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "VirtualFile":
+        return cls(**data)
+
+
+@dataclass
 class BountyContract:
     """A syndicate-issued objective with bonus rewards upon fulfillment (Zeigarnik Effect)."""
     contract_id: str
     title: str
     target_node_type: str
+    target_ip: Optional[str] = None
+    target_file: Optional[str] = None
+    wipe_logs_required: bool = False
     max_trace_limit: int = 75
     reward_creds: int = 150
     completed: bool = False
@@ -75,13 +114,30 @@ class Node:
     credits_reward: int = 0
     data_payload: Optional[str] = None
     puzzle_type: Optional[str] = None  # "frequency", "buffer", "hash"
+    ip_address: str = "127.0.0.1"
+    hostname: str = "localhost"
+    ports: List[PortService] = field(default_factory=list)
+    filesystem: List[VirtualFile] = field(default_factory=list)
+    logs_cleared: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        res = asdict(self)
+        res["ports"] = [p.to_dict() if hasattr(p, "to_dict") else p for p in self.ports]
+        res["filesystem"] = [f.to_dict() if hasattr(f, "to_dict") else f for f in self.filesystem]
+        return res
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Node":
-        return cls(**data)
+        data_clean = dict(data)
+        if "ports" in data_clean and isinstance(data_clean["ports"], list):
+            data_clean["ports"] = [
+                PortService.from_dict(p) if isinstance(p, dict) else p for p in data_clean["ports"]
+            ]
+        if "filesystem" in data_clean and isinstance(data_clean["filesystem"], list):
+            data_clean["filesystem"] = [
+                VirtualFile.from_dict(f) if isinstance(f, dict) else f for f in data_clean["filesystem"]
+            ]
+        return cls(**data_clean)
 
 
 @dataclass

@@ -9,13 +9,17 @@ from cyberpulse.models import (
     Node,
     NodeStatus,
     NodeType,
+    PortService,
     RewardType,
+    VirtualFile,
     apply_career_profile,
 )
 
 
 class TestModels(unittest.TestCase):
     def test_node_roundtrip(self):
+        port = PortService(port=22, service="ssh", version="OpenSSH 7.2", vulnerable=True)
+        vfile = VirtualFile(path="/etc/passwd", size_kb=2, content="root:x:0:0", value_creds=10)
         node = Node(
             node_id="n1",
             name="Proxy Server",
@@ -25,12 +29,37 @@ class TestModels(unittest.TestCase):
             connected_ids=["n2"],
             trace_rate=15,
             credits_reward=100,
+            ip_address="192.168.1.10",
+            hostname="proxy.alpha",
+            ports=[port],
+            filesystem=[vfile],
         )
         data = node.to_dict()
         restored = Node.from_dict(data)
         self.assertEqual(restored.node_id, "n1")
         self.assertEqual(restored.node_type, NodeType.FIREWALL)
         self.assertEqual(restored.credits_reward, 100)
+        self.assertEqual(restored.ip_address, "192.168.1.10")
+        self.assertEqual(restored.hostname, "proxy.alpha")
+        self.assertEqual(len(restored.ports), 1)
+        self.assertEqual(restored.ports[0].port, 22)
+        self.assertEqual(restored.ports[0].service, "ssh")
+        self.assertEqual(len(restored.filesystem), 1)
+        self.assertEqual(restored.filesystem[0].path, "/etc/passwd")
+
+    def test_port_and_file_roundtrip(self):
+        port = PortService(port=3306, service="mysql", version="MariaDB 10.3", vulnerable=True, exploit_tool="sql_inject")
+        p_dict = port.to_dict()
+        p_restored = PortService.from_dict(p_dict)
+        self.assertEqual(p_restored.port, 3306)
+        self.assertEqual(p_restored.exploit_tool, "sql_inject")
+
+        vfile = VirtualFile(path="/data/secret.csv", size_kb=16, content="confidential", value_creds=200, is_target_data=True)
+        f_dict = vfile.to_dict()
+        f_restored = VirtualFile.from_dict(f_dict)
+        self.assertEqual(f_restored.path, "/data/secret.csv")
+        self.assertEqual(f_restored.value_creds, 200)
+        self.assertTrue(f_restored.is_target_data)
 
     def test_deck_roundtrip(self):
         deck = CyberDeck(cryptocreds=500, cpu_cycles=8, ice_dampener_level=1)
