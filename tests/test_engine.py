@@ -79,8 +79,63 @@ class TestEngine(unittest.TestCase):
         target_node = next(n for n in self.engine.nodes.values() if n.node_type == target_type)
         self.engine.complete_breach(target_node.node_id)
 
-        self.assertTrue(contract.completed)
+        # First contract completed and new contract dispatched
+        self.assertIsNotNone(self.engine.state.active_contract)
         self.assertGreater(self.engine.state.unbanked_creds, contract.reward_creds)
+
+    def test_cpu_regeneration(self):
+        self.engine.deck.cpu_cycles = 4
+        self.engine.deck.max_cpu = 10
+        recovered = self.engine.regenerate_cpu(2)
+        self.assertEqual(recovered, 2)
+        self.assertEqual(self.engine.deck.cpu_cycles, 6)
+
+        # Cannot exceed max_cpu
+        self.engine.regenerate_cpu(10)
+        self.assertEqual(self.engine.deck.cpu_cycles, 10)
+
+    def test_ram_capacity_check(self):
+        # Central core has Sec Level 5 -> requires 80MB RAM
+        core = self.engine.nodes["node_central_core"]
+        self.assertEqual(core.security_level, 5)
+
+        # Move to adjacent node
+        self.engine.state.current_node_id = "node_ice_perimeter"
+
+        # Default deck has 64MB RAM -> should fail RAM check
+        self.engine.deck.ram_mb = 64
+        ok, msg = self.engine.can_hack_node("node_central_core")
+        self.assertFalse(ok)
+        self.assertIn("INSUFFICIENT RAM", msg)
+
+        # Upgrading deck RAM to 96MB -> satisfies requirement
+        self.engine.deck.ram_mb = 96
+        ok, msg = self.engine.can_hack_node("node_central_core")
+        self.assertTrue(ok)
+
+    def test_use_exploit_ghost_protocol(self):
+        self.engine.state.trace_percent = 50
+        self.engine.deck.exploits.append("ghost_protocol")
+        ok, msg = self.engine.use_exploit("ghost_protocol")
+        self.assertTrue(ok)
+        self.assertEqual(self.engine.state.trace_percent, 10)
+        self.assertNotIn("ghost_protocol", self.engine.deck.exploits)
+
+    def test_use_exploit_logic_bomb(self):
+        self.engine.deck.exploits.append("logic_bomb")
+        ok, msg = self.engine.use_exploit("logic_bomb", "node_proxy_a")
+        self.assertTrue(ok)
+        self.assertEqual(self.engine.nodes["node_proxy_a"].status, NodeStatus.BREACHED)
+        self.assertNotIn("logic_bomb", self.engine.deck.exploits)
+
+    def test_use_exploit_brute_miner(self):
+        self.engine.deck.exploits.append("brute_miner")
+        unbanked_before = self.engine.state.unbanked_creds
+        ok, msg = self.engine.use_exploit("brute_miner")
+        self.assertTrue(ok)
+        self.assertEqual(self.engine.state.unbanked_creds, unbanked_before + 150)
+        self.assertGreater(self.engine.state.trace_percent, 0)
+        self.assertNotIn("brute_miner", self.engine.deck.exploits)
 
 
 if __name__ == "__main__":

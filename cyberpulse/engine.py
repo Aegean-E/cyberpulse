@@ -73,6 +73,12 @@ class GameEngine:
                 f"🚨 SECURITY TRACE LOCKOUT DETECTED! Connection severed. Lost {lost_loot} unbanked Creds!"
             )
 
+    def regenerate_cpu(self, amount: int = 1) -> int:
+        """Cool down cyberdeck processing units and recover CPU cycles."""
+        old = self.deck.cpu_cycles
+        self.deck.cpu_cycles = min(self.deck.max_cpu, self.deck.cpu_cycles + amount)
+        return self.deck.cpu_cycles - old
+
     def spoof_ip(self) -> Tuple[bool, str]:
         """Reduce active trace level by burning CPU cycles."""
         if self.deck.cpu_cycles < 3:
@@ -96,8 +102,9 @@ class GameEngine:
                 revealed.append(node)
 
         self.add_trace(5)
+        self.regenerate_cpu(1)
         self.state.turns_elapsed += 1
-        return True, f"Scanned {len(revealed)} adjacent network nodes.", revealed
+        return True, f"Scanned {len(revealed)} adjacent network nodes. Recovered 1 CPU cycle.", revealed
 
     def can_move_to(self, target_id: str) -> Tuple[bool, str]:
         """Verify whether the player can transition to target node."""
@@ -126,11 +133,50 @@ class GameEngine:
 
         self.state.current_node_id = target_id
         self.state.turns_elapsed += 1
+        self.regenerate_cpu(1)
         self.add_trace(2)
         node = self.get_current_node()
-        msg = f"⚡ Transferred terminal session to '{node.name}'."
+        msg = f"⚡ Transferred terminal session to '{node.name}'. Recovered 1 CPU cycle."
         self.state.message_log.append(msg)
         return True, msg
+
+    def can_hack_node(self, target_id: str) -> Tuple[bool, str]:
+        """Verify whether player cyberdeck meets hardware requirements to attack node."""
+        if self.state.is_game_over:
+            return False, "Cannot hack: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot hack: terminal session jacked out."
+        if target_id not in self.nodes:
+            return False, f"Unknown node '{target_id}'."
+
+        node = self.nodes[target_id]
+        if node.status == NodeStatus.BREACHED:
+            return False, f"Node '{node.name}' is already breached."
+
+        curr = self.get_current_node()
+        if target_id not in curr.connected_ids and target_id != curr.node_id:
+            return False, f"Node '{node.name}' is not in direct subnet range of '{curr.name}'."
+
+        required_ram = node.security_level * 16
+        if self.deck.ram_mb < required_ram:
+            return False, f"INSUFFICIENT RAM: Infiltration requires {required_ram}MB buffer memory (deck has {self.deck.ram_mb}MB). Upgrade RAM in the Black Market shop."
+
+        return True, "Requirements met."
+
+    def dispatch_next_contract(self) -> Optional[BountyContract]:
+        """Dispatch a new Syndicate Bounty Contract after previous completion (Zeigarnik Effect)."""
+        targets = [NodeType.FIREWALL, NodeType.DATA_VAULT, NodeType.ICE_DEFENSE]
+        next_target = self.rng.choice(targets)
+        contract_num = self.state.turns_elapsed + 1
+        new_contract = BountyContract(
+            contract_id=f"cnt_{contract_num:03d}",
+            title=f"Syndicate Priority Bounty: Sector {next_target}",
+            target_node_type=next_target,
+            max_trace_limit=80,
+            reward_creds=175,
+        )
+        self.state.active_contract = new_contract
+        return new_contract
 
     def complete_breach(self, node_id: str) -> Tuple[bool, str]:
         """Mark node as breached, evaluate variable-ratio rewards, and check contracts."""
@@ -160,6 +206,7 @@ class GameEngine:
                 contract.completed = True
                 self.state.unbanked_creds += contract.reward_creds
                 msg += f" 🏆 CONTRACT FULFILLED! +{contract.reward_creds} Creds!"
+                self.dispatch_next_contract()
 
         # Unlock adjacent nodes to DISCOVERED
         for adj_id in node.connected_ids:
@@ -173,6 +220,51 @@ class GameEngine:
 
         self.state.message_log.append(msg)
         return True, msg
+
+    def use_exploit(self, exploit_name: str, target_id: Optional[str] = None) -> Tuple[bool, str]:
+        """Deploy an executable exploit chip loaded in cyberdeck firmware."""
+        name = exploit_name.lower().strip()
+        if name not in self.deck.exploits:
+            return False, f"Exploit '{name}' is not loaded in cyberdeck firmware."
+
+        if name == "ghost_protocol":
+            reduced = min(self.state.trace_percent, 40)
+            self.state.trace_percent = max(0, self.state.trace_percent - 40)
+            self.deck.exploits.remove(name)
+            msg = f"👻 GHOST PROTOCOL DEPLOYED! Neural signature masked. Trace dropped by {reduced}% (current: {self.state.trace_percent}%)."
+            self.state.message_log.append(msg)
+            return True, msg
+
+        if name == "logic_bomb":
+            if not target_id:
+                return False, "Usage: exploit logic_bomb <node_id>"
+            if target_id not in self.nodes:
+                return False, f"Unknown node '{target_id}'."
+            target = self.nodes[target_id]
+            if target.status == NodeStatus.BREACHED:
+                return False, f"Node '{target.name}' is already breached."
+            curr = self.get_current_node()
+            if target_id not in curr.connected_ids and target_id != curr.node_id:
+                return False, f"Target '{target.name}' is not in direct subnet range of '{curr.name}'."
+
+            self.deck.exploits.remove(name)
+            _, breach_msg = self.complete_breach(target_id)
+            msg = f"💣 LOGIC BOMB DETONATED! Destroyed ICE defenses on '{target.name}'. {breach_msg}"
+            return True, msg
+
+        if name == "brute_miner":
+            curr = self.get_current_node()
+            if curr.status != NodeStatus.BREACHED:
+                return False, "Brute miner can only be executed on a securely breached node."
+            mined = 150
+            self.state.unbanked_creds += mined
+            self.add_trace(15)
+            self.deck.exploits.remove(name)
+            msg = f"⛏️ BRUTE MINER EXECUTED! Mined +{mined} unbanked CryptoCreds (Trace +15% -> {self.state.trace_percent}%)."
+            self.state.message_log.append(msg)
+            return True, msg
+
+        return False, f"Exploit '{name}' has no active payload handler."
 
     def jackout(self) -> Tuple[bool, str]:
         """Push-Your-Luck extraction: safely bank all unbanked credits and looted payloads."""
