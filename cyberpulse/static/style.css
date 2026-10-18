@@ -4,8 +4,8 @@
    ========================================================================== */
 
 :root {
-  --font-mono: 'Share Tech Mono', 'VT323', monospace;
-  --font-display: 'Orbitron', sans-serif;
+  --font-mono: 'Share Tech Mono', 'VT323', 'Cascadia Mono', Consolas, monospace;
+  --font-display: 'Orbitron', 'Bahnschrift', 'Segoe UI', system-ui, sans-serif;
 
   /* Theme Defaults: Phosphor Green */
   --c-primary: hsl(140, 100%, 50%);

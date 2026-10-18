@@ -4,7 +4,7 @@ CyberPulse is a retro-cyberpunk terminal hacking simulation game designed around
 
 ## ⚡ 30-Second Cold-Start Quick Reference
 
-- **Runtime Prerequisites**: git and Python 3.10+ (AIKit's gates).
+- **Runtime Prerequisites**: Python 3.10+ (standard library only; zero third-party packages required); a modern browser for the Web Cyberdeck.
 - **Canonical Regression Shield Gate**:
   ```bash
   python aikit.py check cyberpulse
@@ -42,7 +42,7 @@ cyberpulse/
 │   │   ├── index.html
 │   │   └── style.css
 │   └── storage.py            <- atomic persistence & career dossier management
-└── tests/                    <- sub-second unit & integration test suite
+└── tests/                    <- unit & integration test suite (about a second)
     ├── __init__.py
     ├── test_cli.py
     ├── test_engine.py
@@ -149,6 +149,6 @@ python -m cyberpulse.cli --seed 42069
 - **Deterministic State Engine**: Every network grid and puzzle sequence can be reproduced using `--seed <int>`.
 - **Power-Loss Safe Savegames & Shadow Backup**: Uses atomic temporary file writes, `fsync`, `.bak` shadow recovery, and corruption quarantine to eliminate state loss risk.
 - **Dynamic Resource Loop**: Turn-based CPU cooling (+1/turn) and hardware RAM constraints (`security_level * 16` MB).
-- **Sub-Second Test Shield**: 100% test pass rate across unit and integration suites in under 0.5s via `python -m unittest discover`.
+- **Fast Test Shield**: 100% test pass rate across unit and integration suites in about a second via `python -m unittest discover`.
 
 

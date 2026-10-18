@@ -220,13 +220,14 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
         self.serve_static(path)
 
     def serve_static(self, path: str) -> None:
+        static_root = STATIC_DIR.resolve()
         if path in ("", "/"):
-            req_file = STATIC_DIR / "index.html"
+            req_file = static_root / "index.html"
         else:
             rel = path.lstrip("/")
-            req_file = STATIC_DIR / rel
+            req_file = (static_root / rel).resolve()
 
-        if not req_file.exists() or not req_file.is_file():
+        if not req_file.is_relative_to(static_root) or not req_file.is_file():
             self.send_error(HTTPStatus.NOT_FOUND, f"Asset '{path}' not found")
             return
 
@@ -284,8 +285,9 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                     profile.successful_runs += 1
                     profile.current_streak += 1
                     profile.best_streak = max(profile.best_streak, profile.current_streak)
+                    gained = max(0, engine.deck.cryptocreds + engine.state.unbanked_creds - profile.banked_creds)
                     profile.banked_creds = engine.deck.cryptocreds
-                    profile.lifetime_creds += engine.deck.cryptocreds
+                    profile.lifetime_creds += gained
                     save_mgr.save_career(profile)
                     save_mgr.delete_save()
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
@@ -317,7 +319,11 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
 
             if action == "exploit_service":
                 target = payload.get("target") or engine.state.current_node_id
-                port = int(payload.get("port", 0))
+                try:
+                    port = int(payload.get("port", 0))
+                except (TypeError, ValueError):
+                    self.send_json_response({"ok": False, "error": "Port must be an integer"}, HTTPStatus.BAD_REQUEST)
+                    return
                 cve_id = payload.get("cve_id")
                 ok, msg = engine.exploit_service(target, port, cve_id=cve_id)
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
@@ -325,7 +331,11 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
 
             if action in ("bypass_firewall", "bypass"):
                 target = payload.get("target") or engine.state.current_node_id
-                port = int(payload.get("port", 0))
+                try:
+                    port = int(payload.get("port", 0))
+                except (TypeError, ValueError):
+                    self.send_json_response({"ok": False, "error": "Port must be an integer"}, HTTPStatus.BAD_REQUEST)
+                    return
                 method = payload.get("method", "knock")
                 ok, msg = engine.bypass_firewall(target, port, method)
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})

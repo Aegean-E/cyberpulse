@@ -4,6 +4,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from cyberpulse.engine import GameEngine
 from cyberpulse.models import CareerProfile
@@ -109,6 +110,19 @@ class TestStorage(unittest.TestCase):
         import random
         expected_roll = random.Random(123 + 15).random()
         self.assertEqual(loaded.rng.random(), expected_roll)
+
+    def test_failed_replace_reports_no_save(self):
+        engine = GameEngine(seed=5)
+
+        with (
+            mock.patch("cyberpulse.storage.os.replace", side_effect=OSError("locked")),
+            mock.patch("cyberpulse.storage.time.sleep"),
+        ):
+            path = self.save_mgr.save(engine)
+
+        self.assertIsNone(path)
+        self.assertFalse(self.save_mgr.save_file.exists())
+        self.assertEqual(list(self.temp_dir.glob(".tmp_*")), [])
 
 
 if __name__ == "__main__":

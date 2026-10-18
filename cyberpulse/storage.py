@@ -4,6 +4,7 @@ import json
 import os
 import random
 import shutil
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -21,30 +22,31 @@ class SaveManager:
         self.save_file = self.data_dir / "savegame.json"
         self.career_file = self.data_dir / "career.json"
 
-    def _write_atomic(self, target_path: Path, data: Any) -> Path:
-        """Write JSON payload to target_path atomically using tempfile, fsync, and backup."""
-        temp_path = self.data_dir / f".tmp_{target_path.name}_{int(time.time() * 1000)}"
+    def _write_atomic(self, target_path: Path, data: Any) -> Optional[Path]:
+        """Write JSON payload to target_path atomically; returns None when the replace never lands."""
         backup_path = target_path.with_suffix(".bak")
 
         payload = json.dumps(data, indent=2)
-        with open(temp_path, "w", encoding="utf-8") as f:
-            f.write(payload)
-            f.flush()
-            os.fsync(f.fileno())
+        fd, temp_name = tempfile.mkstemp(dir=self.data_dir, prefix=f".tmp_{target_path.name}_")
+        temp_path = Path(temp_name)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(payload)
+                f.flush()
+                os.fsync(f.fileno())
 
-        if target_path.exists():
-            shutil.copy2(target_path, backup_path)
+            if target_path.exists():
+                shutil.copy2(target_path, backup_path)
 
-        for _ in range(5):
-            try:
-                os.replace(temp_path, target_path)
-                return target_path
-            except OSError:
-                time.sleep(0.02)
-
-        if temp_path.exists():
+            for _ in range(5):
+                try:
+                    os.replace(temp_path, target_path)
+                    return target_path
+                except OSError:
+                    time.sleep(0.02)
+            return None
+        finally:
             temp_path.unlink(missing_ok=True)
-        return target_path
 
     def _read_json_with_backup(self, target_path: Path) -> Optional[Any]:
         """Read JSON from target_path, falling back to shadow .bak if corrupted or missing."""
@@ -72,7 +74,7 @@ class SaveManager:
 
         return None
 
-    def save(self, engine: GameEngine) -> Path:
+    def save(self, engine: GameEngine) -> Optional[Path]:
         """Atomically persist engine state to disk."""
         data = {
             "seed": engine.seed,
@@ -103,7 +105,7 @@ class SaveManager:
         self.save_file.unlink(missing_ok=True)
         self.save_file.with_suffix(".bak").unlink(missing_ok=True)
 
-    def save_career(self, profile: CareerProfile) -> Path:
+    def save_career(self, profile: CareerProfile) -> Optional[Path]:
         """Atomically persist career meta-progression profile."""
         return self._write_atomic(self.career_file, profile.to_dict())
 

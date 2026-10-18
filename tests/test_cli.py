@@ -1,11 +1,13 @@
 """Integration tests for CyberPulse CLI."""
 
 import io
+import re
 import shutil
 import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 from cyberpulse.cli import main
 
@@ -68,6 +70,7 @@ class TestCLI(unittest.TestCase):
         self.assertIn("BLACK MARKET CYBER-VENDOR", out)
         # Deck starts with 100 creds, overclock_cpu costs 150 creds -> should report insufficient funds
         self.assertIn("Insufficient funds", out)
+        self.assertNotIn("Unknown command: 'buy'", out)
 
     def test_career_progression_across_sessions(self):
         # Session 1: Hack proxy a and jackout safely to bank credits
@@ -183,6 +186,31 @@ class TestCLI(unittest.TestCase):
         self.assertIsNotNone(prof2)
         self.assertEqual(prof2.failed_runs, 1)
         self.assertEqual(prof2.current_streak, 0)
+
+
+    def test_lifetime_creds_not_double_counted(self):
+        code, out = self.run_cli("--seed", "1337", "--auto-solve", "--exec", "hack node_proxy_a;jackout;career")
+        self.assertEqual(code, 0)
+        first_banked = int(re.search(r"Banked Funds:\s+(\d+)", out).group(1))
+        first_lifetime = int(re.search(r"Lifetime Stolen:\s+(\d+)", out).group(1))
+
+        code, out = self.run_cli("--seed", "1337", "--auto-solve", "--exec", "hack node_proxy_a;jackout;career")
+        self.assertEqual(code, 0)
+        second_banked = int(re.search(r"Banked Funds:\s+(\d+)", out).group(1))
+        second_lifetime = int(re.search(r"Lifetime Stolen:\s+(\d+)", out).group(1))
+
+        self.assertEqual(second_lifetime - first_lifetime, second_banked - first_banked)
+
+    def test_bypass_rejects_non_numeric_port(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "bypass 192.168.1.20 abc")
+        self.assertEqual(code, 0)
+        self.assertIn("Invalid port 'abc'", out)
+
+    def test_minigame_eof_stops_batch_without_traceback(self):
+        with mock.patch("builtins.input", side_effect=EOFError):
+            code, out = self.run_cli("--seed", "1337", "--exec", "hack node_proxy_a")
+        self.assertEqual(code, 0)
+        self.assertIn("Input stream closed", out)
 
 
 if __name__ == "__main__":

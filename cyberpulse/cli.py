@@ -24,8 +24,8 @@ def setup_terminal_encoding() -> None:
         if hasattr(stream, "reconfigure"):
             try:
                 stream.reconfigure(encoding="utf-8", errors="replace")
-            except Exception:
-                pass
+            except (ValueError, OSError):
+                pass  # detached or non-reconfigurable stream; plain prints still work
 
 
 def safe_print(msg: str) -> None:
@@ -35,8 +35,8 @@ def safe_print(msg: str) -> None:
     except UnicodeEncodeError:
         try:
             print(msg.encode("ascii", errors="replace").decode("ascii"))
-        except Exception:
-            pass
+        except (OSError, ValueError):
+            pass  # the fallback stream is unusable; there is nowhere left to report
 
 
 setup_terminal_encoding()
@@ -369,8 +369,9 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             profile.successful_runs += 1
             profile.current_streak += 1
             profile.best_streak = max(profile.best_streak, profile.current_streak)
+            gained = max(0, engine.deck.cryptocreds + engine.state.unbanked_creds - profile.banked_creds)
             profile.banked_creds = engine.deck.cryptocreds
-            profile.lifetime_creds += engine.deck.cryptocreds
+            profile.lifetime_creds += gained
             save_mgr.save_career(profile)
             save_mgr.delete_save()
             print("📂 Career progression profile updated.")
@@ -391,6 +392,8 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             profile.purchased_upgrades.append(parts[1])
             profile.banked_creds = engine.deck.cryptocreds
             save_mgr.save_career(profile)
+        return True
+
     if action in ("myip", "whoami"):
         print(f"[*] Cyberdeck Local Identity: {engine.deck.local_hostname} ({engine.deck.local_ip}) [{engine.deck.model_name}]")
         return True
@@ -445,7 +448,11 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("Usage: bypass <ip> <port> [knock | fragment | tunnel] (e.g. `bypass 192.168.1.20 22 knock`)")
             return True
         target = parts[1]
-        port = int(parts[2])
+        try:
+            port = int(parts[2])
+        except ValueError:
+            print(f"❌ Invalid port '{parts[2]}'. Usage: bypass <ip> <port> [knock | fragment | tunnel]")
+            return True
         method = parts[3] if len(parts) > 3 else "knock"
         ok, msg = engine.bypass_firewall(target, port, method)
         print(msg)
@@ -481,7 +488,10 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
 
     if action == "save":
         path = save_mgr.save(engine)
-        print(f"💾 Infiltration progress saved to {path}.")
+        if path:
+            print(f"💾 Infiltration progress saved to {path}.")
+        else:
+            print("❌ Save failed: the file could not be replaced after 5 attempts; progress is NOT persisted.")
         return True
 
     if action == "load":
@@ -508,8 +518,9 @@ def handle_run_completion(engine: GameEngine, save_mgr: SaveManager) -> Optional
         profile.successful_runs += 1
         profile.current_streak += 1
         profile.best_streak = max(profile.best_streak, profile.current_streak)
+        gained = max(0, engine.deck.cryptocreds + engine.state.unbanked_creds - profile.banked_creds)
         profile.banked_creds = engine.deck.cryptocreds
-        profile.lifetime_creds += engine.deck.cryptocreds
+        profile.lifetime_creds += gained
     elif engine.state.is_game_over:
         safe_print("\n💀 CONNECTION TERMINATED: Security ICE traced and burned your cyberdeck.")
         profile.failed_runs += 1
@@ -555,7 +566,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.commands:
         cmds = args.commands.split(";")
         for c in cmds:
-            if not run_command(c, engine, save_mgr, auto_solve=args.auto_solve):
+            try:
+                if not run_command(c, engine, save_mgr, auto_solve=args.auto_solve):
+                    break
+            except EOFError:
+                print("👋 Input stream closed during a minigame; stopping batch execution.")
                 break
         handle_run_completion(engine, save_mgr)
         return 0

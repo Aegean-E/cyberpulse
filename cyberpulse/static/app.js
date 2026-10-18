@@ -1450,7 +1450,7 @@ async function openWorkshopModal() {
 
     card.innerHTML = `
       <div class="recipe-info">
-        <div class="recipe-name">${recipe.name} (${recipe.recipe_id})</div>
+        <div class="recipe-name">${recipe.name} [${recipe.vector}]</div>
         <div class="recipe-desc">${recipe.description}</div>
       </div>
       <div class="recipe-action">
@@ -1462,7 +1462,7 @@ async function openWorkshopModal() {
     const craftBtn = card.querySelector(".craft-btn");
     craftBtn.addEventListener("click", async () => {
       sfx.click();
-      const res = await apiPost("/api/action", { action: "craft", recipe: recipe.recipe_id });
+      const res = await apiPost("/api/action", { action: "craft", recipe: recipe.name });
       if (res && res.ok) {
         sfx.jackpot();
         addTerminalLog(res.message, "success");
@@ -1628,8 +1628,8 @@ function openBypassModal() {
 
   const methods = [
     { key: "knock", name: "Port Knocking Sequence (TCP SYN)", cost: "1 CPU", trace: "+5% TRACE", desc: "Craft sequence of closed-port connection attempts to trigger dynamic firewall rule opening." },
-    { key: "fragment", name: "Packet Fragmentation Cloak", cost: "2 CPU", trace: "+3% TRACE", desc: "Split malicious TCP headers across microscopic MTU IP fragments to evade stateful inspection." },
-    { key: "tunnel", name: "Proxy Tunnel Injection", cost: "2 CPU", trace: "+2% TRACE", desc: "Encapsulate port payloads inside legitimate SSH/HTTP tunnel to silently pass ingress inspection." },
+    { key: "fragment", name: "Packet Fragmentation Cloak", cost: "1 CPU", trace: "+7% TRACE", desc: "Split malicious TCP headers across microscopic MTU IP fragments to evade stateful inspection." },
+    { key: "tunnel", name: "Proxy Tunnel Injection", cost: "2 CPU", trace: "+9% TRACE", desc: "Encapsulate port payloads inside legitimate SSH/HTTP tunnel to silently pass ingress inspection." },
   ];
 
   methods.forEach((m) => {

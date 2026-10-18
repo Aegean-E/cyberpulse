@@ -2,6 +2,7 @@
 
 import json
 import shutil
+import socket
 import tempfile
 import threading
 import unittest
@@ -95,6 +96,21 @@ class TestCyberdeckServer(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as ctx:
             self._get("/missing_asset.xyz")
         self.assertEqual(ctx.exception.code, 404)
+        ctx.exception.close()
+
+    def test_static_path_traversal_blocked(self):
+        # Raw socket: urllib would normalize dot segments before sending, hiding the defect.
+        # Two levels up from cyberpulse/static/ reaches the repository root README.md.
+        with socket.create_connection(("127.0.0.1", self.port), timeout=3) as sock:
+            sock.sendall(b"GET /../../README.md HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n")
+            response = b""
+            while True:
+                chunk = sock.recv(4096)
+                if not chunk:
+                    break
+                response += chunk
+        status_line = response.split(b"\r\n", 1)[0]
+        self.assertIn(b"404", status_line)
 
     def test_static_assets_served(self):
         # GET /
@@ -275,6 +291,24 @@ class TestCyberdeckServer(unittest.TestCase):
             self.assertIn("CVE-2011-2523", exp_cve["message"])
         finally:
             self._post("/api/action", {"action": "reset", "seed": 1337})
+
+
+    def test_malformed_port_is_rejected_with_json_error(self):
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            self._post("/api/action", {"action": "bypass", "target": "192.168.1.20", "port": "not-a-number"})
+        self.assertEqual(ctx.exception.code, 400)
+        payload = json.loads(ctx.exception.read().decode("utf-8"))
+        ctx.exception.close()
+        self.assertFalse(payload["ok"])
+
+    def test_craft_accepts_recipe_name_from_web_client(self):
+        self._post("/api/action", {"action": "reset", "seed": 1337})
+
+        status, res = self._post("/api/action", {"action": "craft", "recipe": "trace_cleaner"})
+
+        self.assertEqual(status, 200)
+        self.assertTrue(res["ok"])
+        self.assertIn("trace_cleaner", res["state"]["deck"]["exploits"])
 
 
 if __name__ == "__main__":
