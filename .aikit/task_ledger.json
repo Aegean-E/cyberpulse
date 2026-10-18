@@ -1,44 +1,14 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-hardening-and-evolution-v1",
-    "last_phase": "phase 3",
+    "task_id": "task-cyberpulse-review-fixes-v1",
+    "last_phase": "phase 4",
     "active_phase": 5,
     "status": "completed",
-    "updated_at": 1792268383.7344043,
-    "completed_at": 1792268392.5516346
+    "updated_at": 1792354022.0903203,
+    "completed_at": 1792354034.6899729
   },
   "checkpoints": [
-    {
-      "task_id": "task-hacker-simulation-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[2/4] Hacker simulation engine methods (probe, exploit, ls, cat, download, wipe_logs) and contract fulfillment with unit tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792263889.915851,
-      "timestamp_str": "2026-10-17 22:04:49"
-    },
-    {
-      "task_id": "task-hacker-simulation-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[3/4] Interactive CLI commands for hacker simulation (nmap/probe/exploit/ls/cat/download/wipe_logs/jackout) with unit & integration tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792264071.5817773,
-      "timestamp_str": "2026-10-17 22:07:51"
-    },
-    {
-      "task_id": "task-hacker-simulation-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[4/4] Web Cyberdeck simulation integration (IPs, open ports, files, log wiping), documentation in README.md, and Phase 4 completion",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792264213.4396133,
-      "timestamp_str": "2026-10-17 22:10:13"
-    },
     {
       "task_id": "task-hacker-simulation-v1",
       "phase": "completed",
@@ -222,6 +192,41 @@
       "status": "completed",
       "timestamp": 1792268392.551641,
       "timestamp_str": "2026-10-17 23:19:52"
+    },
+    {
+      "task_id": "task-cyberpulse-review-fixes-v1",
+      "phase": "phase 2",
+      "phase_num": 2,
+      "description": "[1/5] Plan: CLI buy fall-through, web crafting key, static path containment, port and EOF guards, honest save failure, lifetime-credit accounting, offline fonts, README claims",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792353770.4008212,
+      "timestamp_str": "2026-10-18 23:02:50",
+      "impact_assessment": {
+        "why": "An independent review confirmed user-facing defects: every buy prints 'Unknown command', browser crafting always fails, serve_static escapes its root (arbitrary local file read), malformed ports crash CLI and API, piped runs traceback on minigame input, a failed atomic replace still reports success, lifetime stolen double-counts banked credits, and two static assets load Google Fonts",
+        "benefits": "Purchases and crafting work, the web server cannot read files outside its static root, malformed input yields messages instead of tracebacks, saves never lie, career totals are correct, and the UI is fully offline",
+        "risks": "contract: craft payload key and lifetime_creds semantics change, _write_atomic may return None; dependency: none added; concurrency: unchanged; state: career.json and savegame schema unchanged",
+        "mitigation": "Failing-first tests per fix, full aikit check cyberpulse before the commit, ADR-009 records the semantic changes"
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-review-fixes-v1",
+      "phase": "phase 4",
+      "phase_num": 4,
+      "description": "[5/5] All fixes implemented and verified: 94/94 tests green, aikit check cyberpulse 4/4 gates, ADR-009 recorded; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792354022.0903203,
+      "timestamp_str": "2026-10-18 23:07:02"
+    },
+    {
+      "task_id": "task-cyberpulse-review-fixes-v1",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-review-fixes-v1' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792354034.689975,
+      "timestamp_str": "2026-10-18 23:07:14"
     }
   ]
 }
