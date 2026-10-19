@@ -1,33 +1,13 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-story-hardening-v1",
-    "last_phase": "phase 5",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1792433825.5772555,
-    "completed_at": 1792433825.7230344
+    "task_id": "task-cyberpulse-world-simulation-v1",
+    "last_phase": "implementation",
+    "active_phase": 3,
+    "status": "in_progress",
+    "updated_at": 1792437800.4819398
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-story-quests-v1",
-      "phase": "phase 4",
-      "phase_num": 4,
-      "description": "[milestone 6/6] Final quest gating: locked main quests cannot be accepted early and mission board shows LOCKED; 138/138 tests green; aikit fix/check 4/4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792371194.0741017,
-      "timestamp_str": "2026-10-19 03:53:14"
-    },
-    {
-      "task_id": "task-cyberpulse-story-quests-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-story-quests-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792371199.9798412,
-      "timestamp_str": "2026-10-19 03:53:19"
-    },
     {
       "task_id": "task-cyberpulse-endgame-legacy-v1",
       "phase": "phase 2",
@@ -227,6 +207,32 @@
       "status": "completed",
       "timestamp": 1792433825.7230358,
       "timestamp_str": "2026-10-19 21:17:05"
+    },
+    {
+      "task_id": "task-cyberpulse-world-simulation-v1",
+      "phase": "planning",
+      "phase_num": 2,
+      "description": "[1/5] Plan: Grid Pulse world simulation layer - clock/shifts, grid alert, generated news, ambient events, host re-securing, drifting market prices, CLI/Web surfaces, tests, ADR-015",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792437574.52709,
+      "timestamp_str": "2026-10-19 22:19:34",
+      "impact_assessment": {
+        "why": "The grid is static between runs: turns advance only to tick daemons, hosts never react to loud intrusions, black-market prices never move, and nothing in or out of game reports on the player's actions, so the advertised simulation depth is thin.",
+        "benefits": "A living-grid feedback loop: every turn advances an in-game clock and generates events; loud play raises grid alert, which drives headlines, patrol trace, host re-securing, and market prices, with consequences legible in both CLI and Web.",
+        "risks": "contract: GameState and Node gain additive defaulted fields and shop gains an optional price modifier; dependency: none (stdlib only); concurrency: server serializes sessions with its existing lock; state: old saves must load with default world state and nodes without breach ledgers",
+        "mitigation": "Additive dataclass defaults plus from_dict backfill, a dedicated deterministic world RNG independent from engine.rng, failing-first golden-path and old-save tests, aikit check after each milestone, and ADR-015 documenting the schema change."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-world-simulation-v1",
+      "phase": "implementation",
+      "phase_num": 3,
+      "description": "[milestone 1/5] World model and simulation core: NewsItem/WorldState with legacy-save backfill, Node breach ledger, world.py (clock/shifts, alert clamp, market drift, ambient events, grid response re-secure); 20 failing-first unit tests; test 174/174, aikit check 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792437800.4819398,
+      "timestamp_str": "2026-10-19 22:23:20"
     }
   ]
 }
