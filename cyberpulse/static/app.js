@@ -198,6 +198,34 @@ function initUIEvents() {
   document.getElementById("btn-shop-open").addEventListener("click", openShopModal);
   document.getElementById("btn-career-open").addEventListener("click", openCareerModal);
   document.getElementById("btn-reset-run").addEventListener("click", handleReset);
+  document.getElementById("btn-quests-open").addEventListener("click", openQuestsModal);
+  document.getElementById("btn-contacts-open").addEventListener("click", openContactsModal);
+  document.getElementById("btn-overdrive").addEventListener("click", handleOverdrive);
+
+  // Main menu
+  document.getElementById("menu-jack-in").addEventListener("click", () => {
+    document.getElementById("modal-main-menu").classList.add("hidden");
+    sfx.success();
+  });
+  document.getElementById("menu-new-run").addEventListener("click", async () => {
+    document.getElementById("modal-main-menu").classList.add("hidden");
+    await handleReset();
+  });
+  document.getElementById("menu-story").addEventListener("click", () => {
+    document.getElementById("modal-main-menu").classList.add("hidden");
+    openQuestsModal();
+  });
+  document.getElementById("menu-contacts").addEventListener("click", () => {
+    document.getElementById("modal-main-menu").classList.add("hidden");
+    openContactsModal();
+  });
+  document.getElementById("menu-career").addEventListener("click", () => {
+    document.getElementById("modal-main-menu").classList.add("hidden");
+    openCareerModal();
+  });
+  document.getElementById("menu-help").addEventListener("click", () => {
+    document.getElementById("main-menu-help").classList.toggle("hidden");
+  });
 
   // Target Actions
   document.getElementById("btn-probe-node").addEventListener("click", handleProbeNode);
@@ -238,6 +266,14 @@ function initUIEvents() {
     document.getElementById("modal-social").classList.add("hidden");
     sfx.click();
   });
+  document.getElementById("btn-close-quests").addEventListener("click", () => {
+    document.getElementById("modal-quests").classList.add("hidden");
+    sfx.click();
+  });
+  document.getElementById("btn-close-contacts").addEventListener("click", () => {
+    document.getElementById("modal-contacts").classList.add("hidden");
+    sfx.click();
+  });
   document.getElementById("btn-close-bypass").addEventListener("click", () => {
     document.getElementById("modal-bypass").classList.add("hidden");
     sfx.click();
@@ -276,6 +312,11 @@ function initUIEvents() {
       return;
     }
 
+    const mainMenu = document.getElementById("modal-main-menu");
+    if (mainMenu && !mainMenu.classList.contains("hidden")) {
+      return;
+    }
+
     const key = e.code;
     if (key === "KeyS") {
       e.preventDefault();
@@ -310,6 +351,15 @@ function initUIEvents() {
     } else if (key === "KeyA") {
       e.preventDefault();
       handleEvadeAv();
+    } else if (key === "KeyQ") {
+      e.preventDefault();
+      toggleModal("modal-quests", openQuestsModal);
+    } else if (key === "KeyN") {
+      e.preventDefault();
+      toggleModal("modal-contacts", openContactsModal);
+    } else if (key === "KeyO") {
+      e.preventDefault();
+      handleOverdrive();
     }
   });
 }
@@ -370,6 +420,21 @@ function renderHUD(data) {
   // Unbanked & Career Bank
   document.getElementById("val-loot").textContent = `${gState.unbanked_creds} CR`;
   document.getElementById("val-bank").textContent = `${career.banked_creds} CR`;
+  document.getElementById("val-combo").textContent = `x${gState.combo_streak || 0}`;
+
+  // Story beat and active objective
+  if (data.story) {
+    document.getElementById("story-act").textContent =
+      `${data.story.act_title} // ${data.story.chapter_title}`;
+    const activeQuest = (data.quests || []).find(q => q.accepted && !q.completed);
+    document.getElementById("story-objective").textContent = activeQuest
+      ? activeQuest.description
+      : "Open MISSIONS or talk to an operative to pick up the next job.";
+    const menuStory = document.getElementById("main-menu-story");
+    if (menuStory) menuStory.textContent = `${data.story.act_title} // ${data.story.chapter_title}`;
+    const menuSub = document.getElementById("main-menu-sub");
+    if (menuSub && data.story.intro) menuSub.textContent = data.story.intro;
+  }
 
   // Syndicate Bounty Contract
   const contract = gState.active_contract;
@@ -384,10 +449,16 @@ function renderHUD(data) {
 
   // Check Game Over / Victory Overlays
   if (gState.is_victory) {
-    showBanner("MISSION ACCOMPLISHED", "System Supercore Infiltrated. You escaped with all neural payloads.");
+    const summary = data.run_summary || {};
+    const legacy = (summary.epilogue || []).join(" ");
+    const stats = `Best combo x${summary.best_combo || 0} | Quests ${summary.quests_completed_count || 0}/${summary.quests_total || 0}.`;
+    showBanner(summary.outcome_title || "MISSION ACCOMPLISHED", `${legacy} ${stats}`.trim());
     sfx.jackpot();
   } else if (gState.is_game_over) {
-    showBanner("CONNECTION TERMINATED", "Security ICE traced your deck. All unbanked credits destroyed.");
+    const summary = data.run_summary || {};
+    const legacy = (summary.epilogue || []).join(" ");
+    const stats = `Best combo x${summary.best_combo || 0} | Quests ${summary.quests_completed_count || 0}/${summary.quests_total || 0}.`;
+    showBanner(summary.outcome_title || "CONNECTION TERMINATED", `${legacy} ${stats}`.trim());
     sfx.failure();
   }
 }
@@ -451,6 +522,20 @@ async function handleSpoof() {
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || "Failed to bounce proxy.", "warn");
+  }
+}
+
+async function handleOverdrive() {
+  sfx.scan();
+  const res = await apiPost("/api/action", { action: "overdrive" });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "Overdrive refused.", "warn");
   }
 }
 
@@ -710,7 +795,7 @@ function renderProbedPortsBay(node) {
     if (bypassBtn) {
       bypassBtn.onclick = (e) => {
         e.stopPropagation();
-        openBypassModal();
+        openBypassModal(p.port);
       };
     }
 
@@ -1302,7 +1387,146 @@ async function handleGuessHash(word) {
 }
 
 // ==========================================================================
-// 9. Black Market Shop & Career Dossier Modals
+// 9. Story, Mission Board & Operative Interactions
+// ==========================================================================
+function openQuestsModal() {
+  sfx.click();
+  if (!state.data) return;
+  const story = state.data.story || {};
+  const quests = state.data.quests || [];
+
+  document.getElementById("story-brief").innerHTML = `
+    <div class="story-brief-act">${story.act_title || "ACT I"} // ${story.chapter_title || "Ghost in the Gateway"}</div>
+    <div class="story-brief-text">${story.intro || ""}</div>
+    ${story.choice_label ? `<div class="story-choice">CHOICE LOCKED: ${story.choice_label}</div>` : ""}
+  `;
+
+  const logEl = document.getElementById("story-log");
+  logEl.innerHTML = "";
+  (story.log || []).slice(-10).forEach((line) => {
+    const entry = document.createElement("div");
+    entry.className = "story-log-line";
+    entry.textContent = `> ${line}`;
+    logEl.appendChild(entry);
+  });
+
+  const grid = document.getElementById("quests-grid");
+  grid.innerHTML = "";
+  quests.forEach((quest) => {
+    const card = document.createElement("div");
+    const complete = quest.completed;
+    const active = quest.accepted && !complete;
+    const locked = quest.locked;
+    card.className = `quest-card ${complete ? "quest-complete" : locked ? "quest-locked" : active ? "quest-active" : "quest-available"}`;
+    const status = complete ? "COMPLETE" : locked ? "LOCKED" : active ? `${quest.progress}/${quest.required}` : "AVAILABLE";
+    card.innerHTML = `
+      <div class="quest-card-head">
+        <span class="quest-title">${quest.title}</span>
+        <span class="quest-status">${status}</span>
+      </div>
+      <div class="quest-desc">${quest.description}</div>
+      <div class="quest-meta">GIVER: ${quest.giver} | REWARD: ${quest.reward_creds} CR</div>
+      ${!quest.accepted && !complete && !locked ? `<button class="hack-btn small-btn accept-quest-btn" data-quest="${quest.quest_id}">ACCEPT JOB</button>` : ""}
+    `;
+    const acceptBtn = card.querySelector(".accept-quest-btn");
+    if (acceptBtn) {
+      acceptBtn.addEventListener("click", () => handleAcceptQuest(quest.quest_id));
+    }
+    grid.appendChild(card);
+  });
+
+  document.getElementById("modal-quests").classList.remove("hidden");
+}
+
+async function handleAcceptQuest(questId) {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "accept_quest", quest_id: questId });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+    openQuestsModal();
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "Quest unavailable.", "warn");
+  }
+}
+
+function openContactsModal() {
+  sfx.click();
+  if (!state.data) return;
+  const grid = document.getElementById("contacts-grid");
+  grid.innerHTML = "";
+
+  (state.data.contacts || []).forEach((contact) => {
+    const card = document.createElement("div");
+    if (contact.locked) {
+      card.className = "contact-card contact-locked";
+      card.innerHTML = `
+        <div class="contact-name">${contact.name}</div>
+        <div class="contact-role">${contact.handle} // SIGNAL LOCKED</div>
+        <div class="contact-tagline">Advance the story to open this channel.</div>
+      `;
+      grid.appendChild(card);
+      return;
+    }
+
+    card.className = "contact-card";
+    card.innerHTML = `
+      <div class="contact-head">
+        <div>
+          <div class="contact-name">${contact.name}</div>
+          <div class="contact-role">${contact.handle} // ${contact.role}</div>
+        </div>
+        <span class="contact-trust">TRUST ${contact.trust}</span>
+      </div>
+      <div class="contact-tagline">${contact.tagline}</div>
+      <div class="contact-dialogue">"${contact.dialogue}"</div>
+      <div class="contact-favor">${contact.favor_description}</div>
+      <div class="contact-actions">
+        <button class="action-btn small-btn contact-action" data-mode="talk">TALK</button>
+        <button class="action-btn small-btn contact-action" data-mode="job">JOB</button>
+        <button class="action-btn small-btn contact-action" data-mode="favor" ${contact.favor_used ? "disabled" : ""}>
+          ${contact.favor_used ? "FAVOR SPENT" : "CALL FAVOR"}
+        </button>
+      </div>
+      ${contact.pact_available ? `
+        <div class="contact-pact">
+          <div class="contact-pact-label">ACT III ALLIANCE // ONE CHOICE</div>
+          <div class="contact-actions">
+            <button class="action-btn small-btn contact-action pact-ally" data-mode="ally">ALLY WITH ZERO</button>
+            <button class="action-btn small-btn contact-action pact-defy" data-mode="defy">DEFY ZERO</button>
+          </div>
+        </div>
+      ` : ""}
+    `;
+    card.querySelectorAll(".contact-action").forEach((button) => {
+      button.addEventListener("click", () => handleContactInteraction(contact.contact_id, button.dataset.mode));
+    });
+    grid.appendChild(card);
+  });
+
+  document.getElementById("modal-contacts").classList.remove("hidden");
+}
+
+async function handleContactInteraction(contactId, mode) {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "contact", contact_id: contactId, mode });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+    openContactsModal();
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "No response on the channel.", "warn");
+  }
+}
+
+// ==========================================================================
+// 10. Black Market Shop & Career Dossier Modals
 // ==========================================================================
 async function openShopModal() {
   sfx.click();
@@ -1365,6 +1589,7 @@ async function openCareerModal() {
   document.getElementById("dossier-fails").textContent = data.failed_runs;
   document.getElementById("dossier-streak").textContent = `${data.current_streak} HEISTS`;
   document.getElementById("dossier-best").textContent = `${data.best_streak} HEISTS`;
+  document.getElementById("dossier-combo").textContent = `x${data.best_combo || 0}`;
   document.getElementById("dossier-upgrades").textContent = data.purchased_upgrades.length > 0
     ? data.purchased_upgrades.join(", ")
     : "Standard Factory Rig";
@@ -1438,15 +1663,17 @@ async function openWorkshopModal() {
   const data = await apiGet("/api/workshop");
   if (!data) return;
 
-  const currentCreds = (state.data && state.data.state) ? state.data.state.unbanked_creds : 0;
-  document.getElementById("workshop-creds").textContent = currentCreds;
+  const unbanked = (state.data && state.data.state) ? state.data.state.unbanked_creds : 0;
+  const banked = (state.data && state.data.deck) ? state.data.deck.cryptocreds : 0;
+  const totalCreds = unbanked + banked;
+  document.getElementById("workshop-creds").textContent = `${totalCreds} (${banked} BANKED + ${unbanked} UNBANKED)`;
   const grid = document.getElementById("workshop-recipes-grid");
   grid.innerHTML = "";
 
   data.recipes.forEach((recipe) => {
     const card = document.createElement("div");
     card.className = "workshop-recipe-card";
-    const canCraft = currentCreds >= recipe.cost_creds;
+    const canCraft = totalCreds >= recipe.cost_creds;
 
     card.innerHTML = `
       <div class="recipe-info">
@@ -1605,7 +1832,7 @@ async function executeSocialAttack() {
 // ==========================================================================
 // 12. Firewall Ingress Bypass & Antivirus Evasion Handlers
 // ==========================================================================
-function openBypassModal() {
+function openBypassModal(port) {
   if (!state.selectedNodeId) return;
   const node = state.data.nodes[state.selectedNodeId];
   if (!node || !node.firewall) return;
@@ -1617,7 +1844,8 @@ function openBypassModal() {
     return;
   }
 
-  const targetPort = blockedRules[0].port;
+  const requestedRule = blockedRules.find(r => r.port === port);
+  const targetPort = (requestedRule || blockedRules[0]).port;
   document.getElementById("bypass-target-info").innerHTML = `
     <div>TARGET HOST: <strong>${node.hostname} (${node.ip_address})</strong></div>
     <div>BLOCKED PORT: <strong style="color:var(--c-danger);">${targetPort}/tcp</strong> | POLICY: <strong>${node.firewall.policy}</strong></div>

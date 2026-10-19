@@ -1,6 +1,6 @@
 # cyberpulse
 
-CyberPulse is a retro-cyberpunk terminal hacking simulation game designed around empirical behavioral psychology, featuring procedural puzzle nodes, ICE defenses, push-your-luck extraction mechanics, variable-ratio reward schedules, near-miss striatal feedback, and persistent career progression.
+CyberPulse is a retro-cyberpunk terminal hacking simulation game designed around empirical behavioral psychology, featuring procedural puzzle nodes, ICE defenses, push-your-luck extraction mechanics, variable-ratio reward schedules, near-miss striatal feedback, persistent career progression, a five-act story campaign, an operative relationship system, a dynamic quest board, and combo/overdrive risk-reward mechanics.
 
 ## ⚡ 30-Second Cold-Start Quick Reference
 
@@ -37,6 +37,7 @@ cyberpulse/
 │   ├── rewards.py            <- variable-ratio loot tables & reward schedules
 │   ├── server.py             <- zero-dependency HTTP REST & cyberdeck server
 │   ├── shop.py               <- black market tech vendor & hardware catalog
+│   ├── story.py              <- story acts, quest blueprints, operative dialogue
 │   ├── static/               <- Web Cyberdeck UI (HTML, CSS, JS)
 │   │   ├── app.js
 │   │   ├── index.html
@@ -73,11 +74,19 @@ CyberPulse's mechanics are grounded in cognitive neuroscience and behavioral gam
    - Active Syndicate Bounty Contracts track unfulfilled goals (e.g. breach 2 encryption nodes). Unfinished objectives create cognitive tension that motivates session continuation.
 5. **Autonomy & Competence Loop (Ryan & Deci Self-Determination Theory - PENS)**:
    - Tactical agency through branching network topologies, upgrade pathways, and cyberdeck customization in the Black Market vendor.
+6. **Combo Streaks & Voluntary Risk (Sensation Seeking / Flow Channel)**:
+   - Consecutive successful breaches build a reward multiplier (up to +50%). `overdrive` lets the player voluntarily burn CPU and trace to prime the next combo, tightening the flow channel between boredom and lockout. Best combo is recorded in the career dossier, and combo milestones appear in the run epilogue.
+7. **Narrative Transportation & Character Attachment**:
+   - Five story acts, a mission board, and four persistent operatives turn abstract objectives into relationships. Act progression unlocks new dialogue, jobs, and one-time favors that materially change the run, while trust tracks your standing with each operative.
+8. **Implementation Intentions (Gollwitzer)**:
+   - Accepted quests and the story objective card make the next concrete action salient, reducing choice paralysis while preserving player autonomy.
+9. **Meaningful Narrative Choice (Self-Concordance)**:
+   - In Act III, Agent Zero offers a one-time alliance or defiance decision. The choice changes trust, rewards, late-act dialogue, and the run epilogue, making the relationship feel authored rather than cosmetic.
 
 ## 🎮 How to Play
 
 ### 1. Web Cyberdeck (Visual CRT & Web Audio)
-Launch the visual browser-based cyberpunk cyberdeck with interactive 2D node matrix canvas, visual oscilloscope/buffer mini-games, and synthesized 8-bit sound FX:
+Launch the visual browser-based cyberpunk cyberdeck with a main menu, story/mission board, operative dialogue modal, interactive 2D node matrix canvas, visual oscilloscope/buffer mini-games, and synthesized 8-bit sound FX:
 
 ```bash
 # Launch interactive Web Cyberdeck (auto-opens browser at http://127.0.0.1:8420)
@@ -88,7 +97,7 @@ python -m cyberpulse.cli --web --port 9000 --seed 42069
 ```
 
 ### 2. Interactive Terminal CLI
-Or operate purely in the retro terminal REPL harness:
+Or operate purely in the retro terminal REPL harness. Both interfaces open with a main menu offering a new run, save continuation, story briefing, operative channels, career dossier, and help:
 
 ```bash
 # Launch interactive terminal game with default seed
@@ -124,10 +133,16 @@ python -m cyberpulse.cli --seed 42069
 | `move <ip>` / `ssh <ip>` | Transfer your active terminal session to an adjacent breached host | Network lateral movement |
 | `scan` | Scan surrounding connected nodes to reveal topology and IP addresses | Information foraging & strategic autonomy |
 | `spoof` | Burn 3 CPU cycles to bounce your proxy and reduce security trace by 25% | Risk mitigation & resource trade-offs |
+| `overdrive` | Burn 2 CPU and 8% trace to stack +1 combo and +10 unbanked credits | Voluntary risk, combo priming & dopamine anticipation |
+| `story` | Show the current act, story log, and briefing | Narrative orientation & campaign immersion |
+| `quests` / `missions` | Open the mission board with progress, rewards, and available jobs | Goal clarity & Zeigarnik completion pressure |
+| `contacts` / `crew` | List operative channels, trust, dialogue, and favors | Relationship tracking & social capital |
+| `contact <handle> [talk\|job\|favor\|ally\|defy]` | Talk to an operative, accept their job, spend a one-time favor, or make Agent Zero's Act III alliance choice | Character interaction & story branching |
+| `accept <quest_id>` | Accept an available side quest from the mission board | Player-authored goals & autonomy |
 | `cash_out` / `jackout` | Safely disconnect, bank all unbanked credits, and update career dossier | Loss aversion & push-your-luck extraction |
 | `shop` | Open the Black Market vendor to inspect permanent hardware upgrades | Anticipation of reward & meta-progression |
 | `buy <item_id>` | Purchase permanent cyberdeck upgrades with banked career credits | Long-term investment & competence scaling |
-| `career` | View lifetime operative dossier, breach stats, and installed cyberware | Identity, pride & meta-game mastery |
+| `career` | View lifetime operative dossier, breach stats, best neural combo, and installed cyberware | Identity, pride & meta-game mastery |
 | `status` | Display cyberdeck specs, unbanked credits, and active syndicate contract | HUD awareness & contract progress tracking |
 | `save` | Atomically persist your current infiltration state to disk | Power-loss protection & player security |
 | `load` | Restore previous saved game state | Resumption fidelity |
@@ -148,6 +163,12 @@ python -m cyberpulse.cli --seed 42069
 - **Zero Undeclared Dependencies**: Built with 100% pure Python standard library modules (`random`, `json`, `dataclasses`, `pathlib`, `argparse`).
 - **Deterministic State Engine**: Every network grid and puzzle sequence can be reproduced using `--seed <int>`.
 - **Power-Loss Safe Savegames & Shadow Backup**: Uses atomic temporary file writes, `fsync`, `.bak` shadow recovery, and corruption quarantine to eliminate state loss risk.
+- **Deterministic Run Settlement**: Victory and `jackout` both bank all unbanked loot; trace lockout records a failed run. CLI and Web Cyberdeck share the same one-shot career lifecycle, so rewards are never double-counted or silently lost.
+- **Persistent Puzzle Attempts**: Reopening a node resumes its remaining tuning/cracking attempts instead of granting a free retry.
+- **Story, Quests & Operatives Persist**: Story act, log, quest progress, contact trust, and spent favors are stored in the savegame and backfilled for pre-story saves.
+- **Run Legacy & Epilogues**: Victory, jackout, and lockout produce a run summary with quest/contact progress, best combo, and a story epilogue shown in both CLI and Web. Career dossiers record the highest combo across runs.
+- **Branching Alliance**: The Act III Agent Zero choice is persisted in the savegame and changes trust, rewards, dialogue, and the epilogue; old saves default to no choice.
+- **Same-Origin Web Cyberdeck**: The REST API sends no wildcard CORS grant and serializes state mutations, keeping the local game session private to its own page.
 - **Dynamic Resource Loop**: Turn-based CPU cooling (+1/turn) and hardware RAM constraints (`security_level * 16` MB).
 - **Fast Test Shield**: 100% test pass rate across unit and integration suites in about a second via `python -m unittest discover`.
 

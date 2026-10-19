@@ -1852,3 +1852,270 @@ body:not(.crt-effects) .crt-flicker {
 
 
 
+
+/* ==========================================================================
+   Story, Mission Board, Operatives & Main Menu
+   ========================================================================== */
+.combo-box {
+  border-color: var(--c-warning);
+}
+
+.highlight-value {
+  color: var(--c-warning);
+  text-shadow: 0 0 10px var(--c-warning-glow);
+}
+
+.story-card {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--c-border);
+  border-left: 3px solid var(--c-accent);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.story-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.story-tag,
+.story-act {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--c-accent);
+}
+
+.story-objective {
+  font-size: 0.74rem;
+  color: var(--c-text-dim);
+  line-height: 1.35;
+}
+
+.main-menu-overlay {
+  background: radial-gradient(circle at 50% 20%, hsla(140, 80%, 20%, 0.45), rgba(2, 8, 5, 0.96));
+  z-index: 90;
+}
+
+.main-menu-box {
+  max-width: 720px;
+  text-align: center;
+  border-color: var(--c-border-bright);
+  box-shadow: 0 0 40px var(--c-primary-glow);
+}
+
+.main-menu-kicker {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  color: var(--c-text-dim);
+}
+
+.main-menu-title {
+  margin: 12px 0 8px;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 4vw, 2.6rem);
+  letter-spacing: 0.08em;
+  color: var(--c-primary);
+  text-shadow: 0 0 18px var(--c-primary-glow);
+}
+
+.main-menu-sub {
+  max-width: 560px;
+  margin: 0 auto 14px;
+  color: var(--c-text-main);
+  line-height: 1.5;
+}
+
+.main-menu-story {
+  margin-bottom: 18px;
+  color: var(--c-accent);
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+}
+
+.main-menu-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.menu-primary {
+  grid-column: 1 / -1;
+}
+
+.main-menu-help {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px dashed var(--c-border);
+  color: var(--c-text-dim);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.story-brief {
+  margin-bottom: 12px;
+  padding: 12px;
+  border-left: 3px solid var(--c-accent);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.story-brief-act {
+  color: var(--c-accent);
+  font-family: var(--font-display);
+  margin-bottom: 6px;
+}
+
+.story-brief-text {
+  color: var(--c-text-dim);
+  line-height: 1.5;
+}
+
+.story-log {
+  max-height: 160px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  padding: 10px;
+  border: 1px solid var(--c-border);
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 0.76rem;
+}
+
+.story-log-line {
+  margin-bottom: 5px;
+  color: var(--c-text-main);
+}
+
+.quests-grid,
+.contacts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  max-height: 52vh;
+  overflow-y: auto;
+}
+
+.quest-card,
+.contact-card {
+  padding: 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-bg-card);
+}
+
+.quest-active {
+  border-left: 3px solid var(--c-warning);
+}
+
+.quest-complete {
+  border-left: 3px solid var(--c-primary);
+  opacity: 0.8;
+}
+
+.quest-card-head,
+.contact-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.quest-title,
+.contact-name {
+  color: var(--c-text-bright);
+  font-family: var(--font-display);
+}
+
+.quest-status,
+.contact-trust {
+  color: var(--c-warning);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.quest-desc,
+.contact-tagline,
+.contact-dialogue,
+.contact-favor,
+.contact-role {
+  margin-top: 8px;
+  color: var(--c-text-dim);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.quest-meta {
+  margin-top: 8px;
+  color: var(--c-accent);
+  font-size: 0.68rem;
+}
+
+.contact-dialogue {
+  color: var(--c-text-main);
+  font-style: italic;
+}
+
+.contact-favor {
+  color: var(--c-warning);
+}
+
+.contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.contact-locked {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+.small-btn {
+  padding: 4px 8px;
+  font-size: 0.7rem;
+}
+
+.contacts-intro {
+  margin-bottom: 12px;
+  color: var(--c-text-dim);
+  font-size: 0.78rem;
+}
+.quest-locked {
+  opacity: 0.55;
+  border-style: dashed;
+}
+.story-choice {
+  margin-top: 8px;
+  color: var(--c-warning);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
+
+.contact-pact {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px dashed var(--c-warning);
+  background: hsla(45, 100%, 50%, 0.06);
+}
+
+.contact-pact-label {
+  margin-bottom: 8px;
+  color: var(--c-warning);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+.pact-ally {
+  border-color: var(--c-primary);
+}
+
+.pact-defy {
+  border-color: var(--c-danger);
+}

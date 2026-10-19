@@ -1,232 +1,226 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-review-fixes-v1",
-    "last_phase": "phase 4",
+    "task_id": "task-cyberpulse-story-delivery-v1",
+    "last_phase": "phase 5",
     "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1792354022.0903203,
-    "completed_at": 1792354034.6899729
+    "status": "in_progress",
+    "updated_at": 1792432762.8862631
   },
   "checkpoints": [
     {
-      "task_id": "task-hacker-simulation-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-hacker-simulation-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792264600.7906158,
-      "timestamp_str": "2026-10-17 22:16:40"
-    },
-    {
-      "task_id": "task-netrunner-workshop-v1",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/4] Pre-flight impact assessment, ADR-006, and domain models for player localhost virtual rig, virus crafting recipes, and background malware daemons",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792264743.8593187,
-      "timestamp_str": "2026-10-17 22:19:03",
-      "impact_assessment": {
-        "why": "Expand netrunner simulation with player-owned localhost virtual filesystem, in-game spear-phishing dispatch, virus synthesis workshop, and background listener daemons",
-        "benefits": "Deepens tactical variety, strategic pre-planning, and immersion while maintaining pure Python 3 standard library zero-dependency constraints and sub-second test execution",
-        "risks": "contract: extended deck and game state schemas; dependency: none; concurrency: none; state: backward compatibility with existing saves",
-        "mitigation": "Support default values for schema expansion, synthetic in-memory isolation, and comprehensive unit tests"
-      }
-    },
-    {
-      "task_id": "task-netrunner-workshop-v1",
+      "task_id": "task-cyberpulse-story-quests-v1",
       "phase": "phase 3",
       "phase_num": 3,
-      "description": "[2/4] GameEngine simulation mechanics: local deck drive, phishing dispatch, malware workshop synthesis, and keylogger daemons with unit tests",
+      "description": "[milestone 2/6] Models and story data: Quest/ContactProfile models, persisted story act/log, contact trust/favors, seven quest blueprints, four operative dialogues",
       "files_affected": [],
       "status": "in_progress",
-      "timestamp": 1792264815.092114,
-      "timestamp_str": "2026-10-17 22:20:15"
+      "timestamp": 1792370974.4975743,
+      "timestamp_str": "2026-10-19 03:49:34"
     },
     {
-      "task_id": "task-netrunner-workshop-v1",
+      "task_id": "task-cyberpulse-story-quests-v1",
       "phase": "phase 3",
       "phase_num": 3,
-      "description": "[3/4] Interactive CLI commands for rig filesystem, phishing, virus crafting workshop, and keylogger deployment with unit & integration tests",
+      "description": "[milestone 3/6] Engine: combo streaks, overdrive, quest progress/rewards, story act advancement, contact talk/job/favor, save backfill and terminal-state guards",
       "files_affected": [],
       "status": "in_progress",
-      "timestamp": 1792264989.097607,
-      "timestamp_str": "2026-10-17 22:23:09"
+      "timestamp": 1792370984.3401227,
+      "timestamp_str": "2026-10-19 03:49:44"
     },
     {
-      "task_id": "task-netrunner-workshop-v1",
+      "task_id": "task-cyberpulse-story-quests-v1",
       "phase": "phase 3",
       "phase_num": 3,
-      "description": "[4/4] Web Cyberdeck UI integration (virtual rig viewer, workshop modal, active daemons), documentation in README.md, and Phase 4 completion",
+      "description": "[milestone 4/6] CLI: main menu with story/operatives/career preview, story and quest commands, contact/accept/overdrive commands, story HUD line",
       "files_affected": [],
       "status": "in_progress",
-      "timestamp": 1792265146.614726,
-      "timestamp_str": "2026-10-17 22:25:46"
+      "timestamp": 1792370989.9737225,
+      "timestamp_str": "2026-10-19 03:49:49"
     },
     {
-      "task_id": "task-netrunner-workshop-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-netrunner-workshop-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792265661.4689257,
-      "timestamp_str": "2026-10-17 22:34:21"
-    },
-    {
-      "task_id": "task-cyber-warfare-v1",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/4] Add domain models and serialization tests for Firewalls, Antivirus, CVE Exploits, and Social Engineering",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792265771.104285,
-      "timestamp_str": "2026-10-17 22:36:11",
-      "impact_assessment": {
-        "why": "Deepen tactical realism with Firewalls, Antivirus, specialized CVE exploits, and multi-vector Social Engineering",
-        "benefits": "Enriches gameplay depth, strategic counters, and authentic hacker simulation variety",
-        "risks": "contract: existing API endpoints and engine methods remain fully backward compatible; dependency: none, pure standard library Python; concurrency: none, deterministic turn-based execution; state: new dataclass fields have default values preserving save/load compatibility",
-        "mitigation": "Default dataclass attributes, comprehensive serialization unit tests, strict AST syntax and sub-second test execution"
-      }
-    },
-    {
-      "task_id": "task-cyber-warfare-v1",
+      "task_id": "task-cyberpulse-story-quests-v1",
       "phase": "phase 3",
       "phase_num": 3,
-      "description": "[2/4] Implement engine mechanics for Firewalls, Antivirus sweeps/evasion, specialized CVE exploit execution, and multi-vector Social Engineering in engine.py and network.py",
+      "description": "[milestone 5/6] Server and Web UI: state story/quests/contacts payload, overdrive/contact/accept actions, main menu overlay, mission board, operative dialogue modal, combo HUD",
       "files_affected": [],
       "status": "in_progress",
-      "timestamp": 1792265918.7616313,
-      "timestamp_str": "2026-10-17 22:38:38"
+      "timestamp": 1792370997.1463118,
+      "timestamp_str": "2026-10-19 03:49:57"
     },
     {
-      "task_id": "task-cyber-warfare-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[3/4] Implement interactive CLI commands for firewalls, antivirus, CVE exploits, and social engineering in cli.py with integration tests in test_cli.py",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792266308.9558039,
-      "timestamp_str": "2026-10-17 22:45:08"
-    },
-    {
-      "task_id": "task-cyber-warfare-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[4/4] Web Cyberdeck REST endpoints, UI modal panels, target action buttons, README documentation, and final Phase 4 completion",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792266473.571191,
-      "timestamp_str": "2026-10-17 22:47:53"
-    },
-    {
-      "task_id": "task-cyber-warfare-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyber-warfare-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792267088.2662463,
-      "timestamp_str": "2026-10-17 22:58:08"
-    },
-    {
-      "task_id": "task-hardening-and-evolution-v1",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/4] System-wide engine hardening: state invariants, defensive input coercion, turn/tick progression, and persistence determinism",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792267555.9031453,
-      "timestamp_str": "2026-10-17 23:05:55",
-      "impact_assessment": {
-        "why": "Holistic audit revealed edge case gaps in engine guards, input handling, and lifecycle hooks",
-        "benefits": "Eliminates unexpected crashes, reinforces state integrity, ensures deterministic persistence",
-        "risks": "contract: preserve existing API return tuples; dependency: none, pure standard library; concurrency: thread-safe stateless handlers; state: maintain roundtrip save serialization",
-        "mitigation": "Comprehensive unit tests covering edge cases and invalid parameters"
-      }
-    },
-    {
-      "task_id": "task-hardening-and-evolution-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 1/4] harden engine state guards, input sanitization, and turn progression",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792267937.5089111,
-      "timestamp_str": "2026-10-17 23:12:17"
-    },
-    {
-      "task_id": "task-hardening-and-evolution-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 2/4] complete weaponized CVE exploit catalog with full network coverage",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792268043.001301,
-      "timestamp_str": "2026-10-17 23:14:03"
-    },
-    {
-      "task_id": "task-hardening-and-evolution-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 3/4] unify run completion lifecycle and career persistence across CLI modes",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792268168.046961,
-      "timestamp_str": "2026-10-17 23:16:08"
-    },
-    {
-      "task_id": "task-hardening-and-evolution-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 4/4] add visual Probed Ports bay, keyboard navigation, and UI polish to Web Cyberdeck",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792268383.7344043,
-      "timestamp_str": "2026-10-17 23:19:43"
-    },
-    {
-      "task_id": "task-hardening-and-evolution-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-hardening-and-evolution-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792268392.551641,
-      "timestamp_str": "2026-10-17 23:19:52"
-    },
-    {
-      "task_id": "task-cyberpulse-review-fixes-v1",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/5] Plan: CLI buy fall-through, web crafting key, static path containment, port and EOF guards, honest save failure, lifetime-credit accounting, offline fonts, README claims",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792353770.4008212,
-      "timestamp_str": "2026-10-18 23:02:50",
-      "impact_assessment": {
-        "why": "An independent review confirmed user-facing defects: every buy prints 'Unknown command', browser crafting always fails, serve_static escapes its root (arbitrary local file read), malformed ports crash CLI and API, piped runs traceback on minigame input, a failed atomic replace still reports success, lifetime stolen double-counts banked credits, and two static assets load Google Fonts",
-        "benefits": "Purchases and crafting work, the web server cannot read files outside its static root, malformed input yields messages instead of tracebacks, saves never lie, career totals are correct, and the UI is fully offline",
-        "risks": "contract: craft payload key and lifetime_creds semantics change, _write_atomic may return None; dependency: none added; concurrency: unchanged; state: career.json and savegame schema unchanged",
-        "mitigation": "Failing-first tests per fix, full aikit check cyberpulse before the commit, ADR-009 records the semantic changes"
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-review-fixes-v1",
+      "task_id": "task-cyberpulse-story-quests-v1",
       "phase": "phase 4",
       "phase_num": 4,
-      "description": "[5/5] All fixes implemented and verified: 94/94 tests green, aikit check cyberpulse 4/4 gates, ADR-009 recorded; checklists: passed",
+      "description": "[milestone 6/6] Verification and docs: 137/137 tests green, JS syntax check, ADR-011 and README updated, codebase map regenerated, aikit check cyberpulse 4/4 gates; checklists: passed",
       "files_affected": [],
       "status": "in_progress",
-      "timestamp": 1792354022.0903203,
-      "timestamp_str": "2026-10-18 23:07:02"
+      "timestamp": 1792371013.6317713,
+      "timestamp_str": "2026-10-19 03:50:13"
     },
     {
-      "task_id": "task-cyberpulse-review-fixes-v1",
+      "task_id": "task-cyberpulse-story-quests-v1",
       "phase": "completed",
       "phase_num": 5,
-      "description": "Task 'task-cyberpulse-review-fixes-v1' completed successfully.",
+      "description": "Task 'task-cyberpulse-story-quests-v1' completed successfully.",
       "status": "completed",
-      "timestamp": 1792354034.689975,
-      "timestamp_str": "2026-10-18 23:07:14"
+      "timestamp": 1792371017.3851974,
+      "timestamp_str": "2026-10-19 03:50:17"
+    },
+    {
+      "task_id": "task-cyberpulse-story-quests-v1",
+      "phase": "phase 4",
+      "phase_num": 4,
+      "description": "[milestone 6/6] Final quest gating: locked main quests cannot be accepted early and mission board shows LOCKED; 138/138 tests green; aikit fix/check 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792371194.0741017,
+      "timestamp_str": "2026-10-19 03:53:14"
+    },
+    {
+      "task_id": "task-cyberpulse-story-quests-v1",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-story-quests-v1' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792371199.9798412,
+      "timestamp_str": "2026-10-19 03:53:19"
+    },
+    {
+      "task_id": "task-cyberpulse-endgame-legacy-v1",
+      "phase": "phase 2",
+      "phase_num": 2,
+      "description": "[1/4] Plan: endgame run summary and story epilogues, career best-combo stat, CLI/Web legacy display, regression tests, ADR-012",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792386094.6184845,
+      "timestamp_str": "2026-10-19 08:01:34",
+      "impact_assessment": {
+        "why": "The new story, quest, contact, and combo systems currently end abruptly: terminal runs show only a generic banner, combo mastery is not recorded in the career dossier, and operative relationships never pay off in the ending.",
+        "benefits": "Players get closure and a reason to replay: epilogues reflect quest completion, operative trust, favors, and combo skill; career records best combo; CLI and Web show the same legacy summary.",
+        "risks": "contract: CareerProfile and full-state payload gain additive fields with defaults; dependency: none; concurrency: summary computed from locked session state; state: old saves must load with best_combo default and missing summary fields must stay optional",
+        "mitigation": "Use dataclass defaults, compute summaries from existing state only, add old-save fallback tests, keep CLI/Web parity tests, and run aikit fix/check before completion."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-endgame-legacy-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[milestone 2/4] Models and story epilogues: CareerProfile.best_combo, outcome/contact/combo epilogue data, backward-compatible defaults",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792386451.617017,
+      "timestamp_str": "2026-10-19 08:07:31"
+    },
+    {
+      "task_id": "task-cyberpulse-endgame-legacy-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[milestone 3/4] Engine and API: run_summary with epilogues/stats, best-combo settlement on all outcomes, /api/state run_summary payload",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792386457.3513916,
+      "timestamp_str": "2026-10-19 08:07:37"
+    },
+    {
+      "task_id": "task-cyberpulse-endgame-legacy-v1",
+      "phase": "phase 4",
+      "phase_num": 4,
+      "description": "[milestone 4/4] CLI/Web legacy display, best-combo dossier row, epilogue banner; 143/143 tests, JS check, ADR-012/README, aikit fix/check 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792386462.7860126,
+      "timestamp_str": "2026-10-19 08:07:42"
+    },
+    {
+      "task_id": "task-cyberpulse-endgame-legacy-v1",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-endgame-legacy-v1' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792386466.1874537,
+      "timestamp_str": "2026-10-19 08:07:46"
+    },
+    {
+      "task_id": "task-cyberpulse-alliance-choice-v1",
+      "phase": "phase 2",
+      "phase_num": 2,
+      "description": "[1/4] Plan: Act III Agent Zero alliance choice, persistent story_choice, branching dialogue/epilogue, CLI/Web pact controls, tests, ADR-013",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792390069.889341,
+      "timestamp_str": "2026-10-19 09:07:49",
+      "impact_assessment": {
+        "why": "Operative interactions currently change trust and rewards but never branch the story or the ending; Agent Zero is introduced as a rival with no meaningful decision attached.",
+        "benefits": "A one-time alliance/defiance decision makes character interactions consequential, changes late-act dialogue and epilogues, and gives players a replay-worthy narrative branch.",
+        "risks": "contract: GameState gains story_choice with a default; dependency: none; concurrency: choice mutates under the existing session lock; state: old saves load with an empty choice and no branch",
+        "mitigation": "Persist story_choice with a default, gate the choice to Act III, add old-save/default tests, keep unknown-mode errors explicit, and run aikit fix/check before completion."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-alliance-choice-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[milestone 2/4] Models/story: persistent story_choice, choice labels, Acts III-V choice dialogue, choice epilogue lines, old-save default",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792390377.671331,
+      "timestamp_str": "2026-10-19 09:12:57"
+    },
+    {
+      "task_id": "task-cyberpulse-alliance-choice-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[milestone 3/4] Engine/UI: one-time Act III ally/defy modes, trust/rewards, choice-aware dialogue and epilogue, CLI contact modes, Web pact buttons and locked-choice label",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792390404.6229396,
+      "timestamp_str": "2026-10-19 09:13:24"
+    },
+    {
+      "task_id": "task-cyberpulse-alliance-choice-v1",
+      "phase": "phase 4",
+      "phase_num": 4,
+      "description": "[milestone 4/4] Verification: 148/148 tests, JS check, CLI/server/storage pact coverage, ADR-013/README, codebase map, aikit fix/check 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792390411.2487335,
+      "timestamp_str": "2026-10-19 09:13:31"
+    },
+    {
+      "task_id": "task-cyberpulse-alliance-choice-v1",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-alliance-choice-v1' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792390416.7769623,
+      "timestamp_str": "2026-10-19 09:13:36"
+    },
+    {
+      "task_id": "task-cyberpulse-story-delivery-v1",
+      "phase": "phase 2",
+      "phase_num": 2,
+      "description": "[1/2] finish the completed story/legacy/alliance work: document four deliberate silent-except handlers, regenerate the codebase map, verify JS syntax, and run the full project gate set; [2/2] record the checklist outcome and commit the campaign, legacy, and alliance changes with ADR-011 to ADR-013",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792432691.98547,
+      "timestamp_str": "2026-10-19 20:58:11",
+      "impact_assessment": {
+        "why": "the last three tasks are marked complete in the ledger but their 2463 lines were never committed, and the project check now fails hygiene on four deliberately silent handlers, so the work is neither durable nor deliverable",
+        "benefits": "the story campaign, operative relationships, run legacy, and Act III branch become committed history; the hygiene gate passes with its reasons recorded; the repository leaves the disrupted in-flight state",
+        "risks": "contract: none, only hygiene annotations and delivery; dependency: none; concurrency: none; state: source and ledger annotations change, no game data format changes",
+        "mitigation": "each annotation names why the discard is deliberate; tests already cover all three features at 148/148; run aikit check cyberpulse and node --check before the commit"
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-story-delivery-v1",
+      "phase": "phase 5",
+      "phase_num": 5,
+      "description": "[milestone 1/2] four deliberate hygiene discards documented on their handler lines, codebase map regenerated, node --check app.js clean, 148/148 tests green, aikit check cyberpulse 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792432762.8862631,
+      "timestamp_str": "2026-10-19 20:59:22"
     }
   ]
 }

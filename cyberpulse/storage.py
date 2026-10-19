@@ -61,7 +61,7 @@ class SaveManager:
                 corrupt_path = self.data_dir / f"{target_path.name}.corrupt_{int(time.time())}"
                 try:
                     shutil.move(target_path, corrupt_path)
-                except OSError:
+                except OSError:  # hygiene: allow quarantine best-effort; backup recovery follows
                     pass
 
         # Attempt recovery from shadow backup
@@ -69,7 +69,7 @@ class SaveManager:
             try:
                 with open(backup_path, "r", encoding="utf-8") as f:
                     return json.load(f)
-            except (json.JSONDecodeError, OSError):
+            except (json.JSONDecodeError, OSError):  # hygiene: allow unusable backup is reported as None
                 pass
 
         return None
@@ -95,6 +95,7 @@ class SaveManager:
             engine.deck = CyberDeck.from_dict(data["deck"])
             engine.state = GameState.from_dict(data["state"])
             engine.nodes = {nid: Node.from_dict(ndata) for nid, ndata in data["nodes"].items()}
+            engine.ensure_story_state()
             engine.rng = random.Random(engine.seed + engine.state.turns_elapsed)
             return engine
         except (KeyError, TypeError):

@@ -50,6 +50,11 @@
           <span class="gauge-label">CAREER BANK</span>
           <span class="gauge-value" id="val-bank">100 CR</span>
         </div>
+
+        <div class="gauge-box combo-box" id="gauge-combo">
+          <span class="gauge-label">NEURAL COMBO</span>
+          <span class="gauge-value highlight-value" id="val-combo">x0</span>
+        </div>
       </div>
 
       <!-- Control Toggles -->
@@ -83,11 +88,23 @@
           <div class="contract-meta" id="contract-status">TARGET: DATA_VAULT | MAX TRACE: 70%</div>
         </div>
 
+        <!-- Story Beat & Active Objective -->
+        <div class="story-card" id="story-card">
+          <div class="story-header">
+            <span class="story-tag">📖 STORY</span>
+            <span class="story-act" id="story-act">ACT I // Ghost in the Gateway</span>
+          </div>
+          <div class="story-objective" id="story-objective">Breach two FIREWALL routers to map the inner subnet.</div>
+        </div>
+
         <!-- Tactical Command Deck -->
         <div class="quick-actions">
           <button class="action-btn" id="btn-scan" title="Scan surrounding nodes (+1 CPU recovery, +5% trace)">📡 SCAN MATRIX <span class="kbd-badge">[S]</span></button>
           <button class="action-btn" id="btn-spoof" title="Burn 3 CPU to reduce trace by 25%">🛡️ SPOOF PROXY</button>
           <button class="action-btn alert-action" id="btn-jackout" title="Safe extraction: bank credits and secure career streak">🚪 JACK OUT <span class="kbd-badge">[J]</span></button>
+          <button class="action-btn special-action" id="btn-quests-open" title="Story log and mission board">📜 MISSIONS <span class="kbd-badge">[Q]</span></button>
+          <button class="action-btn info-action" id="btn-contacts-open" title="Talk to operatives, take jobs, call favors">🕶️ CONTACTS <span class="kbd-badge">[N]</span></button>
+          <button class="action-btn" id="btn-overdrive" title="Burn 2 CPU and 8% trace to stack a combo">⚡ OVERDRIVE</button>
           <button class="action-btn special-action" id="btn-cves-open" title="Weaponized Zero-Day CVE Exploit Arsenal">🎯 CVE ARSENAL <span class="kbd-badge">[C]</span></button>
           <button class="action-btn info-action" id="btn-rig-open" title="Inspect player CyberDeck virtual rig, local files & daemons">💻 LOCAL RIG <span class="kbd-badge">[R]</span></button>
           <button class="action-btn special-action" id="btn-workshop-open" title="Synthesize custom viruses & keyloggers">🧪 MALWARE LAB <span class="kbd-badge">[M]</span></button>
@@ -295,6 +312,7 @@
           <div class="dossier-row"><span class="k">TRACE SEVERANCES:</span> <span class="v" id="dossier-fails">0</span></div>
           <div class="dossier-row"><span class="k">CURRENT RUN STREAK:</span> <span class="v" id="dossier-streak">0</span></div>
           <div class="dossier-row"><span class="k">BEST RUN STREAK:</span> <span class="v" id="dossier-best">0</span></div>
+          <div class="dossier-row"><span class="k">BEST NEURAL COMBO:</span> <span class="v" id="dossier-combo">x0</span></div>
           <div class="dossier-row"><span class="k">INSTALLED HARDWARE:</span> <span class="v" id="dossier-upgrades">None</span></div>
         </div>
       </div>
@@ -423,6 +441,55 @@
       </div>
       <div class="bypass-target-info" id="bypass-target-info"></div>
       <div class="bypass-methods-grid" id="bypass-methods-grid"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Story Log & Mission Board -->
+  <div class="modal-overlay hidden" id="modal-quests">
+    <div class="modal-box quest-modal-box">
+      <div class="modal-header">
+        <span class="modal-title">&gt;&gt; STORY LOG // MISSION BOARD &lt;&lt;</span>
+        <button class="modal-close" id="btn-close-quests">&times;</button>
+      </div>
+      <div class="story-brief" id="story-brief"></div>
+      <div class="story-log" id="story-log"></div>
+      <div class="quests-grid" id="quests-grid"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Operative Contacts -->
+  <div class="modal-overlay hidden" id="modal-contacts">
+    <div class="modal-box contacts-modal-box">
+      <div class="modal-header">
+        <span class="modal-title">&gt;&gt; OPERATIVE CHANNELS // CHARACTERS &lt;&lt;</span>
+        <button class="modal-close" id="btn-close-contacts">&times;</button>
+      </div>
+      <div class="contacts-intro">Every operative has a job and one favor. Trust grows as you work together and spend favors.</div>
+      <div class="contacts-grid" id="contacts-grid"></div>
+    </div>
+  </div>
+
+  <!-- Main Menu -->
+  <div class="modal-overlay main-menu-overlay" id="modal-main-menu">
+    <div class="modal-box main-menu-box">
+      <div class="main-menu-kicker">CYBERPULSE // NEURAL INTRUSION HARNESS</div>
+      <h1 class="main-menu-title">THE SPRAWL IS LISTENING</h1>
+      <p class="main-menu-sub" id="main-menu-sub">
+        A dead courier left you a deck and one name: NEXUS. Jack in before someone else does.
+      </p>
+      <div class="main-menu-story" id="main-menu-story">ACT I // Ghost in the Gateway</div>
+      <div class="main-menu-actions">
+        <button class="hack-btn menu-primary" id="menu-jack-in">JACK IN</button>
+        <button class="action-btn" id="menu-new-run">NEW RUN</button>
+        <button class="action-btn" id="menu-story">STORY &amp; MISSIONS</button>
+        <button class="action-btn" id="menu-contacts">OPERATIVES</button>
+        <button class="action-btn" id="menu-career">CAREER</button>
+        <button class="action-btn" id="menu-help">HOW TO PLAY</button>
+      </div>
+      <div class="main-menu-help hidden" id="main-menu-help">
+        Scan the grid, probe ports, exploit services, steal files, wipe logs, and jack out to bank loot.
+        Breach nodes without breaking your combo. Talk to operatives for jobs and one-time favors.
+      </div>
     </div>
   </div>
 

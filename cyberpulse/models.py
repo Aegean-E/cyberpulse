@@ -91,6 +91,7 @@ class CareerProfile:
     failed_runs: int = 0
     current_streak: int = 0
     best_streak: int = 0
+    best_combo: int = 0
     purchased_upgrades: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -391,6 +392,59 @@ def apply_career_profile(deck: CyberDeck, profile: CareerProfile) -> None:
 
 
 @dataclass
+class Quest:
+    """A tracked story or side objective with a reward."""
+    quest_id: str
+    title: str
+    description: str
+    objective: str  # breach_type, breach_count, steal_file, wipe_logs, social_vector, deploy_daemon, craft_recipe, finish_run
+    target: str = ""
+    required: int = 1
+    progress: int = 0
+    reward_creds: int = 0
+    reward_item: str = ""
+    giver: str = ""
+    story_act: int = 1
+    story_chapter: int = 1
+    accepted: bool = False
+    completed: bool = False
+
+    @property
+    def ready(self) -> bool:
+        return self.progress >= max(1, self.required)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Quest":
+        return cls(**data)
+
+
+@dataclass
+class ContactProfile:
+    """A persistent in-game operative the player can talk to, work for, and call favors on."""
+    contact_id: str
+    name: str
+    handle: str
+    role: str
+    faction: str
+    tagline: str = ""
+    unlock_act: int = 1
+    trust: int = 0
+    favor_used: bool = False
+    quest_id: str = ""
+    secondary_quest_id: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ContactProfile":
+        return cls(**data)
+
+
+@dataclass
 class GameState:
     """The full runtime state of a CyberPulse infiltration run."""
     seed: int
@@ -405,6 +459,14 @@ class GameState:
     active_contract: Optional[BountyContract] = None
     near_miss_count: int = 0
     message_log: List[str] = field(default_factory=list)
+    combo_streak: int = 0
+    best_combo: int = 0
+    story_act: int = 1
+    story_chapter: int = 1
+    story_choice: str = ""
+    story_log: List[str] = field(default_factory=list)
+    quests: List[Quest] = field(default_factory=list)
+    contacts: List[ContactProfile] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         res = asdict(self)
@@ -418,4 +480,12 @@ class GameState:
         contract = BountyContract.from_dict(contract_data) if isinstance(contract_data, dict) else None
         data_clean = dict(data)
         data_clean["active_contract"] = contract
+        quests = data_clean.get("quests")
+        if isinstance(quests, list):
+            data_clean["quests"] = [Quest.from_dict(q) if isinstance(q, dict) else q for q in quests]
+        contacts = data_clean.get("contacts")
+        if isinstance(contacts, list):
+            data_clean["contacts"] = [
+                ContactProfile.from_dict(c) if isinstance(c, dict) else c for c in contacts
+            ]
         return cls(**data_clean)

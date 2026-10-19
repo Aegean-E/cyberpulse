@@ -34,6 +34,37 @@ class TestStorage(unittest.TestCase):
     def test_load_nonexistent(self):
         self.assertIsNone(self.save_mgr.load())
 
+    def test_save_preserves_story_quests_and_contacts(self):
+        engine = GameEngine(seed=42)
+        engine.complete_breach("node_proxy_a")
+        engine.state.story_act = 2
+        engine.state.story_choice = "zero_ally"
+        self.save_mgr.save(engine)
+
+        loaded = self.save_mgr.load()
+
+        self.assertIsNotNone(loaded)
+        self.assertEqual(loaded.state.story_act, 2)
+        self.assertEqual(loaded.state.story_choice, "zero_ally")
+        self.assertEqual(loaded._find_quest("q_gateway").progress, 1)
+        self.assertEqual(len(loaded.state.contacts), 4)
+        self.assertTrue(loaded.state.story_log)
+
+    def test_load_backfills_story_for_old_save(self):
+        engine = GameEngine(seed=42)
+        engine.state.quests = []
+        engine.state.contacts = []
+        engine.state.story_log = []
+        self.save_mgr.save(engine)
+
+        loaded = self.save_mgr.load()
+
+        self.assertIsNotNone(loaded)
+        self.assertEqual(len(loaded.state.quests), 7)
+        self.assertEqual(len(loaded.state.contacts), 4)
+        self.assertTrue(loaded.state.story_log)
+        self.assertEqual(loaded.state.story_choice, "")
+
     def test_career_save_and_load(self):
         profile = CareerProfile(
             alias="CrashOverride",
@@ -41,6 +72,7 @@ class TestStorage(unittest.TestCase):
             lifetime_creds=1250,
             successful_runs=4,
             current_streak=2,
+            best_combo=6,
             purchased_upgrades=["overclock_cpu"],
         )
         path = self.save_mgr.save_career(profile)
@@ -51,12 +83,19 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(restored.banked_creds, 450)
         self.assertEqual(restored.successful_runs, 4)
         self.assertEqual(restored.current_streak, 2)
+        self.assertEqual(restored.best_combo, 6)
         self.assertIn("overclock_cpu", restored.purchased_upgrades)
 
     def test_career_default_fallback(self):
         fallback = self.save_mgr.load_career()
         self.assertEqual(fallback.alias, "ZeroCool")
         self.assertEqual(fallback.successful_runs, 0)
+        self.assertEqual(fallback.best_combo, 0)
+
+    def test_old_career_payload_uses_best_combo_default(self):
+        profile = CareerProfile.from_dict({"alias": "OldTimer", "banked_creds": 55})
+        self.assertEqual(profile.alias, "OldTimer")
+        self.assertEqual(profile.best_combo, 0)
 
     def test_load_corrupted_save_with_backup_recovery(self):
         engine = GameEngine(seed=77)

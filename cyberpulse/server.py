@@ -1,9 +1,11 @@
 """Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck."""
 
 import json
+import math
 import mimetypes
 import os
 import sys
+import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -22,6 +24,18 @@ from cyberpulse.storage import SaveManager
 
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+MAX_BODY_BYTES = 1024 * 1024
+
+
+def coerce_seed(value: Any) -> int:
+    """Convert API/CLI seed input to an integer, rejecting non-finite or non-numeric values."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("seed must be a finite number") from exc
+    if not math.isfinite(number):
+        raise ValueError("seed must be finite")
+    return int(number)
 
 
 class CyberdeckSession:
@@ -35,9 +49,25 @@ class CyberdeckSession:
         self.engine = GameEngine(seed=seed, career_profile=self.career)
         self.active_puzzle: Optional[Any] = None
         self.active_puzzle_node_id: Optional[str] = None
+        self.lock = threading.RLock()
+
+    def settle_run_if_finished(self) -> Optional[Any]:
+        """Persist a victory/lockout exactly once as soon as the run reaches a terminal state."""
+        engine = self.engine
+        if engine.run_settled:
+            return None
+        if not (engine.state.is_victory or engine.state.is_game_over or engine.state.is_jacked_out):
+            return None
+
+        profile = self.save_mgr.load_career()
+        engine.settle_career(profile)
+        if not self.save_mgr.save_career(profile):
+            engine.run_settled = False
+        return profile
 
     def get_full_state(self) -> Dict[str, Any]:
         """Aggregate complete runtime state for frontend rendering."""
+        self.settle_run_if_finished()
         curr = self.engine.get_current_node()
         career = self.save_mgr.load_career()
         return {
@@ -47,6 +77,10 @@ class CyberdeckSession:
             "current_node": curr.to_dict(),
             "nodes": {nid: n.to_dict() for nid, n in self.engine.nodes.items()},
             "career": career.to_dict(),
+            "story": self.engine.story_summary(),
+            "run_summary": self.engine.run_summary(),
+            "quests": self.engine.list_quests(),
+            "contacts": self.engine.list_contacts(),
             "shop_items": self.shop.list_available(self.engine.deck),
             "workshop_recipes": self.engine.list_crafting_recipes(),
             "known_cves": self.engine.list_cves(),
@@ -60,7 +94,7 @@ class CyberdeckSession:
         }
 
     def reset_game(self, seed: Optional[int] = None) -> Dict[str, Any]:
-        new_seed = seed if seed is not None else (self.engine.seed + 1)
+        new_seed = coerce_seed(seed) if seed is not None else (self.engine.seed + 1)
         self.career = self.save_mgr.load_career()
         self.engine = GameEngine(seed=new_seed, career_profile=self.career)
         self.active_puzzle = None
@@ -72,6 +106,7 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
     """HTTP request handler providing REST API endpoints and static cyberdeck assets."""
 
     server_session: CyberdeckSession
+    timeout = 15
 
     def log_message(self, format: str, *args: Any) -> None:
         """Route cyberdeck request logs without cluttering console."""
@@ -82,20 +117,23 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(payload)))
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.end_headers()
         self.wfile.write(payload)
 
     def do_OPTIONS(self) -> None:
         self.send_response(HTTPStatus.NO_CONTENT)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Allow", "GET, POST, OPTIONS")
         self.end_headers()
 
     def do_GET(self) -> None:
+        path = self.path.split("?")[0]
+        if not path.startswith("/api/"):
+            self.serve_static(path)
+            return
+        with self.server_session.lock:
+            self._do_get()
+
+    def _do_get(self) -> None:
         path = self.path.split("?")[0]
 
         if path == "/api/state":
@@ -108,6 +146,7 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/career":
+            self.server_session.settle_run_if_finished()
             profile = self.server_session.save_mgr.load_career()
             self.send_json_response(profile.to_dict())
             return
@@ -168,15 +207,14 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 self.send_json_response({"ok": False, "error": f"Invalid node '{node_id}'"}, HTTPStatus.BAD_REQUEST)
                 return
 
-            can_hack, reason = self.server_session.engine.can_hack_node(node_id)
-            if not can_hack:
+            can_hack, reason, puzzle, node = self.server_session.engine.get_or_create_puzzle(node_id)
+            if not can_hack or puzzle is None or node is None:
                 self.send_json_response({"ok": False, "error": reason})
                 return
 
-            node = self.server_session.engine.nodes[node_id]
+            self.server_session.active_puzzle = puzzle
+            self.server_session.active_puzzle_node_id = node_id
             p_type = node.puzzle_type or "frequency"
-            seed = self.server_session.engine.seed + self.server_session.engine.state.turns_elapsed
-
             puzzle_payload: Dict[str, Any] = {
                 "ok": True,
                 "node_id": node_id,
@@ -185,32 +223,23 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 "puzzle_type": p_type,
             }
 
-            if p_type == "frequency":
-                p = FrequencyPuzzle.generate(seed)
-                self.server_session.active_puzzle = p
-                self.server_session.active_puzzle_node_id = node_id
+            if isinstance(puzzle, FrequencyPuzzle):
                 puzzle_payload.update({
-                    "tolerance": p.tolerance,
-                    "attempts_left": p.attempts_left,
+                    "tolerance": puzzle.tolerance,
+                    "attempts_left": puzzle.attempts_left,
                     "min_freq": 20.0,
                     "max_freq": 99.0,
                 })
-            elif p_type == "buffer":
-                p = BufferPuzzle.generate(seed)
-                self.server_session.active_puzzle = p
-                self.server_session.active_puzzle_node_id = node_id
+            elif isinstance(puzzle, BufferPuzzle):
                 puzzle_payload.update({
-                    "matrix": p.matrix,
-                    "target_seq": p.target_seq,
+                    "matrix": puzzle.matrix,
+                    "target_seq": puzzle.target_seq,
                 })
-            elif p_type == "hash":
-                p = HashCrackPuzzle.generate(seed)
-                self.server_session.active_puzzle = p
-                self.server_session.active_puzzle_node_id = node_id
+            elif isinstance(puzzle, HashCrackPuzzle):
                 puzzle_payload.update({
-                    "word_list": p.word_list,
-                    "word_length": len(p.target_word),
-                    "attempts_left": p.attempts_left,
+                    "word_list": puzzle.word_list,
+                    "word_length": len(puzzle.target_word),
+                    "attempts_left": puzzle.attempts_left,
                 })
 
             self.send_json_response(puzzle_payload)
@@ -246,21 +275,42 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "Failed to read file")
 
     def do_POST(self) -> None:
-        content_len = int(self.headers.get("Content-Length", 0))
-        body = self.rfile.read(content_len).decode("utf-8") if content_len > 0 else "{}"
         try:
+            content_len = int(self.headers.get("Content-Length", 0))
+        except (TypeError, ValueError):
+            self.send_json_response({"ok": False, "error": "Invalid Content-Length"}, HTTPStatus.BAD_REQUEST)
+            return
+        if content_len < 0 or content_len > MAX_BODY_BYTES:
+            self.send_json_response({"ok": False, "error": "Request body too large"}, HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+            return
+
+        try:
+            body = self.rfile.read(content_len).decode("utf-8") if content_len > 0 else "{}"
             payload = json.loads(body)
-        except json.JSONDecodeError:
+        except (UnicodeDecodeError, json.JSONDecodeError):
             self.send_json_response({"ok": False, "error": "Malformed JSON payload"}, HTTPStatus.BAD_REQUEST)
+            return
+        if not isinstance(payload, dict):
+            self.send_json_response({"ok": False, "error": "JSON payload must be an object"}, HTTPStatus.BAD_REQUEST)
             return
 
         path = self.path.split("?")[0]
+        with self.server_session.lock:
+            self._do_post(path, payload)
 
+    def _do_post(self, path: str, payload: Dict[str, Any]) -> None:
         if path == "/api/action":
             action = payload.get("action")
             engine = self.server_session.engine
             save_mgr = self.server_session.save_mgr
             shop = self.server_session.shop
+
+            if engine.state.is_victory and action != "reset":
+                self.send_json_response(
+                    {"ok": False, "error": "Mission already complete. Start a new run.", "state": self.server_session.get_full_state()},
+                    HTTPStatus.BAD_REQUEST,
+                )
+                return
 
             if action == "scan":
                 ok, msg, _ = engine.scan_surroundings()
@@ -278,18 +328,31 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 
+            if action == "overdrive":
+                ok, msg = engine.overdrive()
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action in ("contact", "talk", "interact"):
+                contact_id = payload.get("contact_id") or payload.get("target") or ""
+                mode = payload.get("mode", "talk")
+                ok, msg, report = engine.interact_contact(contact_id, mode)
+                self.send_json_response({
+                    "ok": ok,
+                    "message": msg,
+                    "report": report,
+                    "state": self.server_session.get_full_state(),
+                })
+                return
+
+            if action == "accept_quest":
+                quest_id = payload.get("quest_id") or payload.get("target") or ""
+                ok, msg = engine.accept_quest(quest_id)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
             if action == "jackout":
                 ok, msg = engine.jackout()
-                if ok:
-                    profile = save_mgr.load_career()
-                    profile.successful_runs += 1
-                    profile.current_streak += 1
-                    profile.best_streak = max(profile.best_streak, profile.current_streak)
-                    gained = max(0, engine.deck.cryptocreds + engine.state.unbanked_creds - profile.banked_creds)
-                    profile.banked_creds = engine.deck.cryptocreds
-                    profile.lifetime_creds += gained
-                    save_mgr.save_career(profile)
-                    save_mgr.delete_save()
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 
@@ -401,6 +464,10 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
             if action == "craft":
                 recipe = payload.get("recipe") or payload.get("recipe_id") or ""
                 ok, msg = engine.craft_virus(recipe)
+                if ok:
+                    profile = save_mgr.load_career()
+                    profile.banked_creds = engine.deck.cryptocreds
+                    save_mgr.save_career(profile)
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 
@@ -413,6 +480,12 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
 
             if action == "reset":
                 seed = payload.get("seed")
+                if seed is not None:
+                    try:
+                        seed = coerce_seed(seed)
+                    except (TypeError, ValueError):
+                        self.send_json_response({"ok": False, "error": "Seed must be a finite number"}, HTTPStatus.BAD_REQUEST)
+                        return
                 state = self.server_session.reset_game(seed)
                 self.send_json_response({"ok": True, "message": "Neural link reset.", "state": state})
                 return
@@ -429,25 +502,35 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 return
 
             engine = self.server_session.engine
-            node = engine.nodes[node_id]
-            guess = payload.get("guess")
+            if engine.state.is_game_over or engine.state.is_jacked_out or engine.state.is_victory:
+                self.send_json_response({"ok": False, "error": "Session is no longer active"}, HTTPStatus.BAD_REQUEST)
+                return
+            node = engine.nodes.get(node_id)
+            if node is None or engine.pending_puzzles.get(node_id) is not p:
+                self.server_session.active_puzzle = None
+                self.server_session.active_puzzle_node_id = None
+                self.send_json_response({"ok": False, "error": "Puzzle is no longer active"}, HTTPStatus.BAD_REQUEST)
+                return
 
+            guess = payload.get("guess")
             solved = False
             near_miss = False
             message = ""
+            exhausted = False
 
             if isinstance(p, FrequencyPuzzle):
                 try:
                     val = float(guess)
-                    solved, message = p.tune(val)
-                    near_miss = p.near_miss
-                    if near_miss:
-                        engine.state.near_miss_count += 1
-                    if not solved and p.attempts_left <= 0:
-                        engine.add_trace(node.trace_rate)
                 except (ValueError, TypeError):
                     self.send_json_response({"ok": False, "error": "Invalid frequency numeric value"}, HTTPStatus.BAD_REQUEST)
                     return
+                solved, message = p.tune(val)
+                near_miss = p.near_miss
+                if near_miss:
+                    engine.state.near_miss_count += 1
+                exhausted = not solved and p.attempts_left <= 0
+                if exhausted:
+                    engine.add_trace(node.trace_rate)
 
             elif isinstance(p, BufferPuzzle):
                 if not isinstance(guess, list):
@@ -459,17 +542,24 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                     engine.state.near_miss_count += 1
                 if not solved:
                     engine.add_trace(node.trace_rate)
+                    exhausted = True
 
             elif isinstance(p, HashCrackPuzzle):
                 solved, message = p.guess(str(guess))
                 near_miss = p.near_miss
                 if near_miss:
                     engine.state.near_miss_count += 1
-                if not solved and p.attempts_left <= 0:
+                exhausted = not solved and p.attempts_left <= 0
+                if exhausted:
                     engine.add_trace(node.trace_rate)
 
             if solved:
+                engine.clear_pending_puzzle(node_id)
                 engine.complete_breach(node_id)
+                self.server_session.active_puzzle = None
+                self.server_session.active_puzzle_node_id = None
+            elif exhausted:
+                engine.clear_pending_puzzle(node_id)
                 self.server_session.active_puzzle = None
                 self.server_session.active_puzzle_node_id = None
 

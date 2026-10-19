@@ -133,3 +133,55 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
 - **Context**: An independent review of the shipped game confirmed several user-facing defects: the `buy` branch never returned, so every purchase printed "Unknown command: 'buy'"; `serve_static` joined raw request paths onto the static root, allowing `../` path traversal (arbitrary local file read); numeric ports from CLI and REST input were parsed with a bare `int()` (ValueError tracebacks in the REPL and dropped connections from the API); a piped batch run tracebacked when a minigame read EOF; `_write_atomic` returned the target path after five failed replaces, so the CLI printed "progress saved" although nothing landed; every jackout added the entire wallet to `lifetime_creds`, double-counting the previously banked credits (fresh career starts at 100/100); the Web Cyberdeck workshop posted a nonexistent `recipe.recipe_id`, so every browser craft failed with "Unknown recipe ''"; the UI advertised wrong bypass CPU/trace costs; and two static assets loaded Google Fonts.
 - **Decision**: Return `True` after a handled `buy`; resolve static requests and reject paths outside the static root via `is_relative_to`; parse ports inside try/except (the REST API answers 400 `{"ok": false, "error": ...}`, the CLI prints a usage line); catch `EOFError` in the batch loop and stop the batch gracefully; make `_write_atomic` return `Optional[Path]`, create temp files with `tempfile.mkstemp` (cleaned in a `finally`), and have the CLI report an unpersisted save instead of claiming success; compute `gained = max(0, deck + unbanked - banked_before)` on jackout and victory paths (CLI and REST) and add only that to `lifetime_creds`; send `recipe.name` from the workshop client and render `[vector]` in the card; align the Web UI bypass cost labels with the engine's cost table; drop the Google Fonts links and extend the CSS font variables with local fallbacks.
 - **Consequences**: Purchases and browser crafting work, the web server cannot read files outside its static root, malformed input yields messages instead of tracebacks, saves never claim false success, `lifetime_creds` grows by the run's net gain over the starting bank instead of re-counting banked credits, and the UI renders fully offline. Test suite: 94 tests, 100% green in about a second.
+
+### ADR-010: Run-State Coherence: Idempotent Breaches, Persistent Puzzles, One-Shot Settlement, and Session Hardening
+- **Date**: 2026-10-19
+- **Status**: Accepted
+- **Context**: A second coherence audit found several state-lifecycle defects that survived the earlier reviews: `complete_breach` and `worm_replicator` could re-award a node already breached; `spoof_ip` always reported a 25% reduction even near zero; daemons kept harvesting after a trace lockout; `bypass_firewall`, `evade_antivirus`, and social engineering accepted targets outside the direct subnet; reopening a CLI/Web puzzle regenerated its attempts; the CLI victory path counted unbanked loot in `lifetime_creds` but never added it to the bank; the Web session settled only on jackout, not on victory or lockout; workshop affordability ignored banked credits; `wipe_logs` could be repeated for free trace loss; the initial extraction contract completed on a bare breach; the API sent wildcard CORS; a non-integer reset seed crashed the server; request bodies and JSON types were unvalidated; and shared session state was mutated concurrently by `ThreadingHTTPServer`.
+- **Decision**:
+  1. Make `complete_breach` reject terminal runs and already-breached nodes, clear any pending puzzle, and award rewards exactly once; require extraction contracts (target file/IP/log wipe) to complete through `download_file` plus `wipe_logs`, while simple sector contracts still complete on breach.
+  2. Persist one puzzle instance per node in `GameEngine.pending_puzzles`; CLI and REST resume remaining attempts and clear the entry on solve or exhaustion.
+  3. Add `GameEngine.settle_career` as the single one-shot run lifecycle used by CLI and Web: victory and jackout bank unbanked loot, lockout records a failure, and `lifetime_creds` grows only by net gain. Crafting and purchases persist banked spending immediately.
+  4. Guard daemon ticks, spoof reporting, wipe idempotence, and subnet reachability; advance daemon ticks for probes and log wipes.
+  5. Remove wildcard CORS, serialize state mutation with a session lock, validate body size/type and seeds (including float seeds), cap request bodies, read request bodies and serve static assets outside the lock, and keep the API same-origin.
+  6. Fix Web workshop affordability to use banked plus unbanked credits and make port-card bypass buttons target the selected port.
+  7. Do not delete a savegame from the Web session; it never loads one, so terminal Web runs must not destroy a CLI-owned save. Enforce the same terminal-state guards on every CLI-reachable mutating action and stop batch execution at victory/lockout.
+- **Consequences**: Rewards and career totals are truthful and idempotent; puzzle retries cost their remaining attempts; runs settle once across both interfaces; Web state is race-free and not readable by cross-site scripts; slow clients and static assets cannot hold the state lock; malformed input cannot crash the server or delete unrelated saves. Test suite: 119 tests, 100% green in about a second.
+
+### ADR-011: Story Campaign, Operative Relationships, Quest Board, and Combo/Overdrive Loop
+- **Date**: 2026-10-19
+- **Status**: Accepted
+- **Context**: CyberPulse had a strong tactical loop but no main menu, no narrative framing, no persistent goals beyond random contracts, no characters to interact with, and no moment-to-moment reward escalation. The Web and CLI also started abruptly, which made the game harder to onboard and gave the world no context.
+- **Decision**:
+  1. Add a CLI main menu (new run, continue, story briefing, operatives, career, help) and a Web main-menu overlay with the same entry points.
+  2. Add a five-act story campaign in `story.py`: Gateway, Money, Black ICE, Nexus Protocol, Zero Day. Story acts advance when main quests complete; story log seed lines and act titles are persisted.
+  3. Add persistent `Quest` and `ContactProfile` models on `GameState`. Seven quests cover main story and side objectives (breach types, file theft, log wipes, crafting, daemon deployment). Main quests auto-accept on act unlock; side quests are accepted through contacts or the mission board.
+  4. Add four operatives (Mira, Kilo, The Archivist, Agent Zero) with act-gated dialogue, trust, jobs, and one-time favors that reduce trace, restore CPU, reveal a locked node, or grant a chip.
+  5. Add combo-streak rewards (up to +50% breach bonus) and `overdrive` (2 CPU + 8% trace for +1 combo and +10 unbanked credits), with combo reset on lockout.
+  6. Expose story, quests, contacts, overdrive, contacts/interaction, and quest acceptance through the REST API and the Web CRT UI; keep CLI and Web behavior aligned.
+  7. Backfill story state in `SaveManager.load` for saves created before this feature, and persist all new fields atomically with the existing savegame.
+- **Consequences**: Players get a clear entry point, a narrative campaign, relationship-driven side content, and a risk/reward combo loop. Existing commands and saves remain compatible; the CLI/Web schemas grow additively. Test suite: 138 tests, 100% green.
+
+### ADR-012: Endgame Legacy Summary, Story Epilogues, and Career Best Combo
+- **Date**: 2026-10-19
+- **Status**: Accepted
+- **Context**: The story, quest, contact, and combo systems ended abruptly. Terminal runs showed a generic banner, combo skill was not recorded in the career dossier, and operative relationships never paid off after the run ended.
+- **Decision**:
+  1. Add `run_summary()` to the engine, deriving outcome, best combo, quest completion, unlocked operatives, and an epilogue from existing run state.
+  2. Add outcome, contact, and combo epilogue data in `story.py`; epilogues reflect victory/jackout/lockout, trust or favors spent, and combo milestones.
+  3. Add `best_combo` to `CareerProfile` with a default, update it on every settlement (including failures), and show it in the CLI dossier and Web career modal.
+  4. Include `run_summary` in `/api/state`; print the legacy block in CLI completion/jackout and show epilogue plus run stats in the Web victory/lockout banner.
+  5. Keep old saves compatible: missing `best_combo` defaults to 0 and story state is backfilled on load.
+- **Consequences**: Runs now end with narrative and statistical closure, combo mastery persists across the career, and operative relationships visibly affect the epilogue. Test suite: 143 tests, 100% green.
+
+### ADR-013: Act III Alliance Choice and Branching Operative Consequences
+- **Date**: 2026-10-19
+- **Status**: Accepted
+- **Context**: Operative interactions changed trust and rewards but never branched the story or ending. Agent Zero was introduced as a rival with no meaningful decision attached, so character relationships were still mostly cosmetic.
+- **Decision**:
+  1. Add persistent `GameState.story_choice` with an empty default for backward compatibility.
+  2. Offer a one-time Act III choice when Agent Zero is unlocked: ally (`zero_ally`) or defy (`zero_defy`).
+  3. Ally grants Zero trust and a ghost_protocol chip (or 150 unbanked credits if already owned); defy grants Mira trust and 150 unbanked credits.
+  4. Add choice-specific dialogue for Acts III/IV/V, a locked-choice label in the story payload, and choice-specific epilogue lines.
+  5. Expose the choice through the same `contact` mode on CLI and REST; the Web contacts modal shows ALLY/DEFY controls only when the pact is available.
+- **Consequences**: The story now has a consequential character branch that changes relationships, rewards, late dialogue, and the ending. The choice is persisted and old saves remain valid. Test suite: 148 tests, 100% green.

@@ -35,6 +35,57 @@ class TestCLI(unittest.TestCase):
         self.assertIn("--web", out)
         self.assertIn("--port", out)
 
+    def test_main_menu_quit(self):
+        with mock.patch("builtins.input", side_effect=["q"]):
+            code, out = self.run_cli()
+        self.assertEqual(code, 0)
+        self.assertIn("MAIN MENU", out)
+        self.assertIn("Neural link closed", out)
+
+    def test_main_menu_starts_run_then_quits(self):
+        with mock.patch("builtins.input", side_effect=["1", "quit"]):
+            code, out = self.run_cli()
+        self.assertEqual(code, 0)
+        self.assertIn("External Border Gateway", out)
+        self.assertIn("Neural link terminated", out)
+
+    def test_story_quests_contacts_and_overdrive_commands(self):
+        batch_cmds = "story;quests;contacts;overdrive;status"
+        code, out = self.run_cli("--seed", "1337", "--exec", batch_cmds)
+        self.assertEqual(code, 0)
+        self.assertIn("STORY // ACT I", out)
+        self.assertIn("MISSION BOARD", out)
+        self.assertIn("OPERATIVE CHANNELS", out)
+        self.assertIn("NEURAL OVERDRIVE", out)
+        self.assertIn("Combo: x1", out)
+
+    def test_agent_zero_alliance_after_act_three(self):
+        batch_cmds = (
+            "hack node_proxy_a;hack node_proxy_b;move node_proxy_a;"
+            "hack node_vault_1;move node_vault_1;steal /data/corporate_slush_fund.csv;"
+            "contact zero ally;contacts"
+        )
+        code, out = self.run_cli("--seed", "1337", "--auto-solve", "--exec", batch_cmds)
+        self.assertEqual(code, 0)
+        self.assertIn("ALLIANCE FORGED", out)
+        self.assertIn("ACT III", out)
+        self.assertIn("Agent Zero", out)
+
+    def test_jackout_records_best_combo_in_career(self):
+        batch_cmds = "overdrive;overdrive;jackout;career"
+        code, out = self.run_cli("--seed", "1337", "--exec", batch_cmds)
+        self.assertEqual(code, 0)
+        self.assertIn("RUN LEGACY", out)
+        self.assertIn("Best Neural Combo: x2", out)
+
+    def test_contact_job_and_favor_commands(self):
+        batch_cmds = "overdrive;contact kilo favor;contact kilo job;quests"
+        code, out = self.run_cli("--seed", "1337", "--exec", batch_cmds)
+        self.assertEqual(code, 0)
+        self.assertIn("CPU restored", out)
+        self.assertIn("QUEST ACCEPTED", out)
+        self.assertIn("Script Kiddie No More", out)
+
     def test_batch_infiltration_playthrough(self):
         # Scan, hack proxy a, move to proxy a, spoof trace, save game
         batch_cmds = "scan;hack node_proxy_a;move node_proxy_a;spoof;save"
@@ -58,6 +109,7 @@ class TestCLI(unittest.TestCase):
         code, out = self.run_cli("--seed", "1337", "--auto-solve", "--exec", batch_cmds)
         self.assertEqual(code, 0)
         self.assertIn("SAFE EXTRACTION", out)
+        self.assertIn("RUN LEGACY", out)
         self.assertIn("Career progression profile updated", out)
         self.assertIn("HACKER CAREER DOSSIER", out)
         self.assertIn("Heists Cleared:   1 successful", out)
@@ -172,17 +224,24 @@ class TestCLI(unittest.TestCase):
         # 1. No completion when game is active
         self.assertIsNone(handle_run_completion(engine, save_mgr))
 
-        # 2. Victory completion
+        # 2. Victory completion banks unbanked loot
         engine.state.is_victory = True
+        engine.state.unbanked_creds = 250
         prof = handle_run_completion(engine, save_mgr)
         self.assertIsNotNone(prof)
         self.assertEqual(prof.successful_runs, 1)
         self.assertEqual(prof.current_streak, 1)
+        self.assertEqual(prof.banked_creds, 350)
+        self.assertEqual(engine.deck.cryptocreds, 350)
+        self.assertEqual(engine.state.unbanked_creds, 0)
 
-        # 3. Game-over completion
-        engine.state.is_victory = False
-        engine.state.is_game_over = True
-        prof2 = handle_run_completion(engine, save_mgr)
+        # A terminal run is settled exactly once.
+        self.assertIsNone(handle_run_completion(engine, save_mgr))
+
+        # 3. Game-over completion on a separate run
+        game_over_engine = GameEngine(seed=42)
+        game_over_engine.state.is_game_over = True
+        prof2 = handle_run_completion(game_over_engine, save_mgr)
         self.assertIsNotNone(prof2)
         self.assertEqual(prof2.failed_runs, 1)
         self.assertEqual(prof2.current_streak, 0)
@@ -211,6 +270,24 @@ class TestCLI(unittest.TestCase):
             code, out = self.run_cli("--seed", "1337", "--exec", "hack node_proxy_a")
         self.assertEqual(code, 0)
         self.assertIn("Input stream closed", out)
+
+    def test_cli_reuses_pending_puzzle_attempts(self):
+        from cyberpulse.cli import execute_hack_puzzle
+        from cyberpulse.engine import GameEngine
+
+        engine = GameEngine(seed=1337)
+        ok, _, puzzle, _ = engine.get_or_create_puzzle("node_proxy_a")
+        self.assertTrue(ok)
+        puzzle.target_freq = 50.0
+        puzzle.tolerance = 0.1
+        puzzle.attempts_left = 1
+
+        with mock.patch("builtins.input", return_value="50.0"):
+            solved = execute_hack_puzzle(engine, "node_proxy_a")
+
+        self.assertTrue(solved)
+        self.assertEqual(engine.nodes["node_proxy_a"].status, "BREACHED")
+        self.assertNotIn("node_proxy_a", engine.pending_puzzles)
 
 
 if __name__ == "__main__":

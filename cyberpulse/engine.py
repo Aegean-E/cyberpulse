@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from cyberpulse.models import (
     BountyContract,
     CareerProfile,
+    ContactProfile,
     CyberDeck,
     EmployeeProfile,
     ExploitPayload,
@@ -19,6 +20,7 @@ from cyberpulse.models import (
     NodeStatus,
     NodeType,
     PortService,
+    Quest,
     SecurityAwarenessLevel,
     SocialVectorType,
     VirtualFile,
@@ -26,7 +28,23 @@ from cyberpulse.models import (
     apply_career_profile,
 )
 from cyberpulse.network import generate_network
+from cyberpulse.puzzles import BufferPuzzle, FrequencyPuzzle, HashCrackPuzzle
 from cyberpulse.rewards import roll_breach_reward
+from cyberpulse.story import (
+    CHOICE_EPILOGUES,
+    CHOICE_LABELS,
+    COMBO_EPILOGUES,
+    CONTACT_EPILOGUES,
+    FAVOR_DESCRIPTIONS,
+    MAIN_QUEST_IDS,
+    OUTCOME_EPILOGUES,
+    STORY_INTRO,
+    STORY_LOG_SEED,
+    act_title,
+    dialogue_for,
+    initial_contacts,
+    initial_quests,
+)
 
 KNOWN_CVES: Dict[str, ExploitPayload] = {
     "cve-2024-38812": ExploitPayload(
@@ -151,16 +169,16 @@ class GameEngine:
     """Manages gameplay rules, push-your-luck risk, and victory/defeat conditions."""
 
     def __init__(self, seed: int = 1337, career_profile: Optional[CareerProfile] = None):
-        self.seed = seed
-        self.rng = random.Random(seed)
-        self.nodes: Dict[str, Node] = generate_network(seed)
+        self.seed = int(seed)
+        self.rng = random.Random(self.seed)
+        self.nodes: Dict[str, Node] = generate_network(self.seed)
         self.deck: CyberDeck = CyberDeck()
         if career_profile:
             apply_career_profile(self.deck, career_profile)
 
         # Generate a procedural Syndicate Bounty Contract (Zeigarnik Effect)
         contract = BountyContract(
-            contract_id=f"cnt_{seed % 1000:03d}",
+            contract_id=f"cnt_{self.seed % 1000:03d}",
             title="Syndicate Infiltration Order: Data Extraction",
             target_node_type=NodeType.DATA_VAULT,
             target_ip="10.0.4.15",
@@ -171,15 +189,407 @@ class GameEngine:
         )
 
         self.state: GameState = GameState(
-            seed=seed,
+            seed=self.seed,
             current_node_id="node_gateway",
             trace_percent=0,
             turns_elapsed=0,
             active_contract=contract,
         )
+        self.state.story_log = list(STORY_LOG_SEED)
+        self.state.quests = initial_quests()
+        self.state.contacts = initial_contacts()
+        self._sync_story_quests()
+        self.pending_puzzles: Dict[str, Any] = {}
+        self.run_settled: bool = False
 
     def get_current_node(self) -> Node:
         return self.nodes[self.state.current_node_id]
+
+    def _find_quest(self, quest_id: Optional[str]) -> Optional[Quest]:
+        if not quest_id:
+            return None
+        for quest in self.state.quests:
+            if quest.quest_id == quest_id:
+                return quest
+        return None
+
+    def _find_contact(self, contact_id: Optional[str]) -> Optional[ContactProfile]:
+        if not contact_id:
+            return None
+        lookup = str(contact_id).strip().lower()
+        for contact in self.state.contacts:
+            if contact.contact_id == lookup or contact.handle.lower() == lookup or contact.name.lower() == lookup:
+                return contact
+        return None
+
+    def _log_story(self, message: str) -> None:
+        self.state.story_log.append(message)
+        if len(self.state.story_log) > 60:
+            del self.state.story_log[:-60]
+
+    def _sync_story_quests(self) -> None:
+        """Auto-accept unlocked main-story quests so the campaign cannot stall."""
+        for quest in self.state.quests:
+            if (
+                quest.quest_id in MAIN_QUEST_IDS
+                and not quest.accepted
+                and not quest.completed
+                and quest.story_act <= self.state.story_act
+            ):
+                quest.accepted = True
+                self._log_story(f"NEW MAIN QUEST: {quest.title} — {quest.description}")
+
+    def _advance_story(self, act: int, chapter: int, reason: str) -> str:
+        if act < self.state.story_act:
+            return ""
+        if act == self.state.story_act and chapter <= self.state.story_chapter:
+            return ""
+        self.state.story_act = act
+        self.state.story_chapter = chapter
+        title, subtitle = act_title(act)
+        message = f"{title} — {subtitle}: {reason}"
+        self._log_story(message)
+        self._sync_story_quests()
+        return message
+
+    def _progress_quests(self, objective: str, target: str = "", amount: int = 1) -> List[str]:
+        messages: List[str] = []
+        for quest in self.state.quests:
+            if not quest.accepted or quest.completed or quest.objective != objective:
+                continue
+            if quest.target and quest.target != target:
+                continue
+
+            quest.progress = min(max(1, quest.required), quest.progress + amount)
+            if quest.progress < max(1, quest.required):
+                continue
+
+            quest.completed = True
+            if quest.reward_creds:
+                self.state.unbanked_creds += quest.reward_creds
+            if quest.reward_item and quest.reward_item not in self.deck.exploits:
+                self.deck.exploits.append(quest.reward_item)
+
+            reward_bits = []
+            if quest.reward_creds:
+                reward_bits.append(f"+{quest.reward_creds} Creds")
+            if quest.reward_item:
+                reward_bits.append(f"[{quest.reward_item}]")
+            reward_text = ", ".join(reward_bits) if reward_bits else "story intel"
+            line = f"📜 QUEST COMPLETE: {quest.title}! Reward: {reward_text}."
+            self._log_story(line)
+            messages.append(line)
+
+            if quest.quest_id in MAIN_QUEST_IDS:
+                advanced = self._advance_story(
+                    quest.story_act + 1,
+                    1,
+                    f"{quest.title} resolved.",
+                )
+                if advanced:
+                    messages.append(f"📖 {advanced}")
+
+        return messages
+
+    def is_quest_locked(self, quest: Quest) -> bool:
+        if quest.quest_id in MAIN_QUEST_IDS and quest.story_act > self.state.story_act:
+            return True
+        giver = self._find_contact(quest.giver)
+        return bool(giver and giver.unlock_act > self.state.story_act)
+
+    def accept_quest(self, quest_id: str) -> Tuple[bool, str]:
+        """Accept a contact's side quest or expose an unlocked story objective."""
+        quest = self._find_quest(quest_id)
+        if not quest:
+            return False, f"Unknown quest '{quest_id}'."
+        if quest.completed:
+            return False, f"Quest '{quest.title}' is already complete."
+        if quest.accepted:
+            return False, f"Quest '{quest.title}' is already active."
+        if self.is_quest_locked(quest):
+            return False, f"Quest '{quest.title}' is not available until the story advances."
+
+        giver = self._find_contact(quest.giver)
+
+        quest.accepted = True
+        if giver:
+            giver.trust += 1
+        message = f"📜 QUEST ACCEPTED: {quest.title} — {quest.description}"
+        self._log_story(message)
+        self.state.message_log.append(message)
+        return True, message
+
+    def _apply_contact_favor(self, contact: ContactProfile) -> Tuple[bool, str]:
+        if contact.contact_id == "mira":
+            if self.state.trace_percent <= 0:
+                return False, "Mira cannot hide a trace that is already at 0%."
+            before = self.state.trace_percent
+            self.state.trace_percent = max(0, before - 20)
+            return True, f"Mira burns a Syndicate favor: trace reduced by {before - self.state.trace_percent}%."
+        if contact.contact_id == "kilo":
+            if self.deck.cpu_cycles >= self.deck.max_cpu:
+                return False, "Kilo says your deck is already running cool."
+            self.deck.cpu_cycles = self.deck.max_cpu
+            return True, f"Kilo vents the deck: CPU restored to {self.deck.max_cpu}/{self.deck.max_cpu}."
+        if contact.contact_id == "archivist":
+            locked = sorted(
+                (node for node in self.nodes.values() if node.status == NodeStatus.LOCKED),
+                key=lambda node: (node.security_level, node.node_id),
+            )
+            if not locked:
+                return False, "The Archive has no locked nodes left to expose."
+            node = locked[0]
+            node.status = NodeStatus.DISCOVERED
+            return True, f"The Archivist exposes '{node.name}' ({node.ip_address}) on your grid."
+        if contact.contact_id == "zero":
+            if "ghost_protocol" in self.deck.exploits:
+                self.state.unbanked_creds += 100
+                return True, "Agent Zero cannot spare a chip, but wires 100 unbanked Creds instead."
+            self.deck.exploits.append("ghost_protocol")
+            return True, "Agent Zero lends you a ghost_protocol exploit chip."
+
+        self.state.unbanked_creds += 50
+        return True, f"{contact.name} helps you out with 50 unbanked Creds."
+
+    def interact_contact(
+        self,
+        contact_id: str,
+        mode: str = "talk",
+    ) -> Tuple[bool, str, Dict[str, Any]]:
+        """Talk to an operative, accept their job, or spend their one-time favor."""
+        if self.state.is_game_over:
+            return False, "Cannot open a channel: system lockout in effect.", {}
+        if self.state.is_jacked_out:
+            return False, "Cannot open a channel: terminal session jacked out.", {}
+        if self.state.is_victory:
+            return False, "Cannot open a channel: mission already complete.", {}
+
+        contact = self._find_contact(contact_id)
+        if not contact:
+            return False, f"Unknown operative '{contact_id}'.", {}
+        if contact.unlock_act > self.state.story_act:
+            return False, f"{contact.name} is not on the grid yet.", {}
+
+        mode_key = str(mode or "talk").lower().strip()
+        report = {
+            "contact_id": contact.contact_id,
+            "name": contact.name,
+            "handle": contact.handle,
+            "role": contact.role,
+            "faction": contact.faction,
+            "trust": contact.trust,
+            "favor_used": contact.favor_used,
+            "choice": self.state.story_choice,
+            "pact_available": (
+                contact.contact_id == "zero"
+                and self.state.story_act >= 3
+                and not self.state.story_choice
+            ),
+            "mode": mode_key,
+        }
+
+        if mode_key in ("talk", "chat", ""):
+            line = dialogue_for(contact.contact_id, self.state.story_act, self.state.story_choice)
+            self.state.message_log.append(line)
+            report["dialogue"] = line
+            return True, line, report
+
+        if mode_key in ("ally", "defy"):
+            if contact.contact_id != "zero":
+                return False, f"{contact.name} has no alliance to offer.", report
+            if self.state.story_act < 3:
+                return False, "Agent Zero will not discuss an alliance until the Black ICE job.", report
+            if self.state.story_choice:
+                return False, f"You already chose: {CHOICE_LABELS.get(self.state.story_choice, self.state.story_choice)}.", report
+
+            if mode_key == "ally":
+                self.state.story_choice = "zero_ally"
+                contact.trust += 3
+                if "ghost_protocol" in self.deck.exploits:
+                    self.state.unbanked_creds += 150
+                    reward = "Zero wires 150 unbanked Creds."
+                else:
+                    self.deck.exploits.append("ghost_protocol")
+                    reward = "Zero shares a ghost_protocol exploit chip."
+                message = f"🤝 ALLIANCE FORGED: {CHOICE_LABELS['zero_ally']}. {reward}"
+            else:
+                self.state.story_choice = "zero_defy"
+                contact.trust = max(-1, contact.trust - 1)
+                mira = self._find_contact("mira")
+                if mira:
+                    mira.trust += 2
+                self.state.unbanked_creds += 150
+                message = f"⚔️ DEFIANCE DECLARED: {CHOICE_LABELS['zero_defy']}. Mira wires 150 unbanked Creds."
+
+            self._log_story(message)
+            self.state.message_log.append(message)
+            report["choice"] = self.state.story_choice
+            report["trust"] = contact.trust
+            report["pact_available"] = False
+            return True, message, report
+
+        if mode_key in ("job", "quest", "work"):
+            for quest_id in (contact.quest_id, contact.secondary_quest_id):
+                quest = self._find_quest(quest_id)
+                if quest and not quest.accepted and not quest.completed:
+                    ok, message = self.accept_quest(quest.quest_id)
+                    if ok:
+                        report["trust"] = contact.trust
+                        report["quest_id"] = quest.quest_id
+                    return ok, message, report
+            return False, f"{contact.name} has no new work for you right now.", report
+
+        if mode_key in ("favor", "help"):
+            if contact.favor_used:
+                return False, f"{contact.name} has already spent their favor this run.", report
+            ok, message = self._apply_contact_favor(contact)
+            if not ok:
+                return False, message, report
+            contact.favor_used = True
+            contact.trust += 1
+            self._log_story(f"FAVOR: {contact.name} — {message}")
+            self.state.message_log.append(message)
+            report["favor_used"] = True
+            report["trust"] = contact.trust
+            return True, message, report
+
+        return False, f"Unknown interaction '{mode}'. Use talk, job, or favor.", report
+
+    def ensure_story_state(self) -> None:
+        """Backfill story content when loading a save created before story support."""
+        if not self.state.story_log:
+            self.state.story_log = list(STORY_LOG_SEED)
+        if not self.state.quests:
+            self.state.quests = initial_quests()
+        if not self.state.contacts:
+            self.state.contacts = initial_contacts()
+        self._sync_story_quests()
+
+    def story_summary(self) -> Dict[str, Any]:
+        title, subtitle = act_title(self.state.story_act)
+        return {
+            "act": self.state.story_act,
+            "chapter": self.state.story_chapter,
+            "act_title": title,
+            "chapter_title": subtitle,
+            "intro": STORY_INTRO,
+            "choice": self.state.story_choice,
+            "choice_label": CHOICE_LABELS.get(self.state.story_choice, ""),
+            "log": self.state.story_log[-20:],
+        }
+
+    def run_summary(self) -> Dict[str, Any]:
+        """Return the terminal (or in-progress) run's legacy for CLI and Web display."""
+        if self.state.is_victory:
+            outcome = "victory"
+            outcome_title = "MISSION ACCOMPLISHED"
+        elif self.state.is_game_over:
+            outcome = "lockout"
+            outcome_title = "CONNECTION TERMINATED"
+        elif self.state.is_jacked_out:
+            outcome = "jackout"
+            outcome_title = "SAFE EXTRACTION"
+        else:
+            outcome = "active"
+            outcome_title = "RUN IN PROGRESS"
+
+        completed = [quest for quest in self.state.quests if quest.completed]
+        main_quests = [quest for quest in self.state.quests if quest.quest_id in MAIN_QUEST_IDS]
+        main_complete = bool(main_quests) and all(quest.completed for quest in main_quests)
+
+        epilogue = [OUTCOME_EPILOGUES.get(outcome, OUTCOME_EPILOGUES["active"])]
+        if self.state.story_choice:
+            choice_line = CHOICE_EPILOGUES.get(self.state.story_choice)
+            if choice_line:
+                epilogue.append(choice_line)
+        if main_complete and outcome == "victory":
+            epilogue.append("Every act of the NEXUS file is closed. The next story starts without you.")
+        for contact in self.state.contacts:
+            if contact.favor_used or contact.trust >= 3:
+                line = CONTACT_EPILOGUES.get(contact.contact_id)
+                if line:
+                    epilogue.append(line)
+        for threshold in sorted(COMBO_EPILOGUES, reverse=True):
+            if self.state.best_combo >= threshold:
+                epilogue.append(COMBO_EPILOGUES[threshold])
+                break
+
+        title, subtitle = act_title(self.state.story_act)
+        return {
+            "outcome": outcome,
+            "outcome_title": outcome_title,
+            "epilogue": epilogue,
+            "best_combo": self.state.best_combo,
+            "quests_completed": [quest.title for quest in completed],
+            "quests_completed_count": len(completed),
+            "quests_total": len(self.state.quests),
+            "main_story_complete": main_complete,
+            "contacts": [
+                {
+                    "contact_id": contact.contact_id,
+                    "name": contact.name,
+                    "trust": contact.trust,
+                    "favor_used": contact.favor_used,
+                }
+                for contact in self.state.contacts
+                if contact.unlock_act <= self.state.story_act
+            ],
+            "story_act": self.state.story_act,
+            "story_title": f"{title} // {subtitle}",
+        }
+
+    def list_quests(self) -> List[Dict[str, Any]]:
+        quests = []
+        for quest in self.state.quests:
+            data = quest.to_dict()
+            data["locked"] = self.is_quest_locked(quest)
+            quests.append(data)
+        return quests
+
+    def list_contacts(self) -> List[Dict[str, Any]]:
+        contacts = []
+        for contact in self.state.contacts:
+            data = contact.to_dict()
+            data["locked"] = contact.unlock_act > self.state.story_act
+            data["dialogue"] = dialogue_for(contact.contact_id, self.state.story_act, self.state.story_choice)
+            data["favor_description"] = FAVOR_DESCRIPTIONS.get(contact.contact_id, "")
+            data["pact_available"] = (
+                contact.contact_id == "zero"
+                and self.state.story_act >= 3
+                and not self.state.story_choice
+            )
+            contacts.append(data)
+        return contacts
+
+    def get_or_create_puzzle(self, node_id: str) -> Tuple[bool, str, Optional[Any], Optional[Node]]:
+        """Return the pending hacking puzzle for a node, creating it only once.
+
+        Keeping the puzzle instance on the engine prevents every CLI/API re-entry from
+        granting a fresh set of attempts for the same node.
+        """
+        ok, reason = self.can_hack_node(node_id)
+        if not ok:
+            return False, reason, None, None
+
+        node = self.nodes[node_id]
+        puzzle = self.pending_puzzles.get(node_id)
+        if puzzle is None:
+            node_salt = sum((index + 1) * ord(char) for index, char in enumerate(node_id))
+            seed = self.seed + (self.state.turns_elapsed * 31) + node_salt
+            p_type = node.puzzle_type or "frequency"
+            if p_type == "buffer":
+                puzzle = BufferPuzzle.generate(seed)
+            elif p_type == "hash":
+                puzzle = HashCrackPuzzle.generate(seed)
+            else:
+                puzzle = FrequencyPuzzle.generate(seed)
+            self.pending_puzzles[node_id] = puzzle
+
+        return True, "Puzzle active.", puzzle, node
+
+    def clear_pending_puzzle(self, node_id: str) -> None:
+        """Discard a solved or exhausted puzzle so the node cannot replay its attempts."""
+        self.pending_puzzles.pop(node_id, None)
 
     def add_trace(self, raw_amount: int) -> None:
         """Increase system trace, mitigated by ICE dampeners. 100% triggers lockout & loss of loot."""
@@ -199,6 +609,7 @@ class GameEngine:
 
         if self.state.trace_percent >= 100:
             self.state.is_game_over = True
+            self.state.combo_streak = 0
             lost_loot = self.state.unbanked_creds
             self.state.unbanked_creds = 0
             self.state.looted_payloads.clear()
@@ -220,10 +631,38 @@ class GameEngine:
             return False, "Cannot spoof: terminal session jacked out."
         if self.deck.cpu_cycles < 3:
             return False, "Insufficient CPU cycles (need 3 CPU)."
+        if self.state.trace_percent <= 0:
+            return False, "Cannot spoof: active trace is already at 0%."
         self.deck.cpu_cycles -= 3
-        reduced = 25
-        self.state.trace_percent = max(0, self.state.trace_percent - reduced)
+        before = self.state.trace_percent
+        self.state.trace_percent = max(0, before - 25)
+        reduced = before - self.state.trace_percent
         msg = f"🛡️ IP Proxy bounced. Trace reduced by {reduced}% (current: {self.state.trace_percent}%)."
+        self.state.message_log.append(msg)
+        return True, msg
+
+    def overdrive(self) -> Tuple[bool, str]:
+        """Burn CPU and trace to stack a combo before the next breach."""
+        if self.state.is_game_over:
+            return False, "Cannot overdrive: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot overdrive: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot overdrive: mission already complete."
+        if self.deck.cpu_cycles < 2:
+            return False, "Insufficient CPU cycles (need 2 CPU for overdrive)."
+        if self.state.trace_percent >= 92:
+            return False, "Cannot overdrive: trace is too high to risk another surge."
+
+        self.deck.cpu_cycles -= 2
+        self.state.combo_streak += 1
+        self.state.best_combo = max(self.state.best_combo, self.state.combo_streak)
+        self.state.unbanked_creds += 10
+        self.add_trace(8)
+        msg = (
+            f"⚡ NEURAL OVERDRIVE! Combo x{self.state.combo_streak} primed "
+            f"(+10 Creds, Trace +8% -> {self.state.trace_percent}%)."
+        )
         self.state.message_log.append(msg)
         return True, msg
 
@@ -233,6 +672,8 @@ class GameEngine:
             return False, "Cannot scan: system lockout in effect.", []
         if self.state.is_jacked_out:
             return False, "Cannot scan: terminal session jacked out.", []
+        if self.state.is_victory:
+            return False, "Cannot scan: mission already complete.", []
         current = self.get_current_node()
         revealed: List[Node] = []
         for adj_id in current.connected_ids:
@@ -254,6 +695,8 @@ class GameEngine:
             return False, "Cannot move: system lockout in effect."
         if self.state.is_jacked_out:
             return False, "Cannot move: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot move: mission already complete."
         if target_id not in self.nodes:
             return False, f"Unknown node: {target_id}"
 
@@ -289,6 +732,8 @@ class GameEngine:
             return False, "Cannot hack: system lockout in effect."
         if self.state.is_jacked_out:
             return False, "Cannot hack: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot hack: mission already complete."
         if target_id not in self.nodes:
             return False, f"Unknown node '{target_id}'."
 
@@ -321,22 +766,53 @@ class GameEngine:
         self.state.active_contract = new_contract
         return new_contract
 
+    def _contract_completes_on_breach(self, contract: BountyContract, node: Node) -> bool:
+        """Return True when a node breach satisfies a contract without extra objectives.
+
+        Extraction contracts that name a target file, target host, or log wipe must be
+        completed through ``download_file`` / ``wipe_logs`` instead of a bare breach.
+        """
+        if contract.completed:
+            return False
+        if contract.target_file or contract.target_ip or contract.wipe_logs_required:
+            return False
+        return (
+            node.node_type == contract.target_node_type
+            and self.state.trace_percent <= contract.max_trace_limit
+        )
+
     def complete_breach(self, node_id: str) -> Tuple[bool, str]:
         """Mark node as breached, evaluate variable-ratio rewards, and check contracts."""
+        if self.state.is_game_over:
+            return False, "Cannot breach: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot breach: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot breach: mission already complete."
         if node_id not in self.nodes:
             return False, f"Invalid node '{node_id}'."
 
         node = self.nodes[node_id]
+        if node.status == NodeStatus.BREACHED:
+            return False, f"Node '{node.name}' is already breached."
+
         node.status = NodeStatus.BREACHED
+        self.clear_pending_puzzle(node_id)
 
         # Variable-ratio reward roll (Skinner reinforcement schedule)
         creds_awarded, reward_desc, exploit_drop = roll_breach_reward(node, self.rng)
-        self.state.unbanked_creds += creds_awarded
+        self.state.combo_streak += 1
+        self.state.best_combo = max(self.state.best_combo, self.state.combo_streak)
+        combo_rate = min(0.50, 0.10 * self.state.combo_streak)
+        combo_bonus = int(creds_awarded * combo_rate)
+        self.state.unbanked_creds += creds_awarded + combo_bonus
 
         if exploit_drop and exploit_drop not in self.deck.exploits:
             self.deck.exploits.append(exploit_drop)
 
         msg = f"💥 Infiltration successful! '{node.name}' breached. {reward_desc}"
+        if combo_bonus:
+            msg += f" 🔥 COMBO x{self.state.combo_streak}: +{combo_bonus} bonus Creds!"
 
         if node.data_payload:
             self.state.looted_payloads.append(node.data_payload)
@@ -344,12 +820,15 @@ class GameEngine:
 
         # Syndicate Contract Check (Zeigarnik Effect)
         contract = self.state.active_contract
-        if contract and not contract.completed:
-            if node.node_type == contract.target_node_type and self.state.trace_percent <= contract.max_trace_limit:
-                contract.completed = True
-                self.state.unbanked_creds += contract.reward_creds
-                msg += f" 🏆 CONTRACT FULFILLED! +{contract.reward_creds} Creds!"
-                self.dispatch_next_contract()
+        if contract and self._contract_completes_on_breach(contract, node):
+            contract.completed = True
+            self.state.unbanked_creds += contract.reward_creds
+            msg += f" 🏆 CONTRACT FULFILLED! +{contract.reward_creds} Creds!"
+            self.dispatch_next_contract()
+
+        # Story quest progress
+        for line in self._progress_quests("breach_type", node.node_type):
+            msg += f"\n{line}"
 
         # Unlock adjacent nodes to DISCOVERED
         for adj_id in node.connected_ids:
@@ -370,6 +849,8 @@ class GameEngine:
             return False, "Cannot use exploit: system lockout in effect."
         if self.state.is_jacked_out:
             return False, "Cannot use exploit: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot use exploit: mission already complete."
 
         name = str(exploit_name or "").lower().strip()
         if not name:
@@ -397,8 +878,10 @@ class GameEngine:
             if target_id not in curr.connected_ids and target_id != curr.node_id:
                 return False, f"Target '{target.name}' is not in direct subnet range of '{curr.name}'."
 
+            breached, breach_msg = self.complete_breach(target_id)
+            if not breached:
+                return False, breach_msg
             self.deck.exploits.remove(name)
-            _, breach_msg = self.complete_breach(target_id)
             msg = f"💣 LOGIC BOMB DETONATED! Destroyed ICE defenses on '{target.name}'. {breach_msg}"
             return True, msg
 
@@ -443,11 +926,15 @@ class GameEngine:
             node = self.find_node(target_id)
             if not node:
                 return False, f"Target '{target_id}' not found."
+            if node.status == NodeStatus.BREACHED:
+                return False, f"Node '{node.name}' is already breached."
             curr = self.get_current_node()
             if node.node_id not in curr.connected_ids and node.node_id != curr.node_id:
                 return False, f"Target '{node.hostname}' is not in direct subnet range."
+            breached, breach_msg = self.complete_breach(node.node_id)
+            if not breached:
+                return False, breach_msg
             self.deck.exploits.remove(name)
-            _, breach_msg = self.complete_breach(node.node_id)
             for adj_id in node.connected_ids:
                 adj = self.nodes.get(adj_id)
                 if adj and adj.status == NodeStatus.LOCKED:
@@ -471,6 +958,8 @@ class GameEngine:
             return False, "Cannot jack out: terminal already locked out."
         if self.state.is_jacked_out:
             return False, "Already jacked out."
+        if self.state.is_victory:
+            return False, "Mission already complete; extraction is automatic."
 
         curr = self.get_current_node()
         if curr.status != NodeStatus.BREACHED:
@@ -483,8 +972,38 @@ class GameEngine:
         self.state.is_jacked_out = True
 
         msg = f"🚪 SAFE EXTRACTION! Banked {banked} CryptoCreds and secured {payload_count} data payloads."
+        for line in self._progress_quests("finish_run", "jackout"):
+            msg += f"\n{line}"
         self.state.message_log.append(msg)
         return True, msg
+
+    def settle_career(self, profile: CareerProfile) -> bool:
+        """Apply a finished run's outcome to the persistent profile exactly once.
+
+        Victory and manual jackout bank all unbanked loot; a lockout records a failed run.
+        ``lifetime_creds`` grows only by the net gain over the profile's prior bank.
+        """
+        if self.run_settled:
+            return False
+        if not (self.state.is_victory or self.state.is_game_over or self.state.is_jacked_out):
+            return False
+
+        if self.state.is_victory or self.state.is_jacked_out:
+            self.deck.cryptocreds += self.state.unbanked_creds
+            self.state.unbanked_creds = 0
+            profile.successful_runs += 1
+            profile.current_streak += 1
+            profile.best_streak = max(profile.best_streak, profile.current_streak)
+        else:
+            profile.failed_runs += 1
+            profile.current_streak = 0
+
+        profile.best_combo = max(profile.best_combo, self.state.best_combo)
+        gained = max(0, self.deck.cryptocreds - profile.banked_creds)
+        profile.banked_creds = self.deck.cryptocreds
+        profile.lifetime_creds += gained
+        self.run_settled = True
+        return True
 
     def find_node(self, query: Optional[str]) -> Optional[Node]:
         """Lookup node by node_id, ip_address, or hostname."""
@@ -504,6 +1023,8 @@ class GameEngine:
             return False, "Cannot probe: system lockout in effect.", None
         if self.state.is_jacked_out:
             return False, "Cannot probe: terminal session jacked out.", None
+        if self.state.is_victory:
+            return False, "Cannot probe: mission already complete.", None
 
         node = self.find_node(target_query)
         if not node:
@@ -519,6 +1040,7 @@ class GameEngine:
         self.add_trace(4)
         self.regenerate_cpu(1)
         self.state.turns_elapsed += 1
+        self.tick_daemons()
 
         port_data = []
         for p in node.ports:
@@ -560,6 +1082,8 @@ class GameEngine:
             return False, "Cannot exploit: system lockout in effect."
         if self.state.is_jacked_out:
             return False, "Cannot exploit: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot exploit: mission already complete."
 
         node = self.find_node(target_query)
         if not node:
@@ -630,7 +1154,10 @@ class GameEngine:
         self.add_trace(trace_add)
         self.state.turns_elapsed += 1
         self.tick_daemons()
-        _, breach_msg = self.complete_breach(node.node_id)
+        breached, breach_msg = self.complete_breach(node.node_id)
+        if not breached:
+            msg = f"💥 EXPLOIT LANDED but root access was interrupted on {node.hostname}:\n{breach_msg}{av_notice}"
+            return False, msg
         msg = f"💥 EXPLOIT SUCCESSFUL! Injected {exploit_label} via port {port_num} ({target_port.service}). Root access acquired on {node.hostname} ({node.ip_address})!\n{breach_msg}{av_notice}"
         return True, msg
 
@@ -691,6 +1218,8 @@ class GameEngine:
             return False, "Cannot download: system lockout in effect.", None
         if self.state.is_jacked_out:
             return False, "Cannot download: terminal session jacked out.", None
+        if self.state.is_victory:
+            return False, "Cannot download: mission already complete.", None
 
         node = self.find_node(target_query)
         if not node:
@@ -730,8 +1259,16 @@ class GameEngine:
 
         contract = self.state.active_contract
         if contract and not contract.completed:
-            if (contract.target_file and (contract.target_file == vfile.path or vfile.is_target_data)) or \
-               (contract.target_ip and contract.target_ip == node.ip_address):
+            if contract.target_file:
+                target_matches = contract.target_file == vfile.path
+            elif contract.target_ip:
+                target_matches = contract.target_ip == node.ip_address
+            else:
+                target_matches = (
+                    node.node_type == contract.target_node_type
+                    and self.state.trace_percent <= contract.max_trace_limit
+                )
+            if target_matches:
                 if not contract.wipe_logs_required or node.logs_cleared:
                     contract.completed = True
                     self.state.unbanked_creds += contract.reward_creds
@@ -739,6 +1276,9 @@ class GameEngine:
                     self.dispatch_next_contract()
                 else:
                     msg += f"\n⚠️ BOUNTY OBJECTIVE: Target data stolen, but contract requires logs to be wiped! Run: wipe_logs {node.ip_address}"
+
+        for line in self._progress_quests("steal_file", vfile.path):
+            msg += f"\n{line}"
 
         self.state.message_log.append(msg)
         return True, msg, vfile
@@ -749,6 +1289,8 @@ class GameEngine:
             return False, "Cannot wipe logs: system lockout in effect."
         if self.state.is_jacked_out:
             return False, "Cannot wipe logs: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot wipe logs: mission already complete."
 
         node = self.find_node(target_query)
         if not node:
@@ -757,32 +1299,44 @@ class GameEngine:
         if node.status != NodeStatus.BREACHED:
             return False, f"Access Denied: Host {node.hostname} is not breached."
 
+        if node.logs_cleared:
+            return False, f"Logs on {node.hostname} are already sanitized."
+
         node.logs_cleared = True
         trace_drop = min(self.state.trace_percent, 20)
         self.state.trace_percent = max(0, self.state.trace_percent - 20)
+        self.state.turns_elapsed += 1
+        self.tick_daemons()
 
         msg = f"🧹 LOGS SANITIZED: Erased intruder access timestamps on {node.hostname} ({node.ip_address}). Trace dropped by {trace_drop}% (current: {self.state.trace_percent}%)."
 
         contract = self.state.active_contract
         if contract and not contract.completed and contract.wipe_logs_required:
-            has_looted_target = any(
-                (contract.target_file and contract.target_file in p) or
-                (contract.target_ip and contract.target_ip == node.ip_address)
-                for p in self.state.looted_payloads
+            target_host_match = not contract.target_ip or contract.target_ip == node.ip_address
+            has_looted_target = (
+                not contract.target_file or contract.target_file in self.state.looted_payloads
             )
-            if has_looted_target:
+            if target_host_match and has_looted_target:
                 contract.completed = True
                 self.state.unbanked_creds += contract.reward_creds
                 msg += f"\n🏆 SYNDICATE CONTRACT COMPLETED! Clean exit confirmed. +{contract.reward_creds} Creds!"
                 self.dispatch_next_contract()
+
+        for line in self._progress_quests("wipe_logs", node.ip_address):
+            msg += f"\n{line}"
 
         self.state.message_log.append(msg)
         return True, msg
 
     def tick_daemons(self) -> List[str]:
         """Process active background malware daemons (e.g. keyloggers) and host antivirus sweeps."""
+        if self.state.is_game_over or self.state.is_jacked_out or self.state.is_victory:
+            return []
+
         messages = []
         for daemon in list(self.deck.active_daemons):
+            if self.state.is_game_over or self.state.is_jacked_out or self.state.is_victory:
+                break
             daemon.turns_active += 1
             node = self.nodes.get(daemon.target_node_id)
             if not node or node.status != NodeStatus.BREACHED:
@@ -801,6 +1355,8 @@ class GameEngine:
                         q_msg = f"🛡️ [ANTIVIRUS QUARANTINE] {node.antivirus.name} on {node.hostname} detected and terminated background {daemon.daemon_type}! Alert Level: {node.antivirus.alert_level}%. Active Trace +15%!"
                         messages.append(q_msg)
                         self.state.message_log.append(q_msg)
+                        if self.state.is_game_over:
+                            break
                         continue
 
             self.state.unbanked_creds += daemon.yield_per_turn
@@ -808,6 +1364,8 @@ class GameEngine:
             msg = f"📡 [{daemon.daemon_type.upper()}] Harvested +{daemon.yield_per_turn} unbanked Creds from {node.hostname} (Trace +{daemon.detection_risk}%)."
             messages.append(msg)
             self.state.message_log.append(msg)
+            if self.state.is_game_over:
+                break
         return messages
 
     def deploy_daemon(self, target_query: str, daemon_type: str = "keylogger") -> Tuple[bool, str]:
@@ -816,6 +1374,8 @@ class GameEngine:
             return False, "Cannot deploy daemon: system lockout in effect."
         if self.state.is_jacked_out:
             return False, "Cannot deploy daemon: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot deploy daemon: mission already complete."
 
         node = self.find_node(target_query)
         if not node:
@@ -842,6 +1402,8 @@ class GameEngine:
         )
         self.deck.active_daemons.append(daemon)
         msg = f"👾 DAEMON INITIALIZED: [{daemon_type.upper()}] active on {node.hostname} ({node.ip_address}). Passively harvesting +25 unbanked Creds/turn."
+        for line in self._progress_quests("deploy_daemon", daemon_type):
+            msg += f"\n{line}"
         self.state.message_log.append(msg)
         return True, msg
 
@@ -879,7 +1441,7 @@ class GameEngine:
 
     def social_engineer(self, target_query: str, vector: str = "spear_phish", employee_name: Optional[str] = None) -> Tuple[bool, str, Dict[str, Any]]:
         """Launch an interactive social engineering attack (pretext, bait, spear_phish, vishing) against target employees."""
-        vector_key = vector.lower().strip()
+        vector_key = str(vector or "").lower().strip()
         valid_vectors = [SocialVectorType.PRETEXT, SocialVectorType.BAIT, SocialVectorType.SPEAR_PHISH, SocialVectorType.VISHING]
         if vector_key not in valid_vectors:
             return False, f"Invalid vector '{vector}'. Valid options: pretext, bait, spear_phish, vishing.", {}
@@ -888,6 +1450,8 @@ class GameEngine:
             return False, "Cannot engage: system lockout in effect.", {}
         if self.state.is_jacked_out:
             return False, "Cannot engage: terminal session jacked out.", {}
+        if self.state.is_victory:
+            return False, "Cannot engage: mission already complete.", {}
 
         node = self.find_node(target_query)
         if not node:
@@ -897,7 +1461,7 @@ class GameEngine:
             return False, f"Host {node.hostname} ({node.ip_address}) is already compromised.", {}
 
         curr = self.get_current_node()
-        if node.status == NodeStatus.LOCKED and node.node_id not in curr.connected_ids and node.node_id != curr.node_id:
+        if node.node_id not in curr.connected_ids and node.node_id != curr.node_id:
             return False, f"Target {node.hostname} is out of subnet range.", {}
 
         if self.deck.cpu_cycles < 1:
@@ -982,6 +1546,8 @@ class GameEngine:
             if fw_bypass_notice:
                 msg += fw_bypass_notice
             msg += f"   * Harvested auth token saved to local rig at {cred_file}."
+            for line in self._progress_quests("social_vector", vector_key):
+                msg += f"\n{line}"
             self.state.message_log.append(f"Social engineering [{vector_key}] success on {node.hostname}.")
             return True, msg, report
         else:
@@ -1021,15 +1587,21 @@ class GameEngine:
             return False, "Cannot bypass firewall: system lockout in effect."
         if self.state.is_jacked_out:
             return False, "Cannot bypass firewall: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot bypass firewall: mission already complete."
 
         node = self.find_node(target_query)
         if not node:
             return False, f"Target '{target_query}' not found."
 
+        curr = self.get_current_node()
+        if node.node_id not in curr.connected_ids and node.node_id != curr.node_id:
+            return False, f"Target {node.hostname} ({node.ip_address}) is not in direct subnet range."
+
         if not node.firewall or not node.firewall.enabled:
             return False, f"Host {node.hostname} has no active firewall."
 
-        method_key = method.lower().strip()
+        method_key = str(method or "").lower().strip()
         costs = {
             "knock": {"cpu": 1, "trace": 5, "name": "Port Knocking Sequence"},
             "fragment": {"cpu": 1, "trace": 7, "name": "MTU Packet Fragmentation"},
@@ -1083,10 +1655,16 @@ class GameEngine:
             return False, "Cannot evade AV: system lockout in effect."
         if self.state.is_jacked_out:
             return False, "Cannot evade AV: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot evade AV: mission already complete."
 
         node = self.find_node(target_query)
         if not node:
             return False, f"Target '{target_query}' not found."
+
+        curr = self.get_current_node()
+        if node.node_id not in curr.connected_ids and node.node_id != curr.node_id:
+            return False, f"Target {node.hostname} ({node.ip_address}) is not in direct subnet range."
 
         if not node.antivirus or not node.antivirus.enabled:
             return False, f"Host {node.hostname} has no active Antivirus to evade."
@@ -1094,7 +1672,7 @@ class GameEngine:
         if node.antivirus.evaded:
             return False, f"Antivirus on {node.hostname} ({node.antivirus.name}) is already evaded and blinded."
 
-        method_key = method.lower().strip()
+        method_key = str(method or "").lower().strip()
         costs = {
             "rootkit": {"cpu": 2, "trace": 6, "name": "Kernel Rootkit Hook"},
             "spoof": {"cpu": 1, "trace": 8, "name": "Signature Morphing Shifter"},
@@ -1128,6 +1706,8 @@ class GameEngine:
             return False, "Cannot craft virus: system lockout in effect."
         if self.state.is_jacked_out:
             return False, "Cannot craft virus: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot craft virus: mission already complete."
 
         recipe_key = str(recipe_name or "").lower().strip()
         recipe = CRAFTING_RECIPES.get(recipe_key)
@@ -1149,6 +1729,8 @@ class GameEngine:
 
         self.deck.exploits.append(recipe.name)
         msg = f"🧬 WORKSHOP SYNTHESIS COMPLETE: Crafted virus chip '{recipe.name}' (Vector: {recipe.vector}, Payload: {recipe.payload}). Loaded into deck exploits."
+        for line in self._progress_quests("craft_recipe", recipe_key):
+            msg += f"\n{line}"
         self.state.message_log.append(msg)
         return True, msg
 

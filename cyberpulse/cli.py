@@ -24,8 +24,8 @@ def setup_terminal_encoding() -> None:
         if hasattr(stream, "reconfigure"):
             try:
                 stream.reconfigure(encoding="utf-8", errors="replace")
-            except (ValueError, OSError):
-                pass  # detached or non-reconfigurable stream; plain prints still work
+            except (ValueError, OSError):  # hygiene: allow detached stream; plain prints still work
+                pass
 
 
 def safe_print(msg: str) -> None:
@@ -35,8 +35,8 @@ def safe_print(msg: str) -> None:
     except UnicodeEncodeError:
         try:
             print(msg.encode("ascii", errors="replace").decode("ascii"))
-        except (OSError, ValueError):
-            pass  # the fallback stream is unusable; there is nowhere left to report
+        except (OSError, ValueError):  # hygiene: allow fallback stream unusable, nowhere to report
+            pass
 
 
 setup_terminal_encoding()
@@ -82,6 +82,9 @@ def print_hud(engine: GameEngine) -> None:
     print(f"[*] Contract:   {contract_str}")
     if engine.state.near_miss_count > 0:
         print(f"[*] Adrenaline: [NEAR-MISS ENCOUNTERS: {engine.state.near_miss_count}]")
+    story = engine.story_summary()
+    active_quests = sum(1 for q in engine.state.quests if q.accepted and not q.completed)
+    print(f"[*] Story:      {story['act_title']} // {story['chapter_title']} | Combo: x{engine.state.combo_streak} | Quests: {active_quests} active")
     print("--------------------------------------------------------------------------")
     print("Discovered Subnet Nodes:")
     for cid in curr.connected_ids:
@@ -116,6 +119,7 @@ def print_career(profile: CareerProfile) -> None:
     print(f"[*] Lifetime Stolen:  {profile.lifetime_creds} CryptoCreds")
     print(f"[*] Heists Cleared:   {profile.successful_runs} successful | {profile.failed_runs} severed")
     print(f"[*] Infiltration Run: Streak: {profile.current_streak} (Best: {profile.best_streak})")
+    print(f"[*] Best Neural Combo: x{profile.best_combo}")
     upgrades = ', '.join(profile.purchased_upgrades) if profile.purchased_upgrades else "None"
     print(f"[*] Hardware Rig:     {upgrades}")
     print("+==========================================================================+")
@@ -167,44 +171,159 @@ def print_cves(engine: GameEngine) -> None:
     print("+==========================================================================+")
 
 
+def print_story(engine: GameEngine) -> None:
+    story = engine.story_summary()
+    print("\n+==========================================================================+")
+    print(f"|                 >> STORY // {story['act_title']}: {story['chapter_title']} <<")
+    print("+==========================================================================+")
+    print(f"[*] {story['intro']}")
+    print("--------------------------------------------------------------------------")
+    for line in story["log"][-6:]:
+        print(f"   > {line}")
+    print("+==========================================================================+")
+
+
+def print_run_summary(engine: GameEngine) -> None:
+    summary = engine.run_summary()
+    print("\n+==========================================================================+")
+    print(f"|                 >> RUN LEGACY // {summary['outcome_title']} <<")
+    print("+==========================================================================+")
+    print(f"[*] Story:       {summary['story_title']}")
+    print(f"[*] Best Combo:  x{summary['best_combo']} | Quests: {summary['quests_completed_count']}/{summary['quests_total']}")
+    real_contacts = [c for c in summary["contacts"] if c["trust"] > 0 or c["favor_used"]]
+    if real_contacts:
+        print("[*] Operatives:  " + ", ".join(
+            f"{c['name']} (trust {c['trust']}{', favor spent' if c['favor_used'] else ''})"
+            for c in real_contacts
+        ))
+    print("--------------------------------------------------------------------------")
+    for line in summary["epilogue"]:
+        print(f"   > {line}")
+    print("+==========================================================================+")
+
+
+def print_quests(engine: GameEngine) -> None:
+    print("\n+==========================================================================+")
+    print("|                     >> MISSION BOARD // QUESTS <<                        |")
+    print("+==========================================================================+")
+    for quest in engine.state.quests:
+        if quest.completed:
+            status = "[COMPLETE]"
+        elif engine.is_quest_locked(quest):
+            status = "[LOCKED]"
+        elif quest.accepted:
+            status = f"[{quest.progress}/{max(1, quest.required)}]"
+        else:
+            status = "[AVAILABLE]"
+        giver = engine._find_contact(quest.giver)
+        giver_name = giver.name if giver else quest.giver
+        print(f"   * {quest.quest_id:<16} {status:<12} {quest.title} (+{quest.reward_creds} CR)")
+        print(f"     {quest.description} // Contact: {giver_name}")
+    print("--------------------------------------------------------------------------")
+    print("Accept with: accept <quest_id>. Talk to contacts with: contact <handle> job")
+    print("+==========================================================================+")
+
+
+def print_contacts(engine: GameEngine) -> None:
+    print("\n+==========================================================================+")
+    print("|                    >> OPERATIVE CHANNELS // CONTACTS <<                  |")
+    print("+==========================================================================+")
+    for contact in engine.list_contacts():
+        if contact["locked"]:
+            print(f"   * {contact['handle']:<16} [SIGNAL LOCKED] {contact['name']}")
+            continue
+        favor = "SPENT" if contact["favor_used"] else "READY"
+        print(f"   * {contact['handle']:<16} {contact['name']:<16} Trust: {contact['trust']} | Favor: {favor}")
+        print(f"     {contact['role']} // {contact['faction']} // {contact['tagline']}")
+        print(f"     \"{contact['dialogue']}\"")
+    print("--------------------------------------------------------------------------")
+    print("Talk: contact <handle> talk | Job: contact <handle> job | Favor: contact <handle> favor")
+    print("+==========================================================================+")
+
+
+def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
+    """Render the interactive main menu and return 'start', 'load', or 'quit'."""
+    print("\n+==========================================================================+")
+    print("|              >> CYBERPULSE // NEURAL INTRUSION HARNESS <<                |")
+    print("|                              MAIN MENU                                   |")
+    print("+==========================================================================+")
+    print("|  [1] JACK IN (new run)       [2] CONTINUE (load save)                    |")
+    print("|  [3] STORY BRIEFING          [4] OPERATIVES                              |")
+    print("|  [5] CAREER DOSSIER          [6] HOW TO PLAY                             |")
+    print("|  [Q] QUIT                                                                |")
+    print("+==========================================================================+")
+
+    while True:
+        try:
+            choice = input("main-menu> ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print("\n👋 Neural link closed.")
+            return "quit"
+
+        if choice in ("1", "start", "new", "jackin", "jack in"):
+            return "start"
+        if choice in ("2", "continue", "load"):
+            return "load"
+        if choice in ("3", "story", "brief"):
+            print_story(engine)
+            print_quests(engine)
+            continue
+        if choice in ("4", "contacts", "crew"):
+            print_contacts(engine)
+            continue
+        if choice in ("5", "career"):
+            print_career(save_mgr.load_career())
+            continue
+        if choice in ("6", "help", "how"):
+            print("Commands: status, story, quests, contacts, contact, accept, scan, probe, exploit,")
+            print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
+            print("          move, overdrive, spoof, cash_out, shop, buy, career, save, load, quit")
+            continue
+        if choice in ("q", "quit", "exit"):
+            print("👋 Neural link closed.")
+            return "quit"
+        print("Unknown choice. Enter 1-6 or Q.")
+
+
 def execute_hack_puzzle(engine: GameEngine, target_id: str, auto_solve: bool = False) -> bool:
-    can_hack, reason = engine.can_hack_node(target_id)
-    if not can_hack:
+    can_hack, reason, puzzle, node = engine.get_or_create_puzzle(target_id)
+    if not can_hack or node is None or puzzle is None:
         print(f"⚠️ {reason}")
         return False
 
-    node = engine.nodes[target_id]
     print(f"\n⚡ INITIATING CYBER-ATTACK ON: {node.name} (Sec Level: {node.security_level})")
 
     # If auto_solve is True (used in batch/tests)
     if auto_solve:
+        engine.clear_pending_puzzle(target_id)
         _, msg = engine.complete_breach(target_id)
         print(msg)
         return True
 
     # Puzzle execution based on node puzzle_type
     p_type = node.puzzle_type or "frequency"
-    if p_type == "frequency":
-        puzzle = FrequencyPuzzle.generate(engine.seed + engine.state.turns_elapsed)
+    if p_type == "frequency" and isinstance(puzzle, FrequencyPuzzle):
         print(f"📡 TUNING PROTOCOL: Target frequency between 20.0 and 99.0 GHz (tolerance ±{puzzle.tolerance} GHz).")
         while puzzle.attempts_left > 0:
             val_str = input(f"Enter target GHz [{puzzle.attempts_left} tries left]: ").strip()
             try:
                 guess = float(val_str)
-                ok, msg = puzzle.tune(guess)
-                print(msg)
-                if puzzle.near_miss:
-                    engine.state.near_miss_count += 1
-                if ok:
-                    engine.complete_breach(target_id)
-                    return True
             except ValueError:
                 print("Invalid frequency value.")
+                continue
+            ok, msg = puzzle.tune(guess)
+            print(msg)
+            if puzzle.near_miss:
+                engine.state.near_miss_count += 1
+            if ok:
+                engine.clear_pending_puzzle(target_id)
+                engine.complete_breach(target_id)
+                return True
+        engine.clear_pending_puzzle(target_id)
         engine.add_trace(node.trace_rate)
         return False
 
-    elif p_type == "buffer":
-        puzzle = BufferPuzzle.generate(engine.seed + engine.state.turns_elapsed)
+    elif p_type == "buffer" and isinstance(puzzle, BufferPuzzle):
         print("💾 BUFFER OVERFLOW PROTOCOL: Inject target hex sequence:")
         print(f"   Target: {puzzle.target_seq}")
         seq_str = input("Enter hex codes separated by space: ").strip().upper()
@@ -213,14 +332,14 @@ def execute_hack_puzzle(engine: GameEngine, target_id: str, auto_solve: bool = F
         print(msg)
         if puzzle.near_miss:
             engine.state.near_miss_count += 1
+        engine.clear_pending_puzzle(target_id)
         if ok:
             engine.complete_breach(target_id)
             return True
         engine.add_trace(node.trace_rate)
         return False
 
-    elif p_type == "hash":
-        puzzle = HashCrackPuzzle.generate(engine.seed + engine.state.turns_elapsed)
+    elif p_type == "hash" and isinstance(puzzle, HashCrackPuzzle):
         print(f"🔑 HASH CRACK PROTOCOL: Potential keys: {', '.join(puzzle.word_list)}")
         while puzzle.attempts_left > 0:
             guess = input(f"Guess keyword [{puzzle.attempts_left} tries left]: ").strip()
@@ -229,11 +348,14 @@ def execute_hack_puzzle(engine: GameEngine, target_id: str, auto_solve: bool = F
             if puzzle.near_miss:
                 engine.state.near_miss_count += 1
             if ok:
+                engine.clear_pending_puzzle(target_id)
                 engine.complete_breach(target_id)
                 return True
+        engine.clear_pending_puzzle(target_id)
         engine.add_trace(node.trace_rate)
         return False
 
+    engine.clear_pending_puzzle(target_id)
     engine.complete_breach(target_id)
     return True
 
@@ -252,6 +374,35 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
 
     if action == "status":
         print_hud(engine)
+        return True
+
+    if action in ("story", "lore"):
+        print_story(engine)
+        return True
+
+    if action in ("quests", "missions", "jobs"):
+        print_quests(engine)
+        return True
+
+    if action in ("contacts", "crew", "operatives"):
+        print_contacts(engine)
+        return True
+
+    if action in ("contact", "talk", "interact"):
+        if len(parts) < 2:
+            print("Usage: contact <handle | name> [talk | job | favor]")
+            return True
+        mode = parts[2] if len(parts) > 2 else "talk"
+        ok, msg, _ = engine.interact_contact(parts[1], mode)
+        print(msg)
+        return True
+
+    if action in ("accept", "take", "accept_quest"):
+        if len(parts) < 2:
+            print("Usage: accept <quest_id> (see `quests`)")
+            return True
+        ok, msg = engine.accept_quest(parts[1])
+        print(msg)
         return True
 
     if action == "scan":
@@ -360,21 +511,24 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         print(msg)
         return True
 
+    if action in ("overdrive", "od", "surge"):
+        ok, msg = engine.overdrive()
+        print(msg)
+        return True
+
     if action in ("jackout", "cash_out"):
         ok, msg = engine.jackout()
         print(msg)
         if ok:
-            # Update career meta-progression
+            # Update career meta-progression through the shared run lifecycle.
             profile = save_mgr.load_career()
-            profile.successful_runs += 1
-            profile.current_streak += 1
-            profile.best_streak = max(profile.best_streak, profile.current_streak)
-            gained = max(0, engine.deck.cryptocreds + engine.state.unbanked_creds - profile.banked_creds)
-            profile.banked_creds = engine.deck.cryptocreds
-            profile.lifetime_creds += gained
-            save_mgr.save_career(profile)
-            save_mgr.delete_save()
-            print("📂 Career progression profile updated.")
+            engine.settle_career(profile)
+            if save_mgr.save_career(profile):
+                save_mgr.delete_save()
+                print("📂 Career progression profile updated.")
+            else:
+                print("❌ Career update failed: progress is NOT persisted.")
+            print_run_summary(engine)
         return True
 
     if action == "shop":
@@ -421,6 +575,10 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             return True
         ok, msg = engine.craft_virus(parts[1])
         print(msg)
+        if ok:
+            profile = save_mgr.load_career()
+            profile.banked_creds = engine.deck.cryptocreds
+            save_mgr.save_career(profile)
         return True
 
     if action in ("keylogger", "deploy_keylogger"):
@@ -503,31 +661,27 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("No saved game found.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, spoof, cash_out, shop, buy, career, status, save, load, quit")
+    print(f"Unknown command: '{action}'. Commands: story, quests, contacts, contact, accept, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, spoof, cash_out, shop, buy, career, status, save, load, quit")
     return True
 
 
 def handle_run_completion(engine: GameEngine, save_mgr: SaveManager) -> Optional[CareerProfile]:
     """Persist career stats and clean up savegame when run concludes (victory or game-over)."""
-    if not (engine.state.is_victory or engine.state.is_game_over):
+    if engine.run_settled or not (engine.state.is_victory or engine.state.is_game_over):
         return None
 
     profile = save_mgr.load_career()
     if engine.state.is_victory:
-        safe_print("\n🎉 MISSION SUCCESSFUL: System Core infiltrated. You escaped without detection.")
-        profile.successful_runs += 1
-        profile.current_streak += 1
-        profile.best_streak = max(profile.best_streak, profile.current_streak)
-        gained = max(0, engine.deck.cryptocreds + engine.state.unbanked_creds - profile.banked_creds)
-        profile.banked_creds = engine.deck.cryptocreds
-        profile.lifetime_creds += gained
+        safe_print("\n🎉 MISSION SUCCESSFUL: System Core infiltrated. All unbanked loot extracted.")
     elif engine.state.is_game_over:
         safe_print("\n💀 CONNECTION TERMINATED: Security ICE traced and burned your cyberdeck.")
-        profile.failed_runs += 1
-        profile.current_streak = 0
 
-    save_mgr.save_career(profile)
-    save_mgr.delete_save()
+    engine.settle_career(profile)
+    if save_mgr.save_career(profile):
+        save_mgr.delete_save()
+    else:
+        safe_print("❌ Career update failed: progress is NOT persisted.")
+    print_run_summary(engine)
     return profile
 
 
@@ -569,6 +723,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             try:
                 if not run_command(c, engine, save_mgr, auto_solve=args.auto_solve):
                     break
+                if engine.state.is_victory or engine.state.is_game_over:
+                    break
             except EOFError:
                 print("👋 Input stream closed during a minigame; stopping batch execution.")
                 break
@@ -577,6 +733,16 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     # Interactive mode
     print("Initializing CyberPulse...")
+    menu_action = show_main_menu(engine, save_mgr)
+    if menu_action == "quit":
+        return 0
+    if menu_action == "load":
+        loaded = save_mgr.load()
+        if loaded:
+            engine.__dict__.update(loaded.__dict__)
+            print("📂 Loaded saved infiltration session.")
+        else:
+            print("No saved infiltration found. Starting a new run.")
     print_hud(engine)
     while not engine.state.is_game_over and not engine.state.is_victory and not engine.state.is_jacked_out:
         try:

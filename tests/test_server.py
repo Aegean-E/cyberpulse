@@ -10,7 +10,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from cyberpulse.server import create_server
+from cyberpulse.server import CyberdeckSession, create_server
 
 
 class TestCyberdeckServer(unittest.TestCase):
@@ -309,6 +309,178 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertTrue(res["ok"])
         self.assertIn("trace_cleaner", res["state"]["deck"]["exploits"])
+
+    def test_json_responses_do_not_enable_wildcard_cors(self):
+        with urllib.request.urlopen(f"{self.base_url}/api/state", timeout=3.0) as resp:
+            self.assertIsNone(resp.headers.get("Access-Control-Allow-Origin"))
+
+    def test_reset_accepts_float_seed(self):
+        status, res = self._post("/api/action", {"action": "reset", "seed": 42.9})
+        self.assertEqual(status, 200)
+        self.assertTrue(res["ok"])
+        self.assertEqual(res["state"]["seed"], 42)
+
+    def test_reset_rejects_invalid_seed(self):
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            self._post("/api/action", {"action": "reset", "seed": "not-a-seed"})
+        self.assertEqual(ctx.exception.code, 400)
+        payload = json.loads(ctx.exception.read().decode("utf-8"))
+        ctx.exception.close()
+        self.assertFalse(payload["ok"])
+
+    def test_puzzle_retry_keeps_remaining_attempts(self):
+        self._post("/api/action", {"action": "reset", "seed": 1337})
+        status, first = self._get("/api/puzzle?node_id=node_proxy_a")
+        self.assertEqual(status, 200)
+        self.assertEqual(first["attempts_left"], 3)
+
+        self._post("/api/puzzle/solve", {"guess": 0.0})
+        status, second = self._get("/api/puzzle?node_id=node_proxy_a")
+
+        self.assertEqual(status, 200)
+        self.assertEqual(second["attempts_left"], 2)
+
+    def test_victory_settles_career_once(self):
+        data_dir = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, data_dir, ignore_errors=True)
+        session = CyberdeckSession(data_dir=data_dir, seed=7)
+        session.engine.state.is_victory = True
+        session.engine.state.unbanked_creds = 175
+        session.engine.state.best_combo = 3
+
+        first = session.get_full_state()
+        second = session.get_full_state()
+
+        self.assertEqual(first["career"]["successful_runs"], 1)
+        self.assertEqual(second["career"]["successful_runs"], 1)
+        self.assertEqual(second["career"]["banked_creds"], 275)
+        self.assertEqual(second["career"]["best_combo"], 3)
+        self.assertEqual(second["state"]["unbanked_creds"], 0)
+        self.assertEqual(second["run_summary"]["outcome"], "victory")
+
+    def test_game_over_settles_failed_run_once(self):
+        data_dir = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, data_dir, ignore_errors=True)
+        session = CyberdeckSession(data_dir=data_dir, seed=7)
+        session.engine.state.is_game_over = True
+
+        first = session.get_full_state()
+        second = session.get_full_state()
+
+        self.assertEqual(first["career"]["failed_runs"], 1)
+        self.assertEqual(second["career"]["failed_runs"], 1)
+
+    def test_craft_persists_banked_spend(self):
+        session = self.server.RequestHandlerClass.server_session
+        session.save_mgr.career_file.unlink(missing_ok=True)
+        session.save_mgr.career_file.with_suffix(".bak").unlink(missing_ok=True)
+        self._post("/api/action", {"action": "reset", "seed": 1337})
+        status, res = self._post("/api/action", {"action": "craft", "recipe": "trace_cleaner"})
+
+        self.assertEqual(status, 200)
+        self.assertTrue(res["ok"])
+        self.assertEqual(res["state"]["deck"]["cryptocreds"], 20)
+        self.assertEqual(res["state"]["career"]["banked_creds"], 20)
+
+    def test_web_settlement_does_not_delete_unowned_save(self):
+        data_dir = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, data_dir, ignore_errors=True)
+        session = CyberdeckSession(data_dir=data_dir, seed=7)
+        saved = session.save_mgr.save(session.engine)
+        self.assertIsNotNone(saved)
+        self.assertTrue(session.save_mgr.save_file.exists())
+
+        session.engine.state.is_victory = True
+        session.get_full_state()
+
+        self.assertTrue(session.save_mgr.save_file.exists())
+
+    def test_state_includes_story_quests_and_contacts(self):
+        status, res = self._get("/api/state")
+        self.assertEqual(status, 200)
+        self.assertIn("story", res)
+        self.assertIn("run_summary", res)
+        self.assertIn("quests", res)
+        self.assertIn("contacts", res)
+        self.assertEqual(res["story"]["act"], 1)
+        self.assertEqual(res["run_summary"]["outcome"], "active")
+        self.assertTrue(any(q["quest_id"] == "q_gateway" for q in res["quests"]))
+        self.assertTrue(any(c["contact_id"] == "mira" for c in res["contacts"]))
+
+    def test_overdrive_action(self):
+        self._post("/api/action", {"action": "reset", "seed": 1337})
+        status, res = self._post("/api/action", {"action": "overdrive"})
+        self.assertEqual(status, 200)
+        self.assertTrue(res["ok"])
+        self.assertEqual(res["state"]["state"]["combo_streak"], 1)
+        self.assertEqual(res["state"]["state"]["trace_percent"], 8)
+        self.assertEqual(res["state"]["deck"]["cpu_cycles"], 8)
+
+    def test_contact_talk_job_and_favor_actions(self):
+        self._post("/api/action", {"action": "reset", "seed": 1337})
+        status, res = self._post("/api/action", {"action": "contact", "contact_id": "kilo", "mode": "talk"})
+        self.assertEqual(status, 200)
+        self.assertTrue(res["ok"])
+        self.assertIn("Kilo", res["message"])
+
+        status, res = self._post("/api/action", {"action": "contact", "contact_id": "kilo", "mode": "job"})
+        self.assertTrue(res["ok"])
+        self.assertIn("QUEST ACCEPTED", res["message"])
+        self.assertTrue(any(q["quest_id"] == "q_side_craft" and q["accepted"] for q in res["state"]["quests"]))
+
+        self._post("/api/action", {"action": "overdrive"})
+        status, res = self._post("/api/action", {"action": "contact", "contact_id": "kilo", "mode": "favor"})
+        self.assertTrue(res["ok"])
+        self.assertIn("CPU restored", res["message"])
+        self.assertEqual(res["state"]["deck"]["cpu_cycles"], res["state"]["deck"]["max_cpu"])
+
+    def test_agent_zero_alliance_action(self):
+        session = self.server.RequestHandlerClass.server_session
+        session.engine.state.story_act = 3
+        try:
+            status, res = self._post("/api/action", {
+                "action": "contact",
+                "contact_id": "zero",
+                "mode": "ally",
+            })
+            self.assertEqual(status, 200)
+            self.assertTrue(res["ok"])
+            self.assertIn("ALLIANCE FORGED", res["message"])
+            self.assertEqual(res["state"]["story"]["choice"], "zero_ally")
+            self.assertEqual(res["state"]["story"]["choice_label"], "ALLIED WITH AGENT ZERO")
+            self.assertTrue(any(
+                c["contact_id"] == "zero" and not c["pact_available"]
+                for c in res["state"]["contacts"]
+            ))
+        finally:
+            self._post("/api/action", {"action": "reset", "seed": 1337})
+
+    def test_accept_quest_action(self):
+        self._post("/api/action", {"action": "reset", "seed": 1337})
+        status, res = self._post("/api/action", {"action": "accept_quest", "quest_id": "q_side_ghost"})
+        self.assertEqual(status, 200)
+        self.assertTrue(res["ok"])
+        self.assertTrue(any(q["quest_id"] == "q_side_ghost" and q["accepted"] for q in res["state"]["quests"]))
+
+    def test_static_assets_do_not_wait_for_session_lock(self):
+        session = self.server.RequestHandlerClass.server_session
+        acquired = threading.Event()
+        release = threading.Event()
+
+        def hold_session_lock():
+            with session.lock:
+                acquired.set()
+                release.wait(3)
+
+        thread = threading.Thread(target=hold_session_lock, daemon=True)
+        thread.start()
+        self.assertTrue(acquired.wait(1))
+        try:
+            with urllib.request.urlopen(f"{self.base_url}/style.css", timeout=1.0) as resp:
+                self.assertEqual(resp.status, 200)
+        finally:
+            release.set()
+            thread.join(2)
 
 
 if __name__ == "__main__":
