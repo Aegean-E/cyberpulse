@@ -10,6 +10,12 @@ CyberPulse is a retro-cyberpunk terminal hacking simulation game designed around
   python aikit.py check cyberpulse
   ```
 
+### 🚀 Instant One-Click Launch (Zero-Friction)
+From inside the `projects/cyberpulse` directory:
+- **Windows**: Double-click `start.bat` (or run `start.bat` in CMD / PowerShell)
+- **Universal**: Run `python start.py` (or `./start.sh` on POSIX / macOS / Linux)
+*(Defaults to launching the visual Web Cyberdeck; custom flags like `python start.py --seed 1337` are forwarded directly to the CLI)*
+
 ### 🛠️ AIKit Commands (run from the AIKit folder)
 | Role | Command |
 |---|---|
@@ -27,6 +33,9 @@ cyberpulse/
 ├── LICENSE                   <- MIT Open Source License
 ├── README.md
 ├── pyproject.toml            <- build and package configuration
+├── start.bat                 <- Windows one-click launcher
+├── start.py                  <- universal launcher (defaults to --web)
+├── start.sh                  <- POSIX / Linux / macOS launcher
 ├── cyberpulse/               <- core game engine and CLI
 │   ├── __init__.py
 │   ├── cli.py                <- interactive terminal interface & REPL

@@ -310,6 +310,18 @@ class TestCLI(unittest.TestCase):
         self.assertIn("NETWATCH COUNTER-INFILTRATION RADAR", out)
         self.assertIn("Radar Status: CLEAR", out)
 
+    def test_start_launcher_function(self):
+        import start
+
+        with mock.patch.object(start.cli, "main", return_value=0) as mock_main:
+            ret = start.start([])
+            self.assertEqual(ret, 0)
+            mock_main.assert_called_with(["--web"])
+
+            ret_custom = start.start(["--seed", "42", "--exec", "status"])
+            self.assertEqual(ret_custom, 0)
+            mock_main.assert_called_with(["--seed", "42", "--exec", "status"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,11 +6,11 @@
 ---
 
 ## 📊 Codebase Metrics
-- **Total Python Modules**: `25`
+- **Total Python Modules**: `26`
 - **Total Classes**: `53`
-- **Total Top-Level Functions**: `55`
-- **Total Class Methods**: `356`
-- **Total Source Lines**: `8394`
+- **Total Top-Level Functions**: `56`
+- **Total Class Methods**: `357`
+- **Total Source Lines**: `8434`
 
 ---
 
@@ -357,6 +357,16 @@
 
 ---
 
+### [`start.py`](start.py)
+> *Zero-friction launcher for CyberPulse terminal and Web Cyberdeck.*
+
+**Size**: `28` lines (`744` bytes)
+
+**Functions:**
+- `def start(argv)` - *Launch the Web Cyberdeck by default, or forward custom CLI arguments.*
+
+---
+
 ### [`tests/__init__.py`](tests/__init__.py)
 > *Test suite for CyberPulse.*
 
@@ -367,7 +377,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `318` lines (`13496` bytes)
+**Size**: `330` lines (`13965` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -397,6 +407,7 @@
   - Method `.test_minigame_eof_stops_batch_without_traceback()`
   - Method `.test_cli_reuses_pending_puzzle_attempts()`
   - Method `.test_cli_hunter_and_counter_commands()`
+  - Method `.test_start_launcher_function()`
 
 ---
 
