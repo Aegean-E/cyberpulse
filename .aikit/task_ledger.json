@@ -3,21 +3,12 @@
   "active_task": {
     "task_id": "task-cyberpulse-netwatch-hunters-v1",
     "last_phase": "phase 4",
-    "active_phase": 4,
-    "status": "in_progress",
-    "updated_at": 1792440292.6533077
+    "active_phase": 5,
+    "status": "completed",
+    "updated_at": 1792440292.6533077,
+    "completed_at": 1792440327.1138089
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-story-delivery-v1",
-      "phase": "phase 5",
-      "phase_num": 5,
-      "description": "[milestone 1/2] four deliberate hygiene discards documented on their handler lines, codebase map regenerated, node --check app.js clean, 148/148 tests green, aikit check cyberpulse 4/4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792432762.8862631,
-      "timestamp_str": "2026-10-19 20:59:22"
-    },
     {
       "task_id": "task-cyberpulse-story-delivery-v1",
       "phase": "phase 5",
@@ -222,6 +213,15 @@
       "status": "in_progress",
       "timestamp": 1792440292.6533077,
       "timestamp_str": "2026-10-19 23:04:52"
+    },
+    {
+      "task_id": "task-cyberpulse-netwatch-hunters-v1",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-netwatch-hunters-v1' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792440327.1138098,
+      "timestamp_str": "2026-10-19 23:05:27"
     }
   ]
 }
