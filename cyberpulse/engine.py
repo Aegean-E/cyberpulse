@@ -229,6 +229,7 @@ class GameEngine:
 
     def _sync_story_quests(self) -> None:
         """Auto-accept unlocked main-story quests so the campaign cannot stall."""
+        newly_accepted: List[Quest] = []
         for quest in self.state.quests:
             if (
                 quest.quest_id in MAIN_QUEST_IDS
@@ -238,6 +239,70 @@ class GameEngine:
             ):
                 quest.accepted = True
                 self._log_story(f"NEW MAIN QUEST: {quest.title} — {quest.description}")
+                newly_accepted.append(quest)
+        for quest in newly_accepted:
+            self._reconcile_quest_progress(quest)
+
+    def _quest_progress_from_state(self, quest: Quest) -> int:
+        """Progress the world already holds for a one-shot objective."""
+        if quest.objective == "breach_type":
+            return sum(
+                1
+                for node in self.nodes.values()
+                if node.status == NodeStatus.BREACHED and node.node_type == quest.target
+            )
+        if quest.objective == "steal_file":
+            return 1 if quest.target in self.state.looted_payloads else 0
+        if quest.objective == "wipe_logs":
+            node = self.find_node(quest.target)
+            return 1 if node and node.logs_cleared else 0
+        if quest.objective == "deploy_daemon":
+            return sum(1 for daemon in self.deck.active_daemons if daemon.daemon_type == quest.target)
+        if quest.objective == "craft_recipe":
+            return sum(1 for chip in self.deck.exploits if chip == quest.target)
+        return 0
+
+    def _reconcile_quest_progress(self, quest: Quest) -> List[str]:
+        """Credit one-shot events that happened before the quest was accepted."""
+        if not quest.accepted or quest.completed:
+            return []
+        earned = min(max(1, quest.required), self._quest_progress_from_state(quest))
+        if earned <= quest.progress:
+            return []
+        quest.progress = earned
+        if quest.progress >= max(1, quest.required):
+            return self._complete_quest(quest)
+        return []
+
+    def _complete_quest(self, quest: Quest) -> List[str]:
+        """Mark a quest complete once, grant its reward, and advance the main story."""
+        if quest.completed:
+            return []
+        quest.completed = True
+        if quest.reward_creds:
+            self.state.unbanked_creds += quest.reward_creds
+        if quest.reward_item and quest.reward_item not in self.deck.exploits:
+            self.deck.exploits.append(quest.reward_item)
+
+        reward_bits = []
+        if quest.reward_creds:
+            reward_bits.append(f"+{quest.reward_creds} Creds")
+        if quest.reward_item:
+            reward_bits.append(f"[{quest.reward_item}]")
+        reward_text = ", ".join(reward_bits) if reward_bits else "story intel"
+        line = f"📜 QUEST COMPLETE: {quest.title}! Reward: {reward_text}."
+        self._log_story(line)
+        messages = [line]
+
+        if quest.quest_id in MAIN_QUEST_IDS:
+            advanced = self._advance_story(
+                quest.story_act + 1,
+                1,
+                f"{quest.title} resolved.",
+            )
+            if advanced:
+                messages.append(f"📖 {advanced}")
+        return messages
 
     def _advance_story(self, act: int, chapter: int, reason: str) -> str:
         if act < self.state.story_act:
@@ -263,32 +328,7 @@ class GameEngine:
             quest.progress = min(max(1, quest.required), quest.progress + amount)
             if quest.progress < max(1, quest.required):
                 continue
-
-            quest.completed = True
-            if quest.reward_creds:
-                self.state.unbanked_creds += quest.reward_creds
-            if quest.reward_item and quest.reward_item not in self.deck.exploits:
-                self.deck.exploits.append(quest.reward_item)
-
-            reward_bits = []
-            if quest.reward_creds:
-                reward_bits.append(f"+{quest.reward_creds} Creds")
-            if quest.reward_item:
-                reward_bits.append(f"[{quest.reward_item}]")
-            reward_text = ", ".join(reward_bits) if reward_bits else "story intel"
-            line = f"📜 QUEST COMPLETE: {quest.title}! Reward: {reward_text}."
-            self._log_story(line)
-            messages.append(line)
-
-            if quest.quest_id in MAIN_QUEST_IDS:
-                advanced = self._advance_story(
-                    quest.story_act + 1,
-                    1,
-                    f"{quest.title} resolved.",
-                )
-                if advanced:
-                    messages.append(f"📖 {advanced}")
-
+            messages.extend(self._complete_quest(quest))
         return messages
 
     def is_quest_locked(self, quest: Quest) -> bool:
@@ -297,8 +337,21 @@ class GameEngine:
         giver = self._find_contact(quest.giver)
         return bool(giver and giver.unlock_act > self.state.story_act)
 
+    def _story_gate_reason(self, node: Node) -> Optional[str]:
+        """A story lock the network topology alone does not enforce."""
+        if node.node_type == NodeType.CENTRAL_CORE and self.state.story_act < 4:
+            return "The Nexus supercore is sealed until Act IV. Advance the campaign first."
+        return None
+
     def accept_quest(self, quest_id: str) -> Tuple[bool, str]:
         """Accept a contact's side quest or expose an unlocked story objective."""
+        if self.state.is_game_over:
+            return False, "Cannot accept a quest: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot accept a quest: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot accept a quest: mission already complete."
+
         quest = self._find_quest(quest_id)
         if not quest:
             return False, f"Unknown quest '{quest_id}'."
@@ -317,6 +370,10 @@ class GameEngine:
         message = f"📜 QUEST ACCEPTED: {quest.title} — {quest.description}"
         self._log_story(message)
         self.state.message_log.append(message)
+
+        completion_lines = self._reconcile_quest_progress(quest)
+        if completion_lines:
+            message += "\n" + "\n".join(completion_lines)
         return True, message
 
     def _apply_contact_favor(self, contact: ContactProfile) -> Tuple[bool, str]:
@@ -740,6 +797,9 @@ class GameEngine:
         node = self.nodes[target_id]
         if node.status == NodeStatus.BREACHED:
             return False, f"Node '{node.name}' is already breached."
+        gate = self._story_gate_reason(node)
+        if gate:
+            return False, gate
 
         curr = self.get_current_node()
         if target_id not in curr.connected_ids and target_id != curr.node_id:
@@ -795,6 +855,9 @@ class GameEngine:
         node = self.nodes[node_id]
         if node.status == NodeStatus.BREACHED:
             return False, f"Node '{node.name}' is already breached."
+        gate = self._story_gate_reason(node)
+        if gate:
+            return False, gate
 
         node.status = NodeStatus.BREACHED
         self.clear_pending_puzzle(node_id)
@@ -1091,6 +1154,9 @@ class GameEngine:
 
         if node.status == NodeStatus.BREACHED:
             return False, f"Host {node.hostname} ({node.ip_address}) is already breached (root shell active)."
+        gate = self._story_gate_reason(node)
+        if gate:
+            return False, gate
 
         curr = self.get_current_node()
         if node.node_id not in curr.connected_ids and node.node_id != curr.node_id:

@@ -9,8 +9,8 @@
 - **Total Python Modules**: `22`
 - **Total Classes**: `41`
 - **Total Top-Level Functions**: `29`
-- **Total Class Methods**: `277`
-- **Total Source Lines**: `6642`
+- **Total Class Methods**: `287`
+- **Total Source Lines**: `6801`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `761` lines (`33850` bytes)
+**Size**: `761` lines (`33864` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -54,7 +54,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `1741` lines (`80551` bytes)
+**Size**: `1807` lines (`83465` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -64,9 +64,13 @@
   - Method `._find_contact(contact_id)`
   - Method `._log_story(message)`
   - Method `._sync_story_quests()` - *Auto-accept unlocked main-story quests so the campaign cannot stall.*
+  - Method `._quest_progress_from_state(quest)` - *Progress the world already holds for a one-shot objective.*
+  - Method `._reconcile_quest_progress(quest)` - *Credit one-shot events that happened before the quest was accepted.*
+  - Method `._complete_quest(quest)` - *Mark a quest complete once, grant its reward, and advance the main story.*
   - Method `._advance_story(act, chapter, reason)`
   - Method `._progress_quests(objective, target, amount)`
   - Method `.is_quest_locked(quest)`
+  - Method `._story_gate_reason(node)` - *A story lock the network topology alone does not enforce.*
   - Method `.accept_quest(quest_id)` - *Accept a contact's side quest or expose an unlocked story objective.*
   - Method `._apply_contact_favor(contact)`
   - Method `.interact_contact(contact_id, mode)` - *Talk to an operative, accept their job, or spend their one-time favor.*
@@ -306,7 +310,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `297` lines (`12604` bytes)
+**Size**: `300` lines (`12692` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -339,7 +343,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `749` lines (`31930` bytes)
+**Size**: `824` lines (`35170` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -402,6 +406,11 @@
   - Method `.test_locked_story_quest_cannot_be_accepted_early()`
   - Method `.test_archivist_favor_reveals_locked_node()`
   - Method `.test_ensure_story_state_backfills_old_save()`
+  - Method `.test_out_of_order_ice_breach_still_completes_black_ice_quest()`
+  - Method `.test_out_of_order_file_theft_counts_when_money_quest_unlocks()`
+  - Method `.test_out_of_order_log_wipe_completes_side_quest_when_accepted()`
+  - Method `.test_accept_quest_rejects_terminal_states()`
+  - Method `.test_core_is_sealed_until_act_four()`
   - Method `.test_download_contract_respects_trace_limit()`
 
 ---
@@ -482,7 +491,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `489` lines (`20974` bytes)
+**Size**: `504` lines (`21659` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -518,6 +527,7 @@
   - Method `.test_contact_talk_job_and_favor_actions()`
   - Method `.test_agent_zero_alliance_action()`
   - Method `.test_accept_quest_action()`
+  - Method `.test_accept_quest_after_jackout_is_rejected()`
   - Method `.test_static_assets_do_not_wait_for_session_lock()`
 
 ---

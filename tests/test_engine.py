@@ -110,6 +110,7 @@ class TestEngine(unittest.TestCase):
 
         # Move to adjacent node
         self.engine.state.current_node_id = "node_ice_perimeter"
+        self.engine.state.story_act = 4
 
         # Default deck has 64MB RAM -> should fail RAM check
         self.engine.deck.ram_mb = 64
@@ -497,6 +498,7 @@ class TestEngine(unittest.TestCase):
     def test_settle_career_banks_victory_loot_once(self):
         from cyberpulse.models import CareerProfile
 
+        self.engine.state.story_act = 4
         self.engine.complete_breach("node_central_core")
         self.assertTrue(self.engine.state.is_victory)
         self.engine.state.unbanked_creds = 500
@@ -716,6 +718,79 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(len(self.engine.state.quests), 7)
         self.assertEqual(len(self.engine.state.contacts), 4)
         self.assertTrue(self.engine.state.story_log)
+
+    def test_out_of_order_ice_breach_still_completes_black_ice_quest(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.move_to("node_proxy_a")
+        self.engine.complete_breach("node_ice_perimeter")
+        self.engine.move_to("node_gateway")
+        self.engine.complete_breach("node_proxy_b")
+        self.engine.move_to("node_proxy_a")
+        self.engine.complete_breach("node_vault_1")
+        self.engine.download_file("10.0.4.15", "/data/corporate_slush_fund.csv")
+
+        self.assertTrue(self.engine._find_quest("q_blackice").completed)
+        self.assertEqual(self.engine.state.story_act, 4)
+        self.assertTrue(self.engine._find_quest("q_core").accepted)
+
+    def test_out_of_order_file_theft_counts_when_money_quest_unlocks(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.move_to("node_proxy_a")
+        self.engine.complete_breach("node_vault_1")
+        self.engine.download_file("10.0.4.15", "/data/corporate_slush_fund.csv")
+        self.engine.move_to("node_gateway")
+        self.engine.complete_breach("node_proxy_b")
+
+        self.assertTrue(self.engine._find_quest("q_money").completed)
+        self.assertEqual(self.engine.state.story_act, 3)
+
+    def test_out_of_order_log_wipe_completes_side_quest_when_accepted(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.move_to("node_proxy_a")
+        self.engine.complete_breach("node_vault_1")
+        self.engine.wipe_logs("10.0.4.15")
+        self.engine.move_to("node_gateway")
+        self.engine.complete_breach("node_proxy_b")
+
+        ok, _, report = self.engine.interact_contact("archivist", "job")
+
+        self.assertTrue(ok)
+        self.assertEqual(report["quest_id"], "q_side_wipe")
+        self.assertTrue(self.engine._find_quest("q_side_wipe").completed)
+
+    def test_accept_quest_rejects_terminal_states(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.jackout()
+        self.assertFalse(self.engine.accept_quest("q_side_ghost")[0])
+
+        locked_out = GameEngine(seed=42)
+        locked_out.state.is_game_over = True
+        self.assertFalse(locked_out.accept_quest("q_side_ghost")[0])
+
+        won = GameEngine(seed=42)
+        won.state.is_victory = True
+        self.assertFalse(won.accept_quest("q_side_ghost")[0])
+
+    def test_core_is_sealed_until_act_four(self):
+        self.engine.deck.ram_mb = 128
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.move_to("node_proxy_a")
+        self.engine.complete_breach("node_ice_perimeter")
+        self.engine.move_to("node_ice_perimeter")
+
+        ok, msg = self.engine.can_hack_node("node_central_core")
+        self.assertFalse(ok)
+        self.assertIn("Act IV", msg)
+
+        ok, msg = self.engine.complete_breach("node_central_core")
+        self.assertFalse(ok)
+        self.assertFalse(self.engine.state.is_victory)
+
+        cpu_before = self.engine.deck.cpu_cycles
+        ok, msg = self.engine.exploit_service("172.16.80.1", 8888)
+        self.assertFalse(ok)
+        self.assertIn("Act IV", msg)
+        self.assertEqual(self.engine.deck.cpu_cycles, cpu_before)
 
     def test_download_contract_respects_trace_limit(self):
         from cyberpulse.models import BountyContract

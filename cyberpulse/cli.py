@@ -390,7 +390,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
 
     if action in ("contact", "talk", "interact"):
         if len(parts) < 2:
-            print("Usage: contact <handle | name> [talk | job | favor]")
+            print("Usage: contact <handle | name> [talk | job | favor | ally | defy]")
             return True
         mode = parts[2] if len(parts) > 2 else "talk"
         ok, msg, _ = engine.interact_contact(parts[1], mode)

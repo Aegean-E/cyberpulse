@@ -140,9 +140,12 @@ class TestCLI(unittest.TestCase):
         self.assertIn("not loaded in cyberdeck firmware", out)
 
     def test_ram_insufficient_message_in_cli(self):
-        # Move adjacent to central core without sufficient RAM, try to hack
-        # Gateway -> proxy_a -> ice_perimeter -> central_core
-        batch_cmds = "hack node_proxy_a;move node_proxy_a;hack node_ice_perimeter;move node_ice_perimeter;hack node_central_core"
+        # Reach Act IV and stand adjacent to the central core with the default 64MB deck
+        batch_cmds = (
+            "hack node_proxy_a;hack node_proxy_b;move node_proxy_a;"
+            "hack node_vault_1;steal 10.0.4.15 /data/corporate_slush_fund.csv;"
+            "hack node_ice_perimeter;move node_ice_perimeter;hack node_central_core"
+        )
         code, out = self.run_cli("--seed", "1337", "--auto-solve", "--exec", batch_cmds)
         self.assertEqual(code, 0)
         self.assertIn("INSUFFICIENT RAM", out)

@@ -97,7 +97,7 @@ python -m cyberpulse.cli --web --port 9000 --seed 42069
 ```
 
 ### 2. Interactive Terminal CLI
-Or operate purely in the retro terminal REPL harness. Both interfaces open with a main menu offering a new run, save continuation, story briefing, operative channels, career dossier, and help:
+Or operate purely in the retro terminal REPL harness. Both interfaces open with a main menu for a new run, story briefing, operative channels, career dossier, and help; the terminal also offers save continuation:
 
 ```bash
 # Launch interactive terminal game with default seed

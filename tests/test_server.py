@@ -462,6 +462,21 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertTrue(res["ok"])
         self.assertTrue(any(q["quest_id"] == "q_side_ghost" and q["accepted"] for q in res["state"]["quests"]))
 
+    def test_accept_quest_after_jackout_is_rejected(self):
+        self._post("/api/action", {"action": "reset", "seed": 1337})
+        try:
+            status, res = self._post("/api/action", {"action": "jackout"})
+            self.assertTrue(res["ok"])
+
+            status, res = self._post("/api/action", {"action": "accept_quest", "quest_id": "q_side_ghost"})
+
+            self.assertEqual(status, 200)
+            self.assertFalse(res["ok"])
+            self.assertIn("jacked out", res["message"])
+        finally:
+            # Restore the shared session so later tests do not inherit the jacked-out run.
+            self._post("/api/action", {"action": "reset", "seed": 1337})
+
     def test_static_assets_do_not_wait_for_session_lock(self):
         session = self.server.RequestHandlerClass.server_session
         acquired = threading.Event()

@@ -185,3 +185,14 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   4. Add choice-specific dialogue for Acts III/IV/V, a locked-choice label in the story payload, and choice-specific epilogue lines.
   5. Expose the choice through the same `contact` mode on CLI and REST; the Web contacts modal shows ALLY/DEFY controls only when the pact is available.
 - **Consequences**: The story now has a consequential character branch that changes relationships, rewards, late dialogue, and the ending. The choice is persisted and old saves remain valid. Test suite: 148 tests, 100% green.
+
+### ADR-014: Order-Robust Story Progression, Settled-Run Guards, and the Act IV Core Seal
+- **Date**: 2026-10-19
+- **Status**: Accepted
+- **Context**: A hardening audit of the story campaign found three coherence defects. One-shot story objectives only counted while their quest was accepted: breaching Black ICE before Act III made `q_blackice` impossible (the node cannot be breached twice) and permanently stalled the campaign, while early target thefts and log wipes were likewise uncounted. `accept_quest` lacked terminal-state guards, so the REST API could accept quests and grant trust after a lockout or jackout. The Nexus supercore could also be breached before Act IV, producing a victory whose run summary reported an incomplete main story.
+- **Decision**:
+  1. Extract quest completion into `_complete_quest` and reconcile one-shot progress from world state (`_quest_progress_from_state`) whenever a quest is accepted, including auto-accepted main quests; retroactive progress can complete a quest and advance the act chain immediately.
+  2. Guard `accept_quest` against lockout, jackout, and victory like every other mutating action.
+  3. Seal the central core until Act IV in `can_hack_node`, `complete_breach`, and `exploit_service`, so the node refuses even a direct engine call and no CPU or trace is paid.
+  4. Correct the README claim about save continuation in the Web main menu and add `ally | defy` to the CLI contact usage line.
+- **Consequences**: Any exploration order can complete the campaign; one-shot objectives credit events that already happened; settled runs cannot mutate; the final breach is consistent with the narrative. No save schema changed and old saves remain valid. Test suite: 154 tests, 100% green.
