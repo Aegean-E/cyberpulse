@@ -4,30 +4,11 @@
     "task_id": "task-cyberpulse-story-delivery-v1",
     "last_phase": "phase 5",
     "active_phase": 5,
-    "status": "in_progress",
-    "updated_at": 1792432762.8862631
+    "status": "completed",
+    "updated_at": 1792432824.301328,
+    "completed_at": 1792432829.4378707
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-story-quests-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 2/6] Models and story data: Quest/ContactProfile models, persisted story act/log, contact trust/favors, seven quest blueprints, four operative dialogues",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792370974.4975743,
-      "timestamp_str": "2026-10-19 03:49:34"
-    },
-    {
-      "task_id": "task-cyberpulse-story-quests-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 3/6] Engine: combo streaks, overdrive, quest progress/rewards, story act advancement, contact talk/job/favor, save backfill and terminal-state guards",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792370984.3401227,
-      "timestamp_str": "2026-10-19 03:49:44"
-    },
     {
       "task_id": "task-cyberpulse-story-quests-v1",
       "phase": "phase 3",
@@ -221,6 +202,25 @@
       "status": "in_progress",
       "timestamp": 1792432762.8862631,
       "timestamp_str": "2026-10-19 20:59:22"
+    },
+    {
+      "task_id": "task-cyberpulse-story-delivery-v1",
+      "phase": "phase 5",
+      "phase_num": 5,
+      "description": "[milestone 2/2] committed 78444ac with ADR-011 to ADR-013; the commit was checked out alone in a throwaway worktree and passed tests, hygiene, knowledge and secrets; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792432824.301328,
+      "timestamp_str": "2026-10-19 21:00:24"
+    },
+    {
+      "task_id": "task-cyberpulse-story-delivery-v1",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-story-delivery-v1' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792432829.4378734,
+      "timestamp_str": "2026-10-19 21:00:29"
     }
   ]
 }
