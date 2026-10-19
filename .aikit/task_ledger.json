@@ -3,20 +3,12 @@
   "active_task": {
     "task_id": "task-cyberpulse-world-simulation-v1",
     "last_phase": "verification",
-    "active_phase": 4,
-    "status": "in_progress",
-    "updated_at": 1792438706.550825
+    "active_phase": 5,
+    "status": "completed",
+    "updated_at": 1792438706.550825,
+    "completed_at": 1792438731.0119145
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-endgame-legacy-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-endgame-legacy-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792386466.1874537,
-      "timestamp_str": "2026-10-19 08:07:46"
-    },
     {
       "task_id": "task-cyberpulse-alliance-choice-v1",
       "phase": "phase 2",
@@ -227,6 +219,15 @@
       "status": "in_progress",
       "timestamp": 1792438706.550825,
       "timestamp_str": "2026-10-19 22:38:26"
+    },
+    {
+      "task_id": "task-cyberpulse-world-simulation-v1",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-world-simulation-v1' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792438731.0119157,
+      "timestamp_str": "2026-10-19 22:38:51"
     }
   ]
 }
