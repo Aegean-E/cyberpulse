@@ -196,3 +196,18 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   3. Seal the central core until Act IV in `can_hack_node`, `complete_breach`, and `exploit_service`, so the node refuses even a direct engine call and no CPU or trace is paid.
   4. Correct the README claim about save continuation in the Web main menu and add `ally | defy` to the CLI contact usage line.
 - **Consequences**: Any exploration order can complete the campaign; one-shot objectives credit events that already happened; settled runs cannot mutate; the final breach is consistent with the narrative. No save schema changed and old saves remain valid. Test suite: 154 tests, 100% green.
+
+### ADR-015: Living-Grid Simulation: Clock, Corporate Alert, Generated News, Ambient Events, Host Re-Securing, and Market Drift
+- **Date**: 2026-10-19
+- **Status**: Accepted
+- **Context**: The grid outside the player's current node was static. Turns advanced only to tick daemons, hosts never reacted to loud intrusions, black-market prices never moved, and nothing inside or outside the game reported on the player's actions. Requested behavior: more simulation-like mechanics, so the world reads as running on its own rather than waiting for input.
+- **Decision**:
+  1. Add `WorldState` (minute, day, alert level, market index, events cooldown, re-secured count, news feed) and `NewsItem` to `state` with defaults; backfill missing world state for old saves in `GameState.from_dict`.
+  2. Add `world.py` as a pure simulation module: clock and shift math, alert clamping, bounded market random-walk, deterministic per-tick ambient events, and grid re-secure planning. World rolls use their own per-tick RNG stream seeded from `(seed, tick, stream)` so the engine's reward RNG sequence, and every existing seeded outcome, is untouched.
+  3. Route all nine turn advance sites through `GameEngine.advance_turn()`, which ticks daemons and then the world. Every turn advances a 15-minute clock, drifts the market, decays or sustains alert based on trace, may fire an ambient event, applies NetWatch patrol trace at alert 50/75+, and may re-secure a host.
+  4. Make alert actionable: breaches raise it by node security, daemons raise it, extraction cools it, and ambient events can move it. Negative ambient events only enter the pool at alert 35+, so quiet early runs stay fair.
+  5. Re-secure rules: alert 50+, 12-turn cooldown since breach, at most one host per turn, never the player's current host or the central core. Re-securing restores ports, firewall, and antivirus, restores wiped logs, recalls embedded daemons, publishes a NetWatch headline, and bumps `resecured_count`.
+  6. Add a per-host breach ledger (`breached_turn`, `reward_claimed`): a re-secured host pays no second reward, no combo, and no quest credit when re-breached, closing the farm loop introduced by host healing.
+  7. Apply the market index to shop prices through an optional `price_multiplier` (default 1.0), surfaced in CLI shop output, `buy`, `shop_buy`, and `/api/shop`; keep `base_cost` visible.
+  8. Surface the grid in both clients: CLI `world`/`news` commands plus a HUD grid line, `GET /api/world`, a `world` block in `/api/state`, and a Web Cyberdeck ticker bar showing clock, shift, alert, market index, and the newest headline.
+- **Consequences**: The grid now reacts to player behavior and reports on it, giving loud play visible and mechanical consequences. Save schema changes are additive and old saves load with a fresh day-1 world. Seeded reward determinism is preserved by the separate world RNG stream. Test suite: 189 tests, 100% green.

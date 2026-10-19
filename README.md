@@ -1,6 +1,6 @@
 # cyberpulse
 
-CyberPulse is a retro-cyberpunk terminal hacking simulation game designed around empirical behavioral psychology, featuring procedural puzzle nodes, ICE defenses, push-your-luck extraction mechanics, variable-ratio reward schedules, near-miss striatal feedback, persistent career progression, a five-act story campaign, an operative relationship system, a dynamic quest board, and combo/overdrive risk-reward mechanics.
+CyberPulse is a retro-cyberpunk terminal hacking simulation game designed around empirical behavioral psychology, featuring procedural puzzle nodes, ICE defenses, push-your-luck extraction mechanics, variable-ratio reward schedules, near-miss striatal feedback, persistent career progression, a five-act story campaign, an operative relationship system, a dynamic quest board, combo/overdrive risk-reward mechanics, and a living-grid world simulation with an in-game clock, corporate alert, generated news, ambient events, host re-securing, and a drifting black market.
 
 ## ⚡ 30-Second Cold-Start Quick Reference
 
@@ -85,11 +85,13 @@ CyberPulse's mechanics are grounded in cognitive neuroscience and behavioral gam
    - Accepted quests and the story objective card make the next concrete action salient, reducing choice paralysis while preserving player autonomy.
 9. **Meaningful Narrative Choice (Self-Concordance)**:
    - In Act III, Agent Zero offers a one-time alliance or defiance decision. The choice changes trust, rewards, late-act dialogue, and the run epilogue, making the relationship feel authored rather than cosmetic.
+10. **Diegetic Feedback & Situational Awareness (Presence)**:
+   - The living grid runs its own clock, alert level, market, and news wire. Loud play raises alert, which raises patrol trace, re-secures breached hosts, and marks up the black market, while generated headlines report the consequences. The world reacts and narrates, so choices feel embedded in a place rather than a menu.
 
 ## 🎮 How to Play
 
 ### 1. Web Cyberdeck (Visual CRT & Web Audio)
-Launch the visual browser-based cyberpunk cyberdeck with a main menu, story/mission board, operative dialogue modal, interactive 2D node matrix canvas, visual oscilloscope/buffer mini-games, and synthesized 8-bit sound FX:
+Launch the visual browser-based cyberpunk cyberdeck with a main menu, story/mission board, operative dialogue modal, interactive 2D node matrix canvas, visual oscilloscope/buffer mini-games, a living-grid ticker (clock, alert, market, generated headlines), and synthesized 8-bit sound FX:
 
 ```bash
 # Launch interactive Web Cyberdeck (auto-opens browser at http://127.0.0.1:8420)
@@ -137,6 +139,8 @@ python -m cyberpulse.cli --seed 42069
 | `scan` | Scan surrounding connected nodes to reveal topology and IP addresses | Information foraging & strategic autonomy |
 | `spoof` | Burn 3 CPU cycles to bounce your proxy and reduce security trace by 25% | Risk mitigation & resource trade-offs |
 | `overdrive` | Burn 2 CPU and 8% trace to stack +1 combo and +10 unbanked credits | Voluntary risk, combo priming & dopamine anticipation |
+| `world` / `city` / `grid` | Show the in-game clock, shift, grid alert, market index, and latest headlines | Living world awareness & consequence telemetry |
+| `news` / `wire` | Read the generated grid news wire (`news 20` for a longer feed) | Diegetic feedback & attribution of events |
 | `story` | Show the current act, story log, and briefing | Narrative orientation & campaign immersion |
 | `quests` / `missions` | Open the mission board with progress, rewards, and available jobs | Goal clarity & Zeigarnik completion pressure |
 | `contacts` / `crew` | List operative channels, trust, dialogue, and favors | Relationship tracking & social capital |
@@ -160,6 +164,7 @@ python -m cyberpulse.cli --seed 42069
 6. **Deploy Persistent Malware**: Plant passive listeners with `keylogger 192.168.1.10` to siphon crypto credits every turn. Unevaded AV will actively hunt daemons unless blinded.
 7. **Exfiltrate High-Value Data**: Traverse directories with `ls`, inspect files with `cat`, and extract proprietary databases with `steal /data/corporate_slush_fund.csv`. Stolen data archives straight into your local rig at `/loot/`!
 8. **Sanitize & Cash Out**: Scrub audit records with `wipe_logs` to shed ICE trace, then extract safely via `cash_out` to lock in your bounty and grow your career dossier!
+9. **Live With the Grid**: Watch `world` and `news` between jobs. A hot alert invites NetWatch patrol trace, black-market markups, and sysadmins re-securing the hosts you left behind (with any daemons inside), while a quiet grid cools down and discounts gear.
 
 ## 🛡️ Architecture & Guarantees
 
@@ -173,6 +178,11 @@ python -m cyberpulse.cli --seed 42069
 - **Branching Alliance**: The Act III Agent Zero choice is persisted in the savegame and changes trust, rewards, dialogue, and the epilogue; old saves default to no choice.
 - **Same-Origin Web Cyberdeck**: The REST API sends no wildcard CORS grant and serializes state mutations, keeping the local game session private to its own page.
 - **Dynamic Resource Loop**: Turn-based CPU cooling (+1/turn) and hardware RAM constraints (`security_level * 16` MB).
+- **Living Grid Simulation**: Every turn advances a 15-minute in-game clock, drifts the black-market index (0.80x-1.35x, applied to shop prices), and cools or sustains the corporate alert level from your current trace.
+- **Reactive Corporate Response**: Alert 50%+ enables NetWatch patrol trace and sysadmin re-securing of breached hosts (12-turn cooldown, one host per turn, never your current host or the Nexus core); re-secured hosts restore their defenses and quarantine embedded daemons.
+- **Anti-Farm Breach Ledger**: A re-secured host pays no second reward, combo, or quest credit, so grid healing cannot be farmed for infinite credits.
+- **Deterministic World Events**: Ambient events, headlines, and re-secure rolls use a dedicated per-tick RNG stream seeded from `(seed, tick, stream)`, so the reward RNG sequence and every seeded gameplay outcome stay reproducible.
+- **Backward-Compatible World State**: Old saves without a world clock load with a fresh Day 1 world; the new fields are additive and atomic with the existing savegame.
 - **Fast Test Shield**: 100% test pass rate across unit and integration suites in about a second via `python -m unittest discover`.
 
 

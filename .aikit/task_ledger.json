@@ -2,22 +2,12 @@
   "version": 1,
   "active_task": {
     "task_id": "task-cyberpulse-world-simulation-v1",
-    "last_phase": "implementation",
-    "active_phase": 3,
+    "last_phase": "verification",
+    "active_phase": 4,
     "status": "in_progress",
-    "updated_at": 1792438637.5045006
+    "updated_at": 1792438706.550825
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-endgame-legacy-v1",
-      "phase": "phase 4",
-      "phase_num": 4,
-      "description": "[milestone 4/4] CLI/Web legacy display, best-combo dossier row, epilogue banner; 143/143 tests, JS check, ADR-012/README, aikit fix/check 4/4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792386462.7860126,
-      "timestamp_str": "2026-10-19 08:07:42"
-    },
     {
       "task_id": "task-cyberpulse-endgame-legacy-v1",
       "phase": "completed",
@@ -227,6 +217,16 @@
       "status": "in_progress",
       "timestamp": 1792438637.5045006,
       "timestamp_str": "2026-10-19 22:37:17"
+    },
+    {
+      "task_id": "task-cyberpulse-world-simulation-v1",
+      "phase": "verification",
+      "phase_num": 4,
+      "description": "[milestone 5/5] Documentation and ADR: ADR-015 records the living-grid design, RNG isolation, re-secure rules and anti-farm ledger; README gains the simulation pitch, presence mechanic, world/news commands, play-flow step, Web ticker note and six architecture guarantees; knowledge map regenerated; test 189/189, aikit check 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792438706.550825,
+      "timestamp_str": "2026-10-19 22:38:26"
     }
   ]
 }
