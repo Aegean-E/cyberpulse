@@ -6,11 +6,11 @@
 ---
 
 ## 📊 Codebase Metrics
-- **Total Python Modules**: `24`
-- **Total Classes**: `50`
+- **Total Python Modules**: `25`
+- **Total Classes**: `51`
 - **Total Top-Level Functions**: `47`
-- **Total Class Methods**: `311`
-- **Total Source Lines**: `7359`
+- **Total Class Methods**: `328`
+- **Total Source Lines**: `7676`
 
 ---
 
@@ -54,7 +54,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `1807` lines (`83465` bytes)
+**Size**: `2003` lines (`91758` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -76,6 +76,8 @@
   - Method `.interact_contact(contact_id, mode)` - *Talk to an operative, accept their job, or spend their one-time favor.*
   - Method `.ensure_story_state()` - *Backfill story content when loading a save created before story support.*
   - Method `.story_summary()`
+  - Method `.world_summary()` - *Return the living-grid snapshot with the newest headlines.*
+  - Method `.news_feed(limit)` - *Return the newest living-grid headlines, oldest first.*
   - Method `.run_summary()` - *Return the terminal (or in-progress) run's legacy for CLI and Web display.*
   - Method `.list_quests()`
   - Method `.list_contacts()`
@@ -83,6 +85,12 @@
   - Method `.clear_pending_puzzle(node_id)` - *Discard a solved or exhausted puzzle so the node cannot replay its attempts.*
   - Method `.add_trace(raw_amount)` - *Increase system trace, mitigated by ICE dampeners. 100% triggers lockout & loss of loot.*
   - Method `.regenerate_cpu(amount)` - *Cool down cyberdeck processing units and recover CPU cycles.*
+  - Method `.advance_turn()` - *Advance the run clock one turn: daemons harvest, then the living grid reacts.*
+  - Method `.tick_world()` - *Advance the in-game clock, alert, market, ambient events, and grid response.*
+  - Method `._decay_alert()` - *Cool the grid while trace is low; a hot trace keeps corporate response elevated.*
+  - Method `._apply_ambient_event(event)` - *Apply a rolled ambient grid event to the deck, loot, alert, or topology.*
+  - Method `._reveal_frontier_node()` - *Reveal one locked node adjacent to the current host, else any locked node.*
+  - Method `._recall_daemons(node_id)` - *Remove player daemons from a host after the grid re-secures it.*
   - Method `.spoof_ip()` - *Reduce active trace level by burning CPU cycles.*
   - Method `.overdrive()` - *Burn CPU and trace to stack a combo before the next breach.*
   - Method `.scan_surroundings()` - *Scan adjacent nodes to reveal their security level and status.*
@@ -447,6 +455,25 @@
   - Method `.test_accept_quest_rejects_terminal_states()`
   - Method `.test_core_is_sealed_until_act_four()`
   - Method `.test_download_contract_respects_trace_limit()`
+
+---
+
+### [`tests/test_grid.py`](tests/test_grid.py)
+> *Integration tests for living-grid simulation wired into the game engine.*
+
+**Size**: `121` lines (`4905` bytes)
+
+**Classes:**
+- `class TestGridIntegration`
+  - Method `.setUp()`
+  - Method `.test_advance_turn_moves_clock_daemons_and_market()`
+  - Method `.test_breach_raises_alert_and_publishes_news()`
+  - Method `.test_trace_thresholds_publish_news()`
+  - Method `.test_patrol_pressure_adds_trace_at_high_alert()`
+  - Method `.test_ambient_grid_events_fire_and_publish()`
+  - Method `.test_grid_resecures_host_and_recalls_daemons()`
+  - Method `.test_rebreach_after_resecure_pays_nothing()`
+  - Method `.test_world_summary_and_news_feed_shapes()`
 
 ---
 

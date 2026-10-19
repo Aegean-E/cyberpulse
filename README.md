@@ -42,11 +42,13 @@ cyberpulse/
 │   │   ├── app.js
 │   │   ├── index.html
 │   │   └── style.css
+│   ├── world.py              <- living-grid clock, alert, news, ambient events
 │   └── storage.py            <- atomic persistence & career dossier management
 └── tests/                    <- unit & integration test suite (about a second)
     ├── __init__.py
     ├── test_cli.py
     ├── test_engine.py
+    ├── test_grid.py
     ├── test_init.py
     ├── test_models.py
     ├── test_network.py
@@ -54,7 +56,8 @@ cyberpulse/
     ├── test_rewards.py
     ├── test_server.py
     ├── test_shop.py
-    └── test_storage.py
+    ├── test_storage.py
+    └── test_world.py
 ```
 
 ## 🧠 Behavioral Psychology & Engagement Mechanics

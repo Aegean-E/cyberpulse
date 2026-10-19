@@ -5,25 +5,9 @@
     "last_phase": "implementation",
     "active_phase": 3,
     "status": "in_progress",
-    "updated_at": 1792437800.4819398
+    "updated_at": 1792438294.8396587
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-endgame-legacy-v1",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/4] Plan: endgame run summary and story epilogues, career best-combo stat, CLI/Web legacy display, regression tests, ADR-012",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792386094.6184845,
-      "timestamp_str": "2026-10-19 08:01:34",
-      "impact_assessment": {
-        "why": "The new story, quest, contact, and combo systems currently end abruptly: terminal runs show only a generic banner, combo mastery is not recorded in the career dossier, and operative relationships never pay off in the ending.",
-        "benefits": "Players get closure and a reason to replay: epilogues reflect quest completion, operative trust, favors, and combo skill; career records best combo; CLI and Web show the same legacy summary.",
-        "risks": "contract: CareerProfile and full-state payload gain additive fields with defaults; dependency: none; concurrency: summary computed from locked session state; state: old saves must load with best_combo default and missing summary fields must stay optional",
-        "mitigation": "Use dataclass defaults, compute summaries from existing state only, add old-save fallback tests, keep CLI/Web parity tests, and run aikit fix/check before completion."
-      }
-    },
     {
       "task_id": "task-cyberpulse-endgame-legacy-v1",
       "phase": "phase 3",
@@ -233,6 +217,16 @@
       "status": "in_progress",
       "timestamp": 1792437800.4819398,
       "timestamp_str": "2026-10-19 22:23:20"
+    },
+    {
+      "task_id": "task-cyberpulse-world-simulation-v1",
+      "phase": "implementation",
+      "phase_num": 3,
+      "description": "[milestone 2/5] Engine grid integration: advance_turn pipeline replaces nine turn/tick pairs, tick_world clock+alert+market+ambient+patrol, breach/daemon/trace/jackout news hooks, alert raises, host re-secure with daemon recall, re-breach anti-farm guard (fresh_data gates rewards, combo and quest credit); 8 integration tests; test 182/182, aikit check 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792438294.8396587,
+      "timestamp_str": "2026-10-19 22:31:34"
     }
   ]
 }

@@ -30,6 +30,19 @@ from cyberpulse.models import (
 from cyberpulse.network import generate_network
 from cyberpulse.puzzles import BufferPuzzle, FrequencyPuzzle, HashCrackPuzzle
 from cyberpulse.rewards import roll_breach_reward
+from cyberpulse.world import (
+    AmbientEvent,
+    adjust_alert,
+    advance_clock,
+    ambient_event_for,
+    apply_resecure,
+    drift_market,
+    patrol_pressure,
+    plan_resecures,
+    record_news,
+    world_rng,
+    world_summary as build_world_summary,
+)
 from cyberpulse.story import (
     CHOICE_EPILOGUES,
     CHOICE_LABELS,
@@ -535,6 +548,17 @@ class GameEngine:
             "log": self.state.story_log[-20:],
         }
 
+    def world_summary(self) -> Dict[str, Any]:
+        """Return the living-grid snapshot with the newest headlines."""
+        summary = build_world_summary(self.state.world)
+        summary["news"] = self.news_feed(10)
+        return summary
+
+    def news_feed(self, limit: int = 12) -> List[Dict[str, Any]]:
+        """Return the newest living-grid headlines, oldest first."""
+        capped = max(1, int(limit))
+        return [item.to_dict() for item in self.state.world.news[-capped:]]
+
     def run_summary(self) -> Dict[str, Any]:
         """Return the terminal (or in-progress) run's legacy for CLI and Web display."""
         if self.state.is_victory:
@@ -657,7 +681,25 @@ class GameEngine:
         else:
             amount = raw_amount
 
+        before = self.state.trace_percent
         self.state.trace_percent = min(100, self.state.trace_percent + amount)
+
+        # Living-grid headlines for trace escalation
+        if before < 50 <= self.state.trace_percent:
+            record_news(
+                self.state.world,
+                self.state.turns_elapsed,
+                "NetWatch",
+                "Intrusion signature crossed the 50% NetWatch trace threshold.",
+            )
+        if before < 80 <= self.state.trace_percent:
+            record_news(
+                self.state.world,
+                self.state.turns_elapsed,
+                "NetWatch",
+                "Black ICE lock-in at 80% trace; connection integrity degrading.",
+                tone="alert",
+            )
 
         # High-arousal near-miss tension feedback (Clark et al.)
         if 80 <= self.state.trace_percent < 100:
@@ -670,6 +712,13 @@ class GameEngine:
             lost_loot = self.state.unbanked_creds
             self.state.unbanked_creds = 0
             self.state.looted_payloads.clear()
+            record_news(
+                self.state.world,
+                self.state.turns_elapsed,
+                "NetWatch",
+                "A netrunner's deck burned out mid-intrusion in the Sprawl.",
+                tone="negative",
+            )
             self.state.message_log.append(
                 f"🚨 SECURITY TRACE LOCKOUT DETECTED! Connection severed. Lost {lost_loot} unbanked Creds!"
             )
@@ -679,6 +728,120 @@ class GameEngine:
         old = self.deck.cpu_cycles
         self.deck.cpu_cycles = min(self.deck.max_cpu, self.deck.cpu_cycles + amount)
         return self.deck.cpu_cycles - old
+
+    def advance_turn(self) -> List[str]:
+        """Advance the run clock one turn: daemons harvest, then the living grid reacts."""
+        self.state.turns_elapsed += 1
+        messages = self.tick_daemons()
+        messages.extend(self.tick_world())
+        return messages
+
+    def tick_world(self) -> List[str]:
+        """Advance the in-game clock, alert, market, ambient events, and grid response."""
+        if self.state.is_game_over or self.state.is_jacked_out or self.state.is_victory:
+            return []
+        world = self.state.world
+        advance_clock(world)
+        drift_market(world, world_rng(self.seed, self.state.turns_elapsed, "drift"))
+        world.turns_since_event += 1
+        messages: List[str] = []
+        self._decay_alert()
+
+        event = ambient_event_for(
+            self.seed, self.state.turns_elapsed, world.alert_level, world.turns_since_event
+        )
+        if event:
+            messages.extend(self._apply_ambient_event(event))
+            if self.state.is_game_over:
+                return messages
+
+        pressure = patrol_pressure(world)
+        if pressure:
+            self.add_trace(pressure)
+            msg = (
+                f"🚨 [NETWATCH PATROL] Grid alert {world.alert_level}% sustains an active ICE sweep "
+                f"(+{pressure}% trace)."
+            )
+            messages.append(msg)
+            self.state.message_log.append(msg)
+            if self.state.is_game_over:
+                return messages
+
+        for node_id in plan_resecures(
+            self.seed, self.state.turns_elapsed, world.alert_level, self.nodes, self.state.current_node_id
+        ):
+            node = self.nodes[node_id]
+            message = apply_resecure(node)
+            recalled = self._recall_daemons(node_id)
+            if recalled:
+                message += f" {recalled} background daemon(s) quarantined."
+            world.resecured_count += 1
+            record_news(
+                world,
+                self.state.turns_elapsed,
+                "NetWatch",
+                f"Sysadmins re-secured {node.hostname}; intruder access revoked.",
+                tone="alert",
+            )
+            messages.append(message)
+            self.state.message_log.append(message)
+        return messages
+
+    def _decay_alert(self) -> int:
+        """Cool the grid while trace is low; a hot trace keeps corporate response elevated."""
+        trace = self.state.trace_percent
+        if trace >= 70:
+            return adjust_alert(self.state.world, 1)
+        if trace >= 40:
+            return adjust_alert(self.state.world, -1)
+        return adjust_alert(self.state.world, -2)
+
+    def _apply_ambient_event(self, event: AmbientEvent) -> List[str]:
+        """Apply a rolled ambient grid event to the deck, loot, alert, or topology."""
+        world = self.state.world
+        world.turns_since_event = 0
+        effects: List[str] = []
+        if event.credits:
+            self.state.unbanked_creds += event.credits
+            effects.append(f"+{event.credits} CR")
+        if event.cpu and not (self.state.is_game_over or self.state.is_jacked_out or self.state.is_victory):
+            self.deck.cpu_cycles = max(0, min(self.deck.max_cpu, self.deck.cpu_cycles + event.cpu))
+            effects.append(f"CPU {event.cpu:+d}")
+        if event.alert:
+            adjust_alert(world, event.alert)
+            effects.append(f"alert {event.alert:+d}%")
+        if event.reveal:
+            revealed = self._reveal_frontier_node()
+            if revealed:
+                effects.append(f"revealed {revealed}")
+        if event.trace:
+            self.add_trace(event.trace)
+            effects.append(f"+{event.trace}% trace")
+
+        record_news(world, self.state.turns_elapsed, event.source, event.headline, tone=event.tone)
+        suffix = f" ({', '.join(effects)})" if effects else ""
+        message = f"🌐 [GRID EVENT] {event.headline}{suffix}"
+        self.state.message_log.append(message)
+        return [message]
+
+    def _reveal_frontier_node(self) -> Optional[str]:
+        """Reveal one locked node adjacent to the current host, else any locked node."""
+        current = self.get_current_node()
+        locked = [self.nodes[nid] for nid in current.connected_ids if self.nodes.get(nid) and self.nodes[nid].status == NodeStatus.LOCKED]
+        if not locked:
+            locked = [node for node in sorted(self.nodes.values(), key=lambda n: n.node_id) if node.status == NodeStatus.LOCKED]
+        if not locked:
+            return None
+        target = sorted(locked, key=lambda n: n.node_id)[0]
+        target.status = NodeStatus.DISCOVERED
+        return f"{target.hostname} ({target.ip_address})"
+
+    def _recall_daemons(self, node_id: str) -> int:
+        """Remove player daemons from a host after the grid re-secures it."""
+        remaining = [d for d in self.deck.active_daemons if d.target_node_id != node_id]
+        recalled = len(self.deck.active_daemons) - len(remaining)
+        self.deck.active_daemons = remaining
+        return recalled
 
     def spoof_ip(self) -> Tuple[bool, str]:
         """Reduce active trace level by burning CPU cycles."""
@@ -742,8 +905,7 @@ class GameEngine:
 
         self.add_trace(5)
         self.regenerate_cpu(1)
-        self.state.turns_elapsed += 1
-        self.tick_daemons()
+        self.advance_turn()
         return True, f"Scanned {len(revealed)} adjacent network nodes. Recovered 1 CPU cycle.", revealed
 
     def can_move_to(self, target_id: str) -> Tuple[bool, str]:
@@ -774,10 +936,9 @@ class GameEngine:
             return False, reason
 
         self.state.current_node_id = target_id
-        self.state.turns_elapsed += 1
         self.regenerate_cpu(1)
         self.add_trace(2)
-        self.tick_daemons()
+        self.advance_turn()
         node = self.get_current_node()
         msg = f"⚡ Transferred terminal session to '{node.name}'. Recovered 1 CPU cycle."
         self.state.message_log.append(msg)
@@ -860,26 +1021,43 @@ class GameEngine:
             return False, gate
 
         node.status = NodeStatus.BREACHED
+        node.breached_turn = self.state.turns_elapsed
         self.clear_pending_puzzle(node_id)
 
-        # Variable-ratio reward roll (Skinner reinforcement schedule)
-        creds_awarded, reward_desc, exploit_drop = roll_breach_reward(node, self.rng)
-        self.state.combo_streak += 1
-        self.state.best_combo = max(self.state.best_combo, self.state.combo_streak)
-        combo_rate = min(0.50, 0.10 * self.state.combo_streak)
-        combo_bonus = int(creds_awarded * combo_rate)
-        self.state.unbanked_creds += creds_awarded + combo_bonus
-
-        if exploit_drop and exploit_drop not in self.deck.exploits:
-            self.deck.exploits.append(exploit_drop)
+        # Variable-ratio reward roll (Skinner reinforcement schedule). A host the grid
+        # re-secured has no fresh data, so re-breaching it pays nothing and cannot farm.
+        fresh_data = not node.reward_claimed
+        combo_bonus = 0
+        if fresh_data:
+            creds_awarded, reward_desc, exploit_drop = roll_breach_reward(node, self.rng)
+            self.state.combo_streak += 1
+            self.state.best_combo = max(self.state.best_combo, self.state.combo_streak)
+            combo_rate = min(0.50, 0.10 * self.state.combo_streak)
+            combo_bonus = int(creds_awarded * combo_rate)
+            self.state.unbanked_creds += creds_awarded + combo_bonus
+            node.reward_claimed = True
+            if exploit_drop and exploit_drop not in self.deck.exploits:
+                self.deck.exploits.append(exploit_drop)
+        else:
+            reward_desc = "No fresh data: the host was re-secured and its vaults wiped."
 
         msg = f"💥 Infiltration successful! '{node.name}' breached. {reward_desc}"
         if combo_bonus:
             msg += f" 🔥 COMBO x{self.state.combo_streak}: +{combo_bonus} bonus Creds!"
 
-        if node.data_payload:
+        if node.data_payload and node.data_payload not in self.state.looted_payloads:
             self.state.looted_payloads.append(node.data_payload)
             msg += f" Acquired: [{node.data_payload}]."
+
+        # Loud intrusions raise the living grid's alert level and make the news feed
+        adjust_alert(self.state.world, 3 + node.security_level * 2)
+        record_news(
+            self.state.world,
+            self.state.turns_elapsed,
+            "NetWatch",
+            f"Breach detected on {node.hostname} ({node.ip_address}); corporate response mobilizing.",
+            tone="alert",
+        )
 
         # Syndicate Contract Check (Zeigarnik Effect)
         contract = self.state.active_contract
@@ -887,11 +1065,20 @@ class GameEngine:
             contract.completed = True
             self.state.unbanked_creds += contract.reward_creds
             msg += f" 🏆 CONTRACT FULFILLED! +{contract.reward_creds} Creds!"
+            record_news(
+                self.state.world,
+                self.state.turns_elapsed,
+                "Syndicate",
+                f"Syndicate bounty cleared on {node.hostname}; payment released.",
+                tone="positive",
+            )
             self.dispatch_next_contract()
 
-        # Story quest progress
-        for line in self._progress_quests("breach_type", node.node_type):
-            msg += f"\n{line}"
+        # Story quest progress: only a first, data-bearing breach counts; a re-secured
+        # host must not be farmable for quest credit.
+        if fresh_data:
+            for line in self._progress_quests("breach_type", node.node_type):
+                msg += f"\n{line}"
 
         # Unlock adjacent nodes to DISCOVERED
         for adj_id in node.connected_ids:
@@ -902,6 +1089,13 @@ class GameEngine:
         if node.node_type == NodeType.CENTRAL_CORE:
             self.state.is_victory = True
             msg += " 🏆 CORE INFILTRATED! MISSION ACCOMPLISHED!"
+            record_news(
+                self.state.world,
+                self.state.turns_elapsed,
+                "OmniCorp PR",
+                "NEXUS supercore offline: OmniCorp declares a city-wide systems emergency.",
+                tone="negative",
+            )
 
         self.state.message_log.append(msg)
         return True, msg
@@ -1033,6 +1227,14 @@ class GameEngine:
         self.deck.cryptocreds += banked
         self.state.unbanked_creds = 0
         self.state.is_jacked_out = True
+        adjust_alert(self.state.world, -3)
+        record_news(
+            self.state.world,
+            self.state.turns_elapsed,
+            "StreetFeed",
+            f"An operator vanished from the grid with {banked} CR and {payload_count} payload(s).",
+            tone="positive",
+        )
 
         msg = f"🚪 SAFE EXTRACTION! Banked {banked} CryptoCreds and secured {payload_count} data payloads."
         for line in self._progress_quests("finish_run", "jackout"):
@@ -1102,8 +1304,7 @@ class GameEngine:
 
         self.add_trace(4)
         self.regenerate_cpu(1)
-        self.state.turns_elapsed += 1
-        self.tick_daemons()
+        self.advance_turn()
 
         port_data = []
         for p in node.ports:
@@ -1218,8 +1419,7 @@ class GameEngine:
         self.deck.cpu_cycles -= cpu_needed
         target_port.breached = True
         self.add_trace(trace_add)
-        self.state.turns_elapsed += 1
-        self.tick_daemons()
+        self.advance_turn()
         breached, breach_msg = self.complete_breach(node.node_id)
         if not breached:
             msg = f"💥 EXPLOIT LANDED but root access was interrupted on {node.hostname}:\n{breach_msg}{av_notice}"
@@ -1303,8 +1503,7 @@ class GameEngine:
             return False, f"File '{file_path}' not found on {node.hostname}.", None
 
         self.add_trace(8)
-        self.state.turns_elapsed += 1
-        self.tick_daemons()
+        self.advance_turn()
 
         already_looted = vfile.path in self.state.looted_payloads
         if not already_looted:
@@ -1371,8 +1570,7 @@ class GameEngine:
         node.logs_cleared = True
         trace_drop = min(self.state.trace_percent, 20)
         self.state.trace_percent = max(0, self.state.trace_percent - 20)
-        self.state.turns_elapsed += 1
-        self.tick_daemons()
+        self.advance_turn()
 
         msg = f"🧹 LOGS SANITIZED: Erased intruder access timestamps on {node.hostname} ({node.ip_address}). Trace dropped by {trace_drop}% (current: {self.state.trace_percent}%)."
 
@@ -1467,6 +1665,7 @@ class GameEngine:
             detection_risk=3,
         )
         self.deck.active_daemons.append(daemon)
+        adjust_alert(self.state.world, 2)
         msg = f"👾 DAEMON INITIALIZED: [{daemon_type.upper()}] active on {node.hostname} ({node.ip_address}). Passively harvesting +25 unbanked Creds/turn."
         for line in self._progress_quests("deploy_daemon", daemon_type):
             msg += f"\n{line}"
@@ -1543,9 +1742,8 @@ class GameEngine:
             emp = EmployeeProfile(name="Staff Associate", role="Operations", email=f"staff@{node.hostname}", awareness_level=SecurityAwarenessLevel.STANDARD)
 
         self.deck.cpu_cycles -= 1
-        self.state.turns_elapsed += 1
         self.add_trace(6)
-        self.tick_daemons()
+        self.advance_turn()
 
         # Calculate success probability based on vector vs employee security awareness
         awareness = emp.awareness_level
@@ -1688,9 +1886,8 @@ class GameEngine:
             return False, f"Port {port}/tcp is already bypassed on {node.hostname}."
 
         self.deck.cpu_cycles -= spec["cpu"]
-        self.state.turns_elapsed += 1
         self.add_trace(spec["trace"])
-        self.tick_daemons()
+        self.advance_turn()
 
         rule.bypassed = True
         rule.bypass_method = method_key
@@ -1751,9 +1948,8 @@ class GameEngine:
             return False, f"INSUFFICIENT CPU: {spec['name']} requires {spec['cpu']} CPU cycles."
 
         self.deck.cpu_cycles -= spec["cpu"]
-        self.state.turns_elapsed += 1
         self.add_trace(spec["trace"])
-        self.tick_daemons()
+        self.advance_turn()
 
         node.antivirus.evaded = True
         node.antivirus.alert_level = max(0, node.antivirus.alert_level - 35)
