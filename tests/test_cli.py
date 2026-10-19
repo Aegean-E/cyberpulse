@@ -59,6 +59,20 @@ class TestCLI(unittest.TestCase):
         self.assertIn("NEURAL OVERDRIVE", out)
         self.assertIn("Combo: x1", out)
 
+    def test_world_news_commands_and_hud_grid_line(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "world;news;status")
+        self.assertEqual(code, 0)
+        self.assertIn("LIVING GRID // CITY PULSE", out)
+        self.assertIn("Grid Alert:", out)
+        self.assertIn("GRID NEWS WIRE", out)
+        self.assertIn("Grid:", out)
+        self.assertIn("Market:", out)
+
+    def test_shop_command_reports_market_index(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "shop")
+        self.assertEqual(code, 0)
+        self.assertIn("Market index: x", out)
+
     def test_agent_zero_alliance_after_act_three(self):
         batch_cmds = (
             "hack node_proxy_a;hack node_proxy_b;move node_proxy_a;"

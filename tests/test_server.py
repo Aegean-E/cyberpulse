@@ -61,6 +61,31 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertIn("items", data)
         self.assertGreater(len(data["items"]), 0)
 
+    def test_get_world_state_and_grid_fields(self):
+        status, res = self._get("/api/world")
+        self.assertEqual(status, 200)
+        self.assertIn("clock", res["world"])
+        self.assertIn("alert_level", res["world"])
+        self.assertIn("news", res)
+
+        status, data = self._get("/api/state")
+        self.assertEqual(status, 200)
+        self.assertIn("world", data)
+        self.assertEqual(data["world"]["alert_level"], 10)
+
+    def test_market_markup_reaches_shop_endpoint(self):
+        session = self.server.RequestHandlerClass.server_session
+        session.engine.state.world.market_index = 1.25
+        try:
+            status, res = self._get("/api/shop")
+            self.assertEqual(status, 200)
+            self.assertEqual(res["market_multiplier"], 1.25)
+            overclock = next(i for i in res["items"] if i["item_id"] == "overclock_cpu")
+            self.assertEqual(overclock["cost"], 188)
+            self.assertEqual(overclock["base_cost"], 150)
+        finally:
+            session.engine.state.world.market_index = 1.0
+
     def test_get_career(self):
         status, data = self._get("/api/career")
         self.assertEqual(status, 200)

@@ -5,19 +5,9 @@
     "last_phase": "implementation",
     "active_phase": 3,
     "status": "in_progress",
-    "updated_at": 1792438294.8396587
+    "updated_at": 1792438508.879341
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-endgame-legacy-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 2/4] Models and story epilogues: CareerProfile.best_combo, outcome/contact/combo epilogue data, backward-compatible defaults",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792386451.617017,
-      "timestamp_str": "2026-10-19 08:07:31"
-    },
     {
       "task_id": "task-cyberpulse-endgame-legacy-v1",
       "phase": "phase 3",
@@ -227,6 +217,16 @@
       "status": "in_progress",
       "timestamp": 1792438294.8396587,
       "timestamp_str": "2026-10-19 22:31:34"
+    },
+    {
+      "task_id": "task-cyberpulse-world-simulation-v1",
+      "phase": "implementation",
+      "phase_num": 3,
+      "description": "[milestone 3/5] Grid surfaces and market prices: CLI world/news commands, HUD grid line, market-aware shop costs (CLI/buy), POST shop_buy multiplier, GET /api/world, world block and market-aware shop_items in /api/state, server /api/shop market_multiplier; 7 new tests; test 189/189, aikit check 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792438508.879341,
+      "timestamp_str": "2026-10-19 22:35:08"
     }
   ]
 }

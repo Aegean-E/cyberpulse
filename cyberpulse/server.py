@@ -70,6 +70,7 @@ class CyberdeckSession:
         self.settle_run_if_finished()
         curr = self.engine.get_current_node()
         career = self.save_mgr.load_career()
+        world = self.engine.world_summary()
         return {
             "seed": self.engine.seed,
             "state": self.engine.state.to_dict(),
@@ -78,10 +79,11 @@ class CyberdeckSession:
             "nodes": {nid: n.to_dict() for nid, n in self.engine.nodes.items()},
             "career": career.to_dict(),
             "story": self.engine.story_summary(),
+            "world": world,
             "run_summary": self.engine.run_summary(),
             "quests": self.engine.list_quests(),
             "contacts": self.engine.list_contacts(),
-            "shop_items": self.shop.list_available(self.engine.deck),
+            "shop_items": self.shop.list_available(self.engine.deck, price_multiplier=world["market_multiplier"]),
             "workshop_recipes": self.engine.list_crafting_recipes(),
             "known_cves": self.engine.list_cves(),
             "local_rig": {
@@ -141,8 +143,18 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/shop":
-            items = self.server_session.shop.list_available(self.server_session.engine.deck)
-            self.send_json_response({"items": items, "creds": self.server_session.engine.deck.cryptocreds})
+            multiplier = self.server_session.engine.world_summary()["market_multiplier"]
+            items = self.server_session.shop.list_available(self.server_session.engine.deck, price_multiplier=multiplier)
+            self.send_json_response({
+                "items": items,
+                "creds": self.server_session.engine.deck.cryptocreds,
+                "market_multiplier": multiplier,
+            })
+            return
+
+        if path == "/api/world":
+            world = self.server_session.engine.world_summary()
+            self.send_json_response({"world": world, "news": world.get("news", [])})
             return
 
         if path == "/api/career":
@@ -365,7 +377,8 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
 
             if action == "shop_buy":
                 item_id = payload.get("item_id")
-                ok, msg = shop.purchase(engine.deck, item_id)
+                multiplier = engine.world_summary()["market_multiplier"]
+                ok, msg = shop.purchase(engine.deck, item_id, price_multiplier=multiplier)
                 if ok:
                     profile = save_mgr.load_career()
                     profile.purchased_upgrades.append(item_id)

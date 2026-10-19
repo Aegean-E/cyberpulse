@@ -8,9 +8,9 @@
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `25`
 - **Total Classes**: `51`
-- **Total Top-Level Functions**: `47`
-- **Total Class Methods**: `328`
-- **Total Source Lines**: `7676`
+- **Total Top-Level Functions**: `49`
+- **Total Class Methods**: `336`
+- **Total Source Lines**: `7816`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `761` lines (`33864` bytes)
+**Size**: `812` lines (`36841` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -34,12 +34,14 @@
 - `def get_default_data_dir()`
 - `def render_trace_bar(trace_percent, width)`
 - `def print_hud(engine)`
-- `def print_shop(shop, deck)`
+- `def print_shop(shop, deck, price_multiplier)`
 - `def print_career(profile)`
 - `def print_workshop(engine)`
 - `def print_daemons(engine)`
 - `def print_cves(engine)`
 - `def print_story(engine)`
+- `def print_world(engine)`
+- `def print_news(engine, limit)`
 - `def print_run_summary(engine)`
 - `def print_quests(engine)`
 - `def print_contacts(engine)`
@@ -244,7 +246,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `619` lines (`27472` bytes)
+**Size**: `632` lines (`28106` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -272,14 +274,15 @@
 ### [`cyberpulse/shop.py`](cyberpulse/shop.py)
 > *Black market cyberdeck upgrades and exploit vendor for CyberPulse.*
 
-**Size**: `135` lines (`4856` bytes)
+**Size**: `149` lines (`5497` bytes)
 
 **Classes:**
 - `class ShopItem`
 - `class BlackMarketShop` - *Manages purchasing of cyberdeck hardware upgrades and exploit chips.*
   - Method `.__init__(catalog)`
-  - Method `.list_available(deck)` - *List all shop items and current upgrade status.*
-  - Method `.purchase(deck, item_id)` - *Attempt to buy an item and apply its stat bonuses to deck.*
+  - Method `.price_for(item, price_multiplier)` - *Effective cost after living-grid market drift, never below 1 Cred.*
+  - Method `.list_available(deck, price_multiplier)` - *List all shop items and current upgrade status at the current market price.*
+  - Method `.purchase(deck, item_id, price_multiplier)` - *Attempt to buy an item at the current market price and apply its stat bonuses.*
 
 ---
 
@@ -353,7 +356,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `300` lines (`12692` bytes)
+**Size**: `314` lines (`13288` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -363,6 +366,8 @@
   - Method `.test_main_menu_quit()`
   - Method `.test_main_menu_starts_run_then_quits()`
   - Method `.test_story_quests_contacts_and_overdrive_commands()`
+  - Method `.test_world_news_commands_and_hud_grid_line()`
+  - Method `.test_shop_command_reports_market_index()`
   - Method `.test_agent_zero_alliance_after_act_three()`
   - Method `.test_jackout_records_best_combo_in_career()`
   - Method `.test_contact_job_and_favor_commands()`
@@ -553,7 +558,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `504` lines (`21659` bytes)
+**Size**: `529` lines (`22726` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -563,6 +568,8 @@
   - Method `._post(path, payload)`
   - Method `.test_get_state()`
   - Method `.test_get_shop()`
+  - Method `.test_get_world_state_and_grid_fields()`
+  - Method `.test_market_markup_reaches_shop_endpoint()`
   - Method `.test_get_career()`
   - Method `.test_action_scan_and_spoof()`
   - Method `.test_puzzle_endpoint_and_solve()`
@@ -597,7 +604,7 @@
 ### [`tests/test_shop.py`](tests/test_shop.py)
 > *Unit tests for Black Market Shop in CyberPulse.*
 
-**Size**: `55` lines (`1977` bytes)
+**Size**: `78` lines (`3142` bytes)
 
 **Classes:**
 - `class TestShop`
@@ -607,6 +614,9 @@
   - Method `.test_purchase_ice_dampener()`
   - Method `.test_purchase_insufficient_funds()`
   - Method `.test_purchase_max_level()`
+  - Method `.test_market_markup_raises_prices()`
+  - Method `.test_market_discount_lowers_prices()`
+  - Method `.test_invalid_market_multiplier_falls_back_to_base_price()`
 
 ---
 

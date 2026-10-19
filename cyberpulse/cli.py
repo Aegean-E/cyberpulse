@@ -16,6 +16,7 @@ from cyberpulse.models import CareerProfile, CyberDeck, NodeStatus, NodeType
 from cyberpulse.puzzles import BufferPuzzle, FrequencyPuzzle, HashCrackPuzzle
 from cyberpulse.shop import BlackMarketShop
 from cyberpulse.storage import SaveManager
+from cyberpulse.world import clock_minute_text
 
 
 def setup_terminal_encoding() -> None:
@@ -85,6 +86,9 @@ def print_hud(engine: GameEngine) -> None:
     story = engine.story_summary()
     active_quests = sum(1 for q in engine.state.quests if q.accepted and not q.completed)
     print(f"[*] Story:      {story['act_title']} // {story['chapter_title']} | Combo: x{engine.state.combo_streak} | Quests: {active_quests} active")
+    world = engine.state.world
+    world_info = engine.world_summary()
+    print(f"[*] Grid:       {world_info['clock']} | Alert: {world.alert_level}% | Market: x{world_info['market_multiplier']}")
     print("--------------------------------------------------------------------------")
     print("Discovered Subnet Nodes:")
     for cid in curr.connected_ids:
@@ -95,16 +99,22 @@ def print_hud(engine: GameEngine) -> None:
     print("+==========================================================================+")
 
 
-def print_shop(shop: BlackMarketShop, deck: CyberDeck) -> None:
-    items = shop.list_available(deck)
+def print_shop(shop: BlackMarketShop, deck: CyberDeck, price_multiplier: float = 1.0) -> None:
+    items = shop.list_available(deck, price_multiplier=price_multiplier)
     print("\n+==========================================================================+")
     print("|                   >> BLACK MARKET CYBER-VENDOR <<                        |")
     print("+==========================================================================+")
-    print(f"[*] Available Funds: {deck.cryptocreds} CryptoCreds\n")
+    print(f"[*] Available Funds: {deck.cryptocreds} CryptoCreds | Market index: x{price_multiplier:.3f}")
+    if price_multiplier > 1.0:
+        print("[!] The grid is hot: black-market prices are marked up tonight.")
+    elif price_multiplier < 1.0:
+        print("[*] A quiet grid: black-market prices are discounted tonight.")
+    print()
     for it in items:
         status = f"Lvl {it['current_level']}/{it['max_level']}" if it['max_level'] > 1 else ("OWNED" if it['current_level'] > 0 else "AVAILABLE")
         buy_tag = "[AFFORDABLE]" if it['can_buy'] else "[LOCKED]"
-        print(f"   * {it['item_id']:<18} | Cost: {it['cost']:<4} Creds | {status:<12} | {buy_tag}")
+        cost_str = f"{it['cost']}" if it['cost'] == it['base_cost'] else f"{it['cost']} (base {it['base_cost']})"
+        print(f"   * {it['item_id']:<18} | Cost: {cost_str:<16} Creds | {status:<12} | {buy_tag}")
         print(f"     Description: {it['description']}")
     print("--------------------------------------------------------------------------")
     print("Buy with: buy <item_id> (e.g. `buy overclock_cpu` or `buy ice_dampener`)")
@@ -180,6 +190,36 @@ def print_story(engine: GameEngine) -> None:
     print("--------------------------------------------------------------------------")
     for line in story["log"][-6:]:
         print(f"   > {line}")
+    print("+==========================================================================+")
+
+
+def print_world(engine: GameEngine) -> None:
+    summary = engine.world_summary()
+    print("\n+==========================================================================+")
+    print("|                    >> LIVING GRID // CITY PULSE <<                       |")
+    print("+==========================================================================+")
+    print(f"[*] Clock:      {summary['clock']}")
+    print(f"[*] Shift:      {summary['shift']} | Grid Alert: {summary['alert_level']}%")
+    print(f"[*] Market:     x{summary['market_multiplier']} black-market index | Re-secured hosts: {summary['resecured_count']}")
+    print("--------------------------------------------------------------------------")
+    print("Latest headlines:")
+    for item in summary["news"][-8:]:
+        print(f"   > [{item['source']}] {item['headline']}")
+    print("--------------------------------------------------------------------------")
+    print("News wire: news | Flip through the whole feed with: news 20")
+    print("+==========================================================================+")
+
+
+def print_news(engine: GameEngine, limit: int = 12) -> None:
+    items = engine.news_feed(limit)
+    print("\n+==========================================================================+")
+    print("|                       >> GRID NEWS WIRE <<                               |")
+    print("+==========================================================================+")
+    if not items:
+        print("   > (the wire is quiet; breach a host to make headlines)")
+    for item in items:
+        stamp = f"Day {item['day']} {clock_minute_text(item['minute'])}"
+        print(f"   > [{stamp}] {item['source']}: {item['headline']}")
     print("+==========================================================================+")
 
 
@@ -275,7 +315,7 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
             print_career(save_mgr.load_career())
             continue
         if choice in ("6", "help", "how"):
-            print("Commands: status, story, quests, contacts, contact, accept, scan, probe, exploit,")
+            print("Commands: status, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
             print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
             print("          move, overdrive, spoof, cash_out, shop, buy, career, save, load, quit")
             continue
@@ -378,6 +418,17 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
 
     if action in ("story", "lore"):
         print_story(engine)
+        return True
+
+    if action in ("world", "city", "grid"):
+        print_world(engine)
+        return True
+
+    if action in ("news", "wire", "headlines"):
+        limit = 12
+        if len(parts) > 1 and parts[1].isdigit():
+            limit = max(1, min(60, int(parts[1])))
+        print_news(engine, limit)
         return True
 
     if action in ("quests", "missions", "jobs"):
@@ -532,14 +583,14 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         return True
 
     if action == "shop":
-        print_shop(shop, engine.deck)
+        print_shop(shop, engine.deck, price_multiplier=engine.world_summary()["market_multiplier"])
         return True
 
     if action == "buy":
         if len(parts) < 2:
             print("Usage: buy <item_id> (e.g. `buy overclock_cpu`)")
             return True
-        ok, msg = shop.purchase(engine.deck, parts[1])
+        ok, msg = shop.purchase(engine.deck, parts[1], price_multiplier=engine.world_summary()["market_multiplier"])
         print(msg)
         if ok:
             profile = save_mgr.load_career()
@@ -661,7 +712,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("No saved game found.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: story, quests, contacts, contact, accept, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, spoof, cash_out, shop, buy, career, status, save, load, quit")
+    print(f"Unknown command: '{action}'. Commands: story, quests, contacts, contact, accept, world, news, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, spoof, cash_out, shop, buy, career, status, save, load, quit")
     return True
 
 

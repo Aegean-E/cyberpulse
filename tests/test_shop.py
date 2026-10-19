@@ -50,6 +50,29 @@ class TestShop(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("maximum level", msg)
 
+    def test_market_markup_raises_prices(self):
+        items = self.shop.list_available(self.deck, price_multiplier=1.20)
+        overclock = next(it for it in items if it["item_id"] == "overclock_cpu")
+        self.assertEqual(overclock["cost"], 180)
+        self.assertEqual(overclock["base_cost"], 150)
+
+        ok, msg = self.shop.purchase(self.deck, "overclock_cpu", price_multiplier=1.20)
+        self.assertTrue(ok)
+        self.assertEqual(self.deck.cryptocreds, 320)
+
+    def test_market_discount_lowers_prices(self):
+        items = self.shop.list_available(self.deck, price_multiplier=0.85)
+        dampener = next(it for it in items if it["item_id"] == "ice_dampener")
+        self.assertEqual(dampener["cost"], 212)
+
+        ok, msg = self.shop.purchase(self.deck, "ice_dampener", price_multiplier=0.85)
+        self.assertTrue(ok)
+        self.assertEqual(self.deck.cryptocreds, 288)
+
+    def test_invalid_market_multiplier_falls_back_to_base_price(self):
+        self.assertEqual(self.shop.price_for(self.shop.catalog["overclock_cpu"], "not-a-number"), 150)
+        self.assertEqual(self.shop.price_for(self.shop.catalog["overclock_cpu"], 0), 150)
+
 
 if __name__ == "__main__":
     unittest.main()
