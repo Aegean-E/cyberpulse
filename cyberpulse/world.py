@@ -1,10 +1,11 @@
 """Living-grid world simulation: in-game clock, corporate alert, news, and grid response."""
 
 import random
+from collections import deque
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence
 
-from cyberpulse.models import NewsItem, Node, NodeStatus, NodeType, WorldState
+from cyberpulse.models import NetWatchHunter, NewsItem, Node, NodeStatus, NodeType, WorldState
 
 MINUTES_PER_TURN = 15
 NEWS_CAPACITY = 60
@@ -12,6 +13,7 @@ ALERT_MAX = 100
 MARKET_FLOOR = 0.80
 MARKET_CEILING = 1.35
 RESECURE_ALERT_THRESHOLD = 50
+HUNTER_ALERT_THRESHOLD = 60
 RESECURE_COOLDOWN = 12
 RESECURE_MAX_PER_TURN = 1
 AMBIENT_EVENT_COOLDOWN = 2
@@ -262,8 +264,148 @@ def apply_resecure(node: Node) -> str:
     )
 
 
+def find_shortest_path(nodes: Dict[str, Node], start_id: str, goal_id: str) -> List[str]:
+    """Find the shortest unweighted path of node IDs from start_id to goal_id using BFS."""
+    if start_id not in nodes or goal_id not in nodes:
+        return []
+    if start_id == goal_id:
+        return [start_id]
+    queue: deque = deque([[start_id]])
+    visited = {start_id}
+    while queue:
+        path = queue.popleft()
+        current = path[-1]
+        node = nodes.get(current)
+        if not node:
+            continue
+        for neighbor in sorted(node.connected_ids):
+            if neighbor == goal_id:
+                return path + [neighbor]
+            if neighbor not in visited and neighbor in nodes:
+                visited.add(neighbor)
+                queue.append(path + [neighbor])
+    return []
+
+
+def calculate_distance(nodes: Dict[str, Node], start_id: str, goal_id: str) -> int:
+    """Return the hop distance between start_id and goal_id, or -1 if unreachable."""
+    path = find_shortest_path(nodes, start_id, goal_id)
+    if not path:
+        return -1
+    return len(path) - 1
+
+
+def deploy_hunter(world: WorldState, nodes: Dict[str, Node], tick: int) -> Optional[NetWatchHunter]:
+    """Deploy an active NetWatch Hunter if alert level exceeds threshold and none is active."""
+    if world.alert_level < HUNTER_ALERT_THRESHOLD:
+        return None
+    for h in world.hunters:
+        if h.status in ("hunting", "confused"):
+            return None
+
+    spawn_id = ""
+    for nid, node in nodes.items():
+        if node.node_type == NodeType.CENTRAL_CORE:
+            spawn_id = nid
+            break
+    if not spawn_id and nodes:
+        sorted_nodes = sorted(nodes.values(), key=lambda n: (n.security_level, n.node_id), reverse=True)
+        spawn_id = sorted_nodes[0].node_id
+
+    if not spawn_id:
+        return None
+
+    hunter_idx = len(world.hunters) + 1
+    hunter = NetWatchHunter(
+        hunter_id=f"hunter_{hunter_idx}_{tick}",
+        name=f"NetWatch Hunter Aegis-{hunter_idx}",
+        current_node_id=spawn_id,
+        status="hunting",
+        turns_active=0,
+    )
+    world.hunters.append(hunter)
+    record_news(
+        world,
+        tick,
+        "NetWatch",
+        f"CRITICAL: {hunter.name} deployed to sector subnets to hunt intruder.",
+        tone="alert",
+    )
+    return hunter
+
+
+def step_hunter(
+    hunter: NetWatchHunter,
+    nodes: Dict[str, Node],
+    player_node_id: str,
+    rng: random.Random,
+) -> Dict[str, Any]:
+    """Advance the hunter by 1 hop along the network graph towards the player or random neighbor if confused."""
+    if hunter.status == "neutralized":
+        return {"action": "idle", "hunter": hunter}
+
+    prev_node = hunter.current_node_id
+    if hunter.confused_turns > 0:
+        hunter.confused_turns -= 1
+        curr = nodes.get(hunter.current_node_id)
+        if curr and curr.connected_ids:
+            candidates = sorted(curr.connected_ids)
+            next_node = rng.choice(candidates)
+            hunter.current_node_id = next_node
+        hunter.turns_active += 1
+        if hunter.confused_turns == 0 and hunter.status == "confused":
+            hunter.status = "hunting"
+        return {
+            "action": "confused",
+            "hunter": hunter,
+            "from_node": prev_node,
+            "to_node": hunter.current_node_id,
+        }
+
+    hunter.target_node_id = player_node_id
+    path = find_shortest_path(nodes, hunter.current_node_id, player_node_id)
+    if len(path) >= 2:
+        next_node = path[1]
+        hunter.current_node_id = next_node
+        hunter.turns_active += 1
+        if hunter.current_node_id == player_node_id:
+            hunter.status = "intercepted"
+            return {
+                "action": "intercepted",
+                "hunter": hunter,
+                "from_node": prev_node,
+                "to_node": next_node,
+                "node_id": player_node_id,
+            }
+        return {
+            "action": "moved",
+            "hunter": hunter,
+            "from_node": prev_node,
+            "to_node": next_node,
+        }
+    elif hunter.current_node_id == player_node_id:
+        hunter.status = "intercepted"
+        return {
+            "action": "intercepted",
+            "hunter": hunter,
+            "from_node": prev_node,
+            "to_node": hunter.current_node_id,
+            "node_id": player_node_id,
+        }
+    else:
+        hunter.turns_active += 1
+        return {"action": "idle", "hunter": hunter, "node_id": hunter.current_node_id}
+
+
+def neutralize_hunter(hunter: NetWatchHunter, reason: str = "logic_bomb") -> str:
+    """Neutralize an active NetWatch hunter."""
+    hunter.status = "neutralized"
+    return f"⚡ {hunter.name} was neutralized via {reason}! Sector radar clear."
+
+
 def world_summary(world: WorldState) -> Dict[str, Any]:
     """Serialize the living-grid snapshot for CLI and Web consumers."""
+    active_hunters = [h for h in world.hunters if h.status in ("hunting", "confused", "intercepted")]
     return {
         "clock": clock_label(world),
         "day": world.day,
@@ -273,4 +415,6 @@ def world_summary(world: WorldState) -> Dict[str, Any]:
         "market_multiplier": market_multiplier(world),
         "resecured_count": world.resecured_count,
         "news_count": len(world.news),
+        "active_hunters_count": len(active_hunters),
+        "hunters": [h.to_dict() for h in active_hunters],
     }

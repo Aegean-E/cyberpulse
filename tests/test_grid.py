@@ -116,6 +116,75 @@ class TestGridIntegration(unittest.TestCase):
         self.assertTrue(summary["news"])
         self.assertIn("headline", summary["news"][0])
 
+    def test_hunter_deployment_on_alert_threshold(self):
+        self.engine.state.world.alert_level = 75
+        self.assertEqual(len(self.engine.state.world.hunters), 0)
+
+        self.engine.advance_turn()
+
+        self.assertEqual(len(self.engine.state.world.hunters), 1)
+        hunter = self.engine.state.world.hunters[0]
+        self.assertEqual(hunter.status, "hunting")
+        self.assertTrue(any("NETWATCH HUNTER" in m for m in self.engine.state.message_log))
+
+    def test_hunter_advances_and_intercepts_player(self):
+        self.engine.state.world.alert_level = 70
+        self.engine.advance_turn()
+        hunter = self.engine.state.world.hunters[0]
+
+        # Place hunter in adjacent node to player
+        curr_node = self.engine.get_current_node()
+        adj_id = curr_node.connected_ids[0]
+        hunter.current_node_id = adj_id
+        hunter.status = "hunting"
+        trace_before = self.engine.state.trace_percent
+        self.engine.deck.cpu_cycles = 5
+
+        # Advancing turn should move hunter into current_node_id and intercept!
+        self.engine.advance_turn()
+
+        self.assertEqual(hunter.status, "intercepted")
+        self.assertEqual(hunter.current_node_id, curr_node.node_id)
+        self.assertGreaterEqual(self.engine.state.trace_percent, trace_before + 15)
+        self.assertEqual(self.engine.deck.cpu_cycles, 3)  # drained by 2
+        self.assertTrue(any("NETWATCH CLASH" in m for m in self.engine.state.message_log))
+
+    def test_hunter_scrambled_by_spoof_and_wipe(self):
+        self.engine.state.world.alert_level = 70
+        self.engine.advance_turn()
+        hunter = self.engine.state.world.hunters[0]
+        self.assertEqual(hunter.confused_turns, 0)
+
+        self.engine.deck.cpu_cycles = 5
+        self.engine.state.trace_percent = 50
+        ok, _ = self.engine.spoof_ip()
+        self.assertTrue(ok)
+        self.assertGreater(hunter.confused_turns, 0)
+
+    def test_counter_hunter_with_logic_bomb(self):
+        self.engine.state.world.alert_level = 70
+        self.engine.advance_turn()
+        hunter = self.engine.state.world.hunters[0]
+        self.engine.deck.exploits.append("logic_bomb")
+
+        ok, msg = self.engine.counter_hunter(method="logic_bomb")
+        self.assertTrue(ok)
+        self.assertEqual(hunter.status, "neutralized")
+        self.assertNotIn("logic_bomb", self.engine.deck.exploits)
+        self.assertIn("neutralized", msg.lower())
+
+    def test_counter_hunter_with_ghost_protocol(self):
+        self.engine.state.world.alert_level = 70
+        self.engine.advance_turn()
+        hunter = self.engine.state.world.hunters[0]
+        self.engine.deck.exploits.append("ghost_protocol")
+
+        ok, msg = self.engine.counter_hunter(method="ghost_protocol")
+        self.assertTrue(ok)
+        self.assertGreater(hunter.confused_turns, 0)
+        self.assertNotIn("ghost_protocol", self.engine.deck.exploits)
+        self.assertIn("ghost_protocol", msg.lower())
+
 
 if __name__ == "__main__":
     unittest.main()

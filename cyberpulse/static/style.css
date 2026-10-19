@@ -184,6 +184,18 @@ body:not(.crt-effects) .crt-flicker {
   text-shadow: 0 0 8px var(--c-danger-glow);
 }
 
+.grid-chip.hunter-chip {
+  color: var(--c-danger);
+  font-weight: 700;
+  text-shadow: 0 0 8px var(--c-danger-glow);
+  animation: hunter-pulse 1.2s infinite alternate;
+}
+
+@keyframes hunter-pulse {
+  0% { opacity: 0.85; }
+  100% { opacity: 1; text-shadow: 0 0 14px var(--c-danger); }
+}
+
 .grid-ticker {
   flex: 1;
   overflow: hidden;

@@ -7,6 +7,7 @@ from cyberpulse.models import (
     GameState,
     HostAntivirus,
     HostFirewall,
+    NetWatchHunter,
     Node,
     NodeStatus,
     NodeType,
@@ -22,15 +23,20 @@ from cyberpulse.world import (
     advance_clock,
     ambient_event_for,
     apply_resecure,
+    calculate_distance,
     clock_label,
     clock_minute_text,
+    deploy_hunter,
     drift_market,
+    find_shortest_path,
     format_news_item,
     market_multiplier,
+    neutralize_hunter,
     patrol_pressure,
     plan_resecures,
     record_news,
     shift_name,
+    step_hunter,
     world_rng,
     world_summary,
 )
@@ -228,6 +234,110 @@ class TestWorldPersistence(unittest.TestCase):
         restored = GameState.from_dict(state.to_dict())
         self.assertEqual(restored.world.alert_level, 71)
         self.assertEqual(len(restored.world.news), 1)
+
+
+class TestNetWatchHunterSimulation(unittest.TestCase):
+    def setUp(self):
+        # Build a small network: n1 - n2 - n3 - n4, and n_core - n2
+        self.nodes = {
+            "n1": Node("n1", "Host 1", NodeType.GATEWAY, 1, NodeStatus.BREACHED, connected_ids=["n2"]),
+            "n2": Node("n2", "Host 2", NodeType.FIREWALL, 2, NodeStatus.DISCOVERED, connected_ids=["n1", "n3", "n_core"]),
+            "n3": Node("n3", "Host 3", NodeType.DATA_VAULT, 3, NodeStatus.LOCKED, connected_ids=["n2", "n4"]),
+            "n4": Node("n4", "Host 4", NodeType.ICE_DEFENSE, 4, NodeStatus.LOCKED, connected_ids=["n3"]),
+            "n_core": Node("n_core", "Nexus Core", NodeType.CENTRAL_CORE, 5, NodeStatus.LOCKED, connected_ids=["n2"]),
+            "n_iso": Node("n_iso", "Airgap Host", NodeType.GATEWAY, 1, NodeStatus.LOCKED, connected_ids=[]),
+        }
+
+    def test_hunter_model_roundtrip(self):
+        h = NetWatchHunter(
+            hunter_id="h1",
+            name="Aegis-9",
+            current_node_id="n_core",
+            status="hunting",
+            turns_active=3,
+            target_node_id="n1",
+            confused_turns=1,
+        )
+        data = h.to_dict()
+        restored = NetWatchHunter.from_dict(data)
+        self.assertEqual(restored.hunter_id, "h1")
+        self.assertEqual(restored.name, "Aegis-9")
+        self.assertEqual(restored.current_node_id, "n_core")
+        self.assertEqual(restored.status, "hunting")
+        self.assertEqual(restored.turns_active, 3)
+        self.assertEqual(restored.confused_turns, 1)
+
+    def test_world_state_with_hunters_roundtrip(self):
+        world = WorldState(alert_level=75)
+        h = NetWatchHunter(hunter_id="h_alpha", current_node_id="n_core")
+        world.hunters.append(h)
+        data = world.to_dict()
+        restored = WorldState.from_dict(data)
+        self.assertEqual(len(restored.hunters), 1)
+        self.assertEqual(restored.hunters[0].hunter_id, "h_alpha")
+        self.assertEqual(restored.hunters[0].current_node_id, "n_core")
+
+    def test_find_shortest_path_and_distance(self):
+        path = find_shortest_path(self.nodes, "n1", "n4")
+        self.assertEqual(path, ["n1", "n2", "n3", "n4"])
+        self.assertEqual(calculate_distance(self.nodes, "n1", "n4"), 3)
+
+        # Same node
+        self.assertEqual(find_shortest_path(self.nodes, "n1", "n1"), ["n1"])
+        self.assertEqual(calculate_distance(self.nodes, "n1", "n1"), 0)
+
+        # Isolated unreachable node
+        self.assertEqual(find_shortest_path(self.nodes, "n1", "n_iso"), [])
+        self.assertEqual(calculate_distance(self.nodes, "n1", "n_iso"), -1)
+
+    def test_deploy_hunter_threshold(self):
+        world = WorldState(alert_level=40)
+        deployed = deploy_hunter(world, self.nodes, tick=5)
+        self.assertIsNone(deployed)
+        self.assertEqual(len(world.hunters), 0)
+
+        # At alert >= 60
+        world.alert_level = 65
+        deployed = deploy_hunter(world, self.nodes, tick=6)
+        self.assertIsNotNone(deployed)
+        self.assertEqual(deployed.current_node_id, "n_core")
+        self.assertEqual(len(world.hunters), 1)
+        self.assertEqual(deployed.status, "hunting")
+        self.assertIn("deployed", world.news[-1].headline.lower())
+
+        # No duplicate deployment while active
+        dup = deploy_hunter(world, self.nodes, tick=7)
+        self.assertIsNone(dup)
+        self.assertEqual(len(world.hunters), 1)
+
+    def test_step_hunter_moves_and_intercepts(self):
+        rng = world_rng(42, 1, "test")
+        hunter = NetWatchHunter("h1", current_node_id="n_core", status="hunting")
+
+        # Player at n1. Shortest path from n_core to n1: n_core -> n2 -> n1.
+        res1 = step_hunter(hunter, self.nodes, player_node_id="n1", rng=rng)
+        self.assertEqual(res1["action"], "moved")
+        self.assertEqual(hunter.current_node_id, "n2")
+        self.assertEqual(hunter.turns_active, 1)
+
+        # Step 2: moves into player node n1 -> interception!
+        res2 = step_hunter(hunter, self.nodes, player_node_id="n1", rng=rng)
+        self.assertEqual(res2["action"], "intercepted")
+        self.assertEqual(hunter.current_node_id, "n1")
+        self.assertEqual(hunter.status, "intercepted")
+
+    def test_step_hunter_confused(self):
+        rng = world_rng(42, 1, "test")
+        hunter = NetWatchHunter("h1", current_node_id="n2", status="hunting", confused_turns=2)
+        res = step_hunter(hunter, self.nodes, player_node_id="n4", rng=rng)
+        self.assertEqual(res["action"], "confused")
+        self.assertEqual(hunter.confused_turns, 1)
+
+    def test_neutralize_hunter(self):
+        hunter = NetWatchHunter("h1", status="hunting")
+        msg = neutralize_hunter(hunter, "logic_bomb")
+        self.assertEqual(hunter.status, "neutralized")
+        self.assertIn("neutralized", msg.lower())
 
 
 if __name__ == "__main__":

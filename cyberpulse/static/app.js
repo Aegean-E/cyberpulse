@@ -411,6 +411,22 @@ function renderGridTicker(world) {
   const market = world.market_multiplier || 1;
   document.getElementById("grid-market").textContent = `MARKET x${Number(market).toFixed(3)}`;
 
+  const hunterEl = document.getElementById("grid-hunter");
+  if (hunterEl) {
+    const hunters = world.hunters || [];
+    const activeHunters = hunters.filter(h => h.status === "hunting" || h.status === "confused" || h.status === "intercepted");
+    if (activeHunters.length > 0) {
+      hunterEl.style.display = "inline-block";
+      const h = activeHunters[0];
+      const dist = world.nearest_hunter_distance;
+      const distStr = dist === 0 ? "INTERCEPT!" : (dist > 0 ? `${dist} HOP${dist > 1 ? "S" : ""}` : "UNKNOWN");
+      hunterEl.textContent = `🚨 HUNTER: ${h.name.toUpperCase()} (${distStr})`;
+      hunterEl.classList.toggle("hot", dist <= 1);
+    } else {
+      hunterEl.style.display = "none";
+    }
+  }
+
   const ticker = document.getElementById("grid-ticker");
   const headlines = world.news || [];
   if (ticker && headlines.length) {
@@ -1022,6 +1038,23 @@ function drawMatrix(ctx, time) {
       ctx.font = "9px 'Orbitron', sans-serif";
       ctx.fillStyle = "hsl(185, 100%, 70%)";
       ctx.fillText("[ACTIVE TERMINAL]", pos.x, pos.y - 28);
+    }
+
+    // Check if an active NetWatch Hunter is at this node
+    const huntersAtNode = (state.data && state.data.world && state.data.world.hunters)
+      ? state.data.world.hunters.filter(h => h.current_node_id === nid && h.status !== "neutralized")
+      : [];
+    if (huntersAtNode.length > 0) {
+      const pulse = Math.sin(time * 0.006) * 4;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 32 + pulse, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(255, 30, 60, 0.9)";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.font = "9px 'Orbitron', sans-serif";
+      ctx.fillStyle = "rgba(255, 60, 80, 0.95)";
+      ctx.fillText(`🚨 ${huntersAtNode[0].name.toUpperCase()}`, pos.x, pos.y - (isCurrent ? 40 : 28));
     }
   }
 }

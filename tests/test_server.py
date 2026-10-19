@@ -526,6 +526,26 @@ class TestCyberdeckServer(unittest.TestCase):
             release.set()
             thread.join(2)
 
+    def test_get_world_and_state_contains_hunters(self):
+        status, data = self._get("/api/world")
+        self.assertEqual(status, 200)
+        self.assertIn("world", data)
+        self.assertIn("active_hunters_count", data["world"])
+        self.assertIn("hunters", data["world"])
+        self.assertIn("nearest_hunter_distance", data["world"])
+
+        status, state = self._get("/api/state")
+        self.assertEqual(status, 200)
+        self.assertIn("world", state)
+        self.assertIn("hunters", state["world"])
+
+    def test_counter_hunter_api_action(self):
+        # When no hunter active
+        status, res = self._post("/api/action", {"action": "counter", "method": "logic_bomb"})
+        self.assertEqual(status, 200)
+        self.assertFalse(res["ok"])
+        self.assertIn("No active NetWatch hunters", res["message"])
+
 
 if __name__ == "__main__":
     unittest.main()

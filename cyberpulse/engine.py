@@ -16,6 +16,7 @@ from cyberpulse.models import (
     HostAntivirus,
     HostFirewall,
     MalwareDaemon,
+    NetWatchHunter,
     Node,
     NodeStatus,
     NodeType,
@@ -36,10 +37,14 @@ from cyberpulse.world import (
     advance_clock,
     ambient_event_for,
     apply_resecure,
+    calculate_distance,
+    deploy_hunter,
     drift_market,
+    neutralize_hunter,
     patrol_pressure,
     plan_resecures,
     record_news,
+    step_hunter,
     world_rng,
     world_summary as build_world_summary,
 )
@@ -549,9 +554,17 @@ class GameEngine:
         }
 
     def world_summary(self) -> Dict[str, Any]:
-        """Return the living-grid snapshot with the newest headlines."""
+        """Return the living-grid snapshot with the newest headlines and hunter telemetry."""
         summary = build_world_summary(self.state.world)
         summary["news"] = self.news_feed(10)
+        dist = -1
+        nearest_name = ""
+        active = [h for h in self.state.world.hunters if h.status in ("hunting", "confused", "intercepted")]
+        if active:
+            dist = calculate_distance(self.nodes, active[0].current_node_id, self.state.current_node_id)
+            nearest_name = active[0].name
+        summary["nearest_hunter_distance"] = dist
+        summary["nearest_hunter_name"] = nearest_name
         return summary
 
     def news_feed(self, limit: int = 12) -> List[Dict[str, Any]]:
@@ -785,6 +798,60 @@ class GameEngine:
             )
             messages.append(message)
             self.state.message_log.append(message)
+
+        deployed_hunter = deploy_hunter(world, self.nodes, self.state.turns_elapsed)
+        if deployed_hunter:
+            spawn_node = self.nodes.get(deployed_hunter.current_node_id)
+            spawn_name = spawn_node.name if spawn_node else deployed_hunter.current_node_id
+            hunter_msg = (
+                f"🚨 [NETWATCH HUNTER] Critical grid alert {world.alert_level}% triggered deployment of "
+                f"{deployed_hunter.name} at {spawn_name}!"
+            )
+            messages.append(hunter_msg)
+            self.state.message_log.append(hunter_msg)
+
+        hunter_rng = world_rng(self.seed, self.state.turns_elapsed, "hunter_move")
+        for hunter in world.hunters:
+            if hunter.status not in ("hunting", "confused", "intercepted"):
+                continue
+            step_res = step_hunter(hunter, self.nodes, self.state.current_node_id, hunter_rng)
+            action = step_res.get("action")
+            curr_node = self.get_current_node()
+            target_node = self.nodes.get(hunter.current_node_id)
+            target_name = target_node.name if target_node else hunter.current_node_id
+
+            if action == "intercepted" or hunter.current_node_id == self.state.current_node_id:
+                hunter.status = "intercepted"
+                self.add_trace(15)
+                cpu_drained = min(2, self.deck.cpu_cycles)
+                self.deck.cpu_cycles = max(0, self.deck.cpu_cycles - 2)
+                inter_msg = (
+                    f"💥 [NETWATCH CLASH] {hunter.name} intercepted your connection at {curr_node.name}! "
+                    f"CPU drained (-{cpu_drained}) and ICE trace spiked (+15% -> {self.state.trace_percent}%)!"
+                )
+                record_news(
+                    world,
+                    self.state.turns_elapsed,
+                    "NetWatch",
+                    f"{hunter.name} engaged netrunner at {curr_node.name}!",
+                    tone="alert",
+                )
+                messages.append(inter_msg)
+                self.state.message_log.append(inter_msg)
+                if self.state.is_game_over:
+                    return messages
+            elif action == "moved":
+                recalled = self._recall_daemons(hunter.current_node_id)
+                if recalled:
+                    purge_msg = f"🧹 [NETWATCH SWEEP] {hunter.name} swept {target_name} and purged {recalled} daemon(s)!"
+                    messages.append(purge_msg)
+                    self.state.message_log.append(purge_msg)
+
+                dist = calculate_distance(self.nodes, hunter.current_node_id, self.state.current_node_id)
+                if dist == 1:
+                    prox_msg = f"⚠️ [HUNTER PROXIMITY] {hunter.name} detected 1 hop away at {target_name}!"
+                    messages.append(prox_msg)
+                    self.state.message_log.append(prox_msg)
         return messages
 
     def _decay_alert(self) -> int:
@@ -843,6 +910,76 @@ class GameEngine:
         self.deck.active_daemons = remaining
         return recalled
 
+    def scramble_hunter_radar(self, turns: int = 2) -> int:
+        """Confuse active hunters' tracking algorithms for a number of turns."""
+        count = 0
+        for h in self.state.world.hunters:
+            if h.status in ("hunting", "confused"):
+                h.confused_turns = max(h.confused_turns, turns)
+                h.status = "confused"
+                count += 1
+        return count
+
+    def counter_hunter(self, method: str = "logic_bomb") -> Tuple[bool, str]:
+        """Deploy tactical countermeasures against an active NetWatch Hunter."""
+        if self.state.is_game_over:
+            return False, "Cannot counter hunter: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot counter hunter: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot counter hunter: mission already complete."
+
+        active_hunters = [h for h in self.state.world.hunters if h.status in ("hunting", "confused", "intercepted")]
+        if not active_hunters:
+            return False, "No active NetWatch hunters detected in sector."
+
+        hunter = active_hunters[0]
+        method = (method or "logic_bomb").lower().strip()
+
+        if method == "logic_bomb":
+            if "logic_bomb" not in self.deck.exploits:
+                return False, "No logic_bomb exploit chip loaded in cyberdeck."
+            self.deck.exploits.remove("logic_bomb")
+            neutralize_hunter(hunter, reason="logic_bomb")
+            record_news(
+                self.state.world,
+                self.state.turns_elapsed,
+                "GridWire",
+                f"NetWatch hunter {hunter.name} destroyed by intruder logic bomb payload.",
+                tone="positive",
+            )
+            msg = f"💣 [COUNTERMEASURE] Detonated logic_bomb! {hunter.name} neutralized and offline!"
+            self.state.message_log.append(msg)
+            return True, msg
+
+        if method == "ghost_protocol":
+            if "ghost_protocol" not in self.deck.exploits:
+                return False, "No ghost_protocol exploit chip loaded in cyberdeck."
+            self.deck.exploits.remove("ghost_protocol")
+            hunter.confused_turns = 4
+            hunter.status = "confused"
+            for nid, node in self.nodes.items():
+                if node.node_type == NodeType.CENTRAL_CORE:
+                    hunter.current_node_id = nid
+                    break
+            reduced = min(self.state.trace_percent, 30)
+            self.state.trace_percent = max(0, self.state.trace_percent - 30)
+            msg = f"👻 [COUNTERMEASURE] Deployed ghost_protocol! Masked signature, dropped trace by {reduced}%, and banished {hunter.name}!"
+            self.state.message_log.append(msg)
+            return True, msg
+
+        if method in ("cpu_burst", "scramble"):
+            if self.deck.cpu_cycles < 3:
+                return False, "Insufficient CPU cycles (need 3 CPU for electronic scramble)."
+            self.deck.cpu_cycles -= 3
+            hunter.confused_turns = 3
+            hunter.status = "confused"
+            msg = f"⚡ [COUNTERMEASURE] Burned 3 CPU for electronic jamming! {hunter.name} sensors scrambled for 3 turns."
+            self.state.message_log.append(msg)
+            return True, msg
+
+        return False, f"Unknown countermeasure method '{method}'. Valid: logic_bomb, ghost_protocol, cpu_burst"
+
     def spoof_ip(self) -> Tuple[bool, str]:
         """Reduce active trace level by burning CPU cycles."""
         if self.state.is_game_over:
@@ -857,6 +994,7 @@ class GameEngine:
         before = self.state.trace_percent
         self.state.trace_percent = max(0, before - 25)
         reduced = before - self.state.trace_percent
+        self.scramble_hunter_radar(turns=2)
         msg = f"🛡️ IP Proxy bounced. Trace reduced by {reduced}% (current: {self.state.trace_percent}%)."
         self.state.message_log.append(msg)
         return True, msg
@@ -1118,14 +1256,17 @@ class GameEngine:
         if name == "ghost_protocol":
             reduced = min(self.state.trace_percent, 40)
             self.state.trace_percent = max(0, self.state.trace_percent - 40)
+            self.scramble_hunter_radar(turns=4)
             self.deck.exploits.remove(name)
             msg = f"👻 GHOST PROTOCOL DEPLOYED! Neural signature masked. Trace dropped by {reduced}% (current: {self.state.trace_percent}%)."
             self.state.message_log.append(msg)
             return True, msg
 
         if name == "logic_bomb":
+            if target_id and target_id.lower() in ("hunter", "aegis", "netwatch"):
+                return self.counter_hunter(method="logic_bomb")
             if not target_id:
-                return False, "Usage: exploit logic_bomb <node_id>"
+                return False, "Usage: exploit logic_bomb <node_id | hunter>"
             if target_id not in self.nodes:
                 return False, f"Unknown node '{target_id}'."
             target = self.nodes[target_id]
@@ -1570,6 +1711,7 @@ class GameEngine:
         node.logs_cleared = True
         trace_drop = min(self.state.trace_percent, 20)
         self.state.trace_percent = max(0, self.state.trace_percent - 20)
+        self.scramble_hunter_radar(turns=2)
         self.advance_turn()
 
         msg = f"🧹 LOGS SANITIZED: Erased intruder access timestamps on {node.hostname} ({node.ip_address}). Trace dropped by {trace_drop}% (current: {self.state.trace_percent}%)."

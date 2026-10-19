@@ -465,8 +465,27 @@ class NewsItem:
 
 
 @dataclass
+class NetWatchHunter:
+    """An autonomous NetWatch counter-infiltration agent tracking the player across subnets."""
+    hunter_id: str = "hunter_alpha"
+    name: str = "NetWatch Hunter Aegis-9"
+    current_node_id: str = "node_central_core"
+    status: str = "hunting"  # "hunting", "intercepted", "confused", "neutralized"
+    turns_active: int = 0
+    target_node_id: str = ""
+    confused_turns: int = 0  # turns pathfinding is scrambled
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "NetWatchHunter":
+        return cls(**data)
+
+
+@dataclass
 class WorldState:
-    """Living-grid simulation: in-game clock, corporate alert, market drift, and news."""
+    """Living-grid simulation: in-game clock, corporate alert, market drift, news, and hunters."""
     minute: int = 8 * 60         # in-game minute of the current day (0-1439)
     day: int = 1
     alert_level: int = 10        # grid-wide corporate alert (0-100)
@@ -474,10 +493,12 @@ class WorldState:
     turns_since_event: int = 99  # turns since the last ambient grid event
     resecured_count: int = 0     # hosts the grid has re-secured this run
     news: List[NewsItem] = field(default_factory=list)
+    hunters: List[NetWatchHunter] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         res = asdict(self)
         res["news"] = [n.to_dict() if hasattr(n, "to_dict") else n for n in self.news]
+        res["hunters"] = [h.to_dict() if hasattr(h, "to_dict") else h for h in self.hunters]
         return res
 
     @classmethod
@@ -485,6 +506,8 @@ class WorldState:
         clean = dict(data)
         if "news" in clean and isinstance(clean["news"], list):
             clean["news"] = [NewsItem.from_dict(n) if isinstance(n, dict) else n for n in clean["news"]]
+        if "hunters" in clean and isinstance(clean["hunters"], list):
+            clean["hunters"] = [NetWatchHunter.from_dict(h) if isinstance(h, dict) else h for h in clean["hunters"]]
         return cls(**clean)
 
 

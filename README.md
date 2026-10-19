@@ -141,6 +141,8 @@ python -m cyberpulse.cli --seed 42069
 | `overdrive` | Burn 2 CPU and 8% trace to stack +1 combo and +10 unbanked credits | Voluntary risk, combo priming & dopamine anticipation |
 | `world` / `city` / `grid` | Show the in-game clock, shift, grid alert, market index, and latest headlines | Living world awareness & consequence telemetry |
 | `news` / `wire` | Read the generated grid news wire (`news 20` for a longer feed) | Diegetic feedback & attribution of events |
+| `hunter` / `radar` | Display active NetWatch Hunter threat assessment, location, distance, and scent | Counter-surveillance & proximity telemetry |
+| `counter [method]` | Deploy tactical countermeasures against hunter (`logic_bomb`, `ghost_protocol`, `cpu_burst`) | Active counter-defense & hunter neutralization |
 | `story` | Show the current act, story log, and briefing | Narrative orientation & campaign immersion |
 | `quests` / `missions` | Open the mission board with progress, rewards, and available jobs | Goal clarity & Zeigarnik completion pressure |
 | `contacts` / `crew` | List operative channels, trust, dialogue, and favors | Relationship tracking & social capital |
@@ -183,6 +185,7 @@ python -m cyberpulse.cli --seed 42069
 - **Anti-Farm Breach Ledger**: A re-secured host pays no second reward, combo, or quest credit, so grid healing cannot be farmed for infinite credits.
 - **Deterministic World Events**: Ambient events, headlines, and re-secure rolls use a dedicated per-tick RNG stream seeded from `(seed, tick, stream)`, so the reward RNG sequence and every seeded gameplay outcome stay reproducible.
 - **Backward-Compatible World State**: Old saves without a world clock load with a fresh Day 1 world; the new fields are additive and atomic with the existing savegame.
+- **NetWatch Active Hunters & Pursuit Simulation**: Alert 60%+ mobilizes autonomous ICE hunters that track player location across network graph hops, trigger connection clashes on interception (+15% trace, -2 CPU), quarantine unmonitored daemons, and react to scent scrambling (`spoof`/`wipe_logs`) and countermeasures (`logic_bomb`/`ghost_protocol`).
 - **Fast Test Shield**: 100% test pass rate across unit and integration suites in about a second via `python -m unittest discover`.
 
 

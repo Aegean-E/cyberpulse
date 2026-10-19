@@ -375,6 +375,12 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 
+            if action in ("counter", "counter_hunter"):
+                method = payload.get("method", "logic_bomb")
+                ok, msg = engine.counter_hunter(method=method)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
             if action == "shop_buy":
                 item_id = payload.get("item_id")
                 multiplier = engine.world_summary()["market_multiplier"]

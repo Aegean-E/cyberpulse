@@ -16,7 +16,7 @@ from cyberpulse.models import CareerProfile, CyberDeck, NodeStatus, NodeType
 from cyberpulse.puzzles import BufferPuzzle, FrequencyPuzzle, HashCrackPuzzle
 from cyberpulse.shop import BlackMarketShop
 from cyberpulse.storage import SaveManager
-from cyberpulse.world import clock_minute_text
+from cyberpulse.world import calculate_distance, clock_minute_text
 
 
 def setup_terminal_encoding() -> None:
@@ -88,7 +88,19 @@ def print_hud(engine: GameEngine) -> None:
     print(f"[*] Story:      {story['act_title']} // {story['chapter_title']} | Combo: x{engine.state.combo_streak} | Quests: {active_quests} active")
     world = engine.state.world
     world_info = engine.world_summary()
-    print(f"[*] Grid:       {world_info['clock']} | Alert: {world.alert_level}% | Market: x{world_info['market_multiplier']}")
+    hunter_tag = ""
+    active_hunters = [h for h in world.hunters if h.status in ("hunting", "confused", "intercepted")]
+    if active_hunters:
+        h = active_hunters[0]
+        dist = world_info.get("nearest_hunter_distance", -1)
+        dist_str = f"{dist} hop{'s' if dist != 1 else ''}" if dist >= 0 else "unreachable"
+        if dist == 0:
+            hunter_tag = f" | 🚨 HUNTER INTERCEPT: {h.name}!"
+        elif dist == 1:
+            hunter_tag = f" | ⚠️ HUNTER CLOSE: {h.name} (1 hop)!"
+        else:
+            hunter_tag = f" | 📡 Hunter: {h.name} ({dist_str})"
+    print(f"[*] Grid:       {world_info['clock']} | Alert: {world.alert_level}% | Market: x{world_info['market_multiplier']}{hunter_tag}")
     print("--------------------------------------------------------------------------")
     print("Discovered Subnet Nodes:")
     for cid in curr.connected_ids:
@@ -96,6 +108,36 @@ def print_hud(engine: GameEngine) -> None:
         if adj:
             icon = "[BREACHED]" if adj.status == NodeStatus.BREACHED else ("[DISCOVERED]" if adj.status == NodeStatus.DISCOVERED else "[LOCKED]")
             print(f"   * {adj.ip_address:<15} | {adj.hostname:<24} | {icon} (Sec: {adj.security_level})")
+    print("+==========================================================================+")
+
+
+def print_hunters(engine: GameEngine) -> None:
+    world = engine.state.world
+    active = [h for h in world.hunters if h.status in ("hunting", "confused", "intercepted")]
+    print("\n+==========================================================================+")
+    print("|              >> NETWATCH COUNTER-INFILTRATION RADAR <<                   |")
+    print("+==========================================================================+")
+    if not active:
+        print("[*] Radar Status: CLEAR. No active NetWatch hunter signatures in sector.")
+        print(f"[*] Grid Corporate Alert: {world.alert_level}% (Hunters deploy at >=60%)")
+    else:
+        for h in active:
+            loc_node = engine.nodes.get(h.current_node_id)
+            loc_name = f"{loc_node.hostname} ({loc_node.ip_address})" if loc_node else h.current_node_id
+            dist = calculate_distance(engine.nodes, h.current_node_id, engine.state.current_node_id)
+            dist_str = f"{dist} hop(s)" if dist >= 0 else "unreachable"
+            confusion = f"CONFUSED ({h.confused_turns} turns left)" if h.confused_turns > 0 else "LOCK-ON"
+            print(f"[*] Hunter Unit:     {h.name} [{h.status.upper()}]")
+            print(f"[*] Sector Location: {loc_name}")
+            print(f"[*] Proximity:       {dist_str} to your active rig")
+            print(f"[*] Scent Tracking:  {confusion}")
+            print(f"[*] Active Turns:    {h.turns_active}")
+        print("--------------------------------------------------------------------------")
+        print("Tactical Countermeasures:")
+        print("   * counter hunter logic_bomb     - detonate logic bomb payload to neutralize")
+        print("   * counter hunter ghost_protocol - mask signature & banish hunter back to core")
+        print("   * counter hunter cpu_burst      - burn 3 CPU cycles to scramble hunter radar")
+        print("   * spoof / wipe_logs             - drops trace and adds 2 turns of confusion")
     print("+==========================================================================+")
 
 
@@ -431,6 +473,20 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         print_news(engine, limit)
         return True
 
+    if action in ("hunter", "hunters", "radar"):
+        print_hunters(engine)
+        return True
+
+    if action in ("counter", "countermeasure", "counter_ice"):
+        method = "logic_bomb"
+        if len(parts) >= 3 and parts[1].lower() in ("hunter", "ice", "aegis", "netwatch"):
+            method = parts[2]
+        elif len(parts) >= 2:
+            method = parts[1]
+        ok, msg = engine.counter_hunter(method=method)
+        print(msg)
+        return True
+
     if action in ("quests", "missions", "jobs"):
         print_quests(engine)
         return True
@@ -712,7 +768,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("No saved game found.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: story, quests, contacts, contact, accept, world, news, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, spoof, cash_out, shop, buy, career, status, save, load, quit")
+    print(f"Unknown command: '{action}'. Commands: story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, spoof, cash_out, shop, buy, career, status, save, load, quit")
     return True
 
 

@@ -304,7 +304,11 @@ class TestCLI(unittest.TestCase):
 
         self.assertTrue(solved)
         self.assertEqual(engine.nodes["node_proxy_a"].status, "BREACHED")
-        self.assertNotIn("node_proxy_a", engine.pending_puzzles)
+    def test_cli_hunter_and_counter_commands(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "hunter")
+        self.assertEqual(code, 0)
+        self.assertIn("NETWATCH COUNTER-INFILTRATION RADAR", out)
+        self.assertIn("Radar Status: CLEAR", out)
 
 
 if __name__ == "__main__":

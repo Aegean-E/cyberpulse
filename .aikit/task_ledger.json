@@ -1,85 +1,13 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-world-simulation-v1",
-    "last_phase": "verification",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1792438706.550825,
-    "completed_at": 1792438731.0119145
+    "task_id": "task-cyberpulse-netwatch-hunters-v1",
+    "last_phase": "phase 4",
+    "active_phase": 4,
+    "status": "in_progress",
+    "updated_at": 1792440292.6533077
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-alliance-choice-v1",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/4] Plan: Act III Agent Zero alliance choice, persistent story_choice, branching dialogue/epilogue, CLI/Web pact controls, tests, ADR-013",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792390069.889341,
-      "timestamp_str": "2026-10-19 09:07:49",
-      "impact_assessment": {
-        "why": "Operative interactions currently change trust and rewards but never branch the story or the ending; Agent Zero is introduced as a rival with no meaningful decision attached.",
-        "benefits": "A one-time alliance/defiance decision makes character interactions consequential, changes late-act dialogue and epilogues, and gives players a replay-worthy narrative branch.",
-        "risks": "contract: GameState gains story_choice with a default; dependency: none; concurrency: choice mutates under the existing session lock; state: old saves load with an empty choice and no branch",
-        "mitigation": "Persist story_choice with a default, gate the choice to Act III, add old-save/default tests, keep unknown-mode errors explicit, and run aikit fix/check before completion."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-alliance-choice-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 2/4] Models/story: persistent story_choice, choice labels, Acts III-V choice dialogue, choice epilogue lines, old-save default",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792390377.671331,
-      "timestamp_str": "2026-10-19 09:12:57"
-    },
-    {
-      "task_id": "task-cyberpulse-alliance-choice-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 3/4] Engine/UI: one-time Act III ally/defy modes, trust/rewards, choice-aware dialogue and epilogue, CLI contact modes, Web pact buttons and locked-choice label",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792390404.6229396,
-      "timestamp_str": "2026-10-19 09:13:24"
-    },
-    {
-      "task_id": "task-cyberpulse-alliance-choice-v1",
-      "phase": "phase 4",
-      "phase_num": 4,
-      "description": "[milestone 4/4] Verification: 148/148 tests, JS check, CLI/server/storage pact coverage, ADR-013/README, codebase map, aikit fix/check 4/4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792390411.2487335,
-      "timestamp_str": "2026-10-19 09:13:31"
-    },
-    {
-      "task_id": "task-cyberpulse-alliance-choice-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-alliance-choice-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792390416.7769623,
-      "timestamp_str": "2026-10-19 09:13:36"
-    },
-    {
-      "task_id": "task-cyberpulse-story-delivery-v1",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/2] finish the completed story/legacy/alliance work: document four deliberate silent-except handlers, regenerate the codebase map, verify JS syntax, and run the full project gate set; [2/2] record the checklist outcome and commit the campaign, legacy, and alliance changes with ADR-011 to ADR-013",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792432691.98547,
-      "timestamp_str": "2026-10-19 20:58:11",
-      "impact_assessment": {
-        "why": "the last three tasks are marked complete in the ledger but their 2463 lines were never committed, and the project check now fails hygiene on four deliberately silent handlers, so the work is neither durable nor deliverable",
-        "benefits": "the story campaign, operative relationships, run legacy, and Act III branch become committed history; the hygiene gate passes with its reasons recorded; the repository leaves the disrupted in-flight state",
-        "risks": "contract: none, only hygiene annotations and delivery; dependency: none; concurrency: none; state: source and ledger annotations change, no game data format changes",
-        "mitigation": "each annotation names why the discard is deliberate; tests already cover all three features at 148/148; run aikit check cyberpulse and node --check before the commit"
-      }
-    },
     {
       "task_id": "task-cyberpulse-story-delivery-v1",
       "phase": "phase 5",
@@ -228,6 +156,72 @@
       "status": "completed",
       "timestamp": 1792438731.0119157,
       "timestamp_str": "2026-10-19 22:38:51"
+    },
+    {
+      "task_id": "task-cyberpulse-netwatch-hunters-v1",
+      "phase": "phase 2",
+      "phase_num": 2,
+      "description": "[1/5] Plan: NetWatch Counter-Infiltration & Active Hunters - NetWatchHunter model, autonomous grid tracking, interception mechanics, countermeasures (stealth/logic bomb), CLI/Web surfaces, tests, ADR-016",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792439429.3858545,
+      "timestamp_str": "2026-10-19 22:50:29",
+      "impact_assessment": {
+        "why": "At high grid alert (60%+), corporate response is currently passive and non-spatial; players lack a direct predatory threat to outmaneuver across subnets, reducing late-game tension.",
+        "benefits": "Active NetWatch hunters add thrilling cat-and-mouse spatial tactics: players must track hunter proximity, make evasive lateral moves, wipe logs to throw off scent, or deploy exploit chips to counter-attack.",
+        "risks": "contract: WorldState gains hunters list with default; dependency: none (pure stdlib); concurrency: mutations serialized by existing session lock; state: existing saves load cleanly with empty hunters list",
+        "mitigation": "Additive defaults on WorldState and NetWatchHunter dataclasses, from_dict backward compatibility tests, isolated world_rng stream, failing-first unit/integration tests for hunter pathfinding and interception."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-netwatch-hunters-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[milestone 1/5] Models and simulation core: NetWatchHunter model, hunters list in WorldState with backward-compatible serialization, BFS shortest-path & distance, hunter deployment at alert 60+, hunter step & confusion logic, neutralization; 7 unit tests; test 196/196, aikit check 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792439578.1773634,
+      "timestamp_str": "2026-10-19 22:52:58"
+    },
+    {
+      "task_id": "task-cyberpulse-netwatch-hunters-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[milestone 2/5] Engine integration: tick_world hunter deployment at alert 60+, active hunter stepping towards player, connection interception with trace spike and CPU drain, breached-node daemon purges, proximity warnings, scramble_hunter_radar on spoof/wipe/ghost, counter_hunter method; 5 integration tests; test 201/201, aikit check 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792439786.811328,
+      "timestamp_str": "2026-10-19 22:56:26"
+    },
+    {
+      "task_id": "task-cyberpulse-netwatch-hunters-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[milestone 3/5] CLI hunter surfaces: print_hunters radar report with sector location, distance and scent tracking, hunter proximity warnings on HUD grid line, hunter/radar command dispatch, counter hunter [logic_bomb|ghost_protocol|cpu_burst] countermeasures; 1 CLI test; test 202/202, aikit check 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792439963.660082,
+      "timestamp_str": "2026-10-19 22:59:23"
+    },
+    {
+      "task_id": "task-cyberpulse-netwatch-hunters-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[milestone 4/5] Web Cyberdeck & API: GET /api/world and /api/state telemetry with active_hunters, hunters, nearest_hunter_distance, POST /api/action counter/counter_hunter handlers, index.html grid-hunter ticker chip, style.css pulsating hunter-chip styles, app.js live ticker updates and animated 2D canvas threat beacon; 2 server tests; test 204/204, aikit check 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792440203.0398743,
+      "timestamp_str": "2026-10-19 23:03:23"
+    },
+    {
+      "task_id": "task-cyberpulse-netwatch-hunters-v1",
+      "phase": "phase 4",
+      "phase_num": 4,
+      "description": "[milestone 5/5] Verification and delivery: ADR-016 documents NetWatch hunters and pursuit simulation; README updated with hunter/counter commands, architecture guarantees, and presence telemetry; JS syntax verified clean; 204/204 tests green; aikit check 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792440292.6533077,
+      "timestamp_str": "2026-10-19 23:04:52"
     }
   ]
 }
