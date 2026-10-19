@@ -396,6 +396,35 @@ async function refreshFullState() {
   }
 }
 
+function renderGridTicker(world) {
+  const bar = document.getElementById("grid-bar");
+  if (!bar || !world) return;
+
+  document.getElementById("grid-clock").textContent = (world.clock || "Day 1 08:00").toUpperCase();
+  document.getElementById("grid-shift").textContent = (world.shift || "Morning").toUpperCase();
+
+  const alertEl = document.getElementById("grid-alert");
+  const alertLevel = world.alert_level || 0;
+  alertEl.textContent = `GRID ALERT ${alertLevel}%`;
+  alertEl.classList.toggle("hot", alertLevel >= 50);
+
+  const market = world.market_multiplier || 1;
+  document.getElementById("grid-market").textContent = `MARKET x${Number(market).toFixed(3)}`;
+
+  const ticker = document.getElementById("grid-ticker");
+  const headlines = world.news || [];
+  if (ticker && headlines.length) {
+    const latest = headlines[headlines.length - 1];
+    const text = `${latest.source || "GRIDWIRE"}: ${latest.headline}`;
+    if (ticker.textContent !== text) {
+      ticker.textContent = text;
+      ticker.classList.remove("ticker-flash");
+      void ticker.offsetWidth;
+      ticker.classList.add("ticker-flash");
+    }
+  }
+}
+
 function renderHUD(data) {
   const { deck, state: gState, current_node, career } = data;
 
@@ -421,6 +450,9 @@ function renderHUD(data) {
   document.getElementById("val-loot").textContent = `${gState.unbanked_creds} CR`;
   document.getElementById("val-bank").textContent = `${career.banked_creds} CR`;
   document.getElementById("val-combo").textContent = `x${gState.combo_streak || 0}`;
+
+  // Living grid ticker: clock, alert, market, and the newest headline
+  renderGridTicker(data.world || gState.world);
 
   // Story beat and active objective
   if (data.story) {

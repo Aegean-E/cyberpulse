@@ -145,6 +145,8 @@ class TestCyberdeckServer(unittest.TestCase):
             self.assertIn("text/html", resp.headers.get("Content-Type", ""))
             html = resp.read().decode("utf-8")
             self.assertIn("CYBERPULSE", html)
+            self.assertIn('id="grid-ticker"', html)
+            self.assertIn('id="grid-alert"', html)
 
         # GET /style.css
         url_css = f"{self.base_url}/style.css"
@@ -153,6 +155,7 @@ class TestCyberdeckServer(unittest.TestCase):
             self.assertIn("text/css", resp.headers.get("Content-Type", ""))
             css = resp.read().decode("utf-8")
             self.assertIn("--font-mono", css)
+            self.assertIn(".grid-bar", css)
 
         # GET /app.js
         url_js = f"{self.base_url}/app.js"
@@ -161,6 +164,7 @@ class TestCyberdeckServer(unittest.TestCase):
             self.assertIn("javascript", resp.headers.get("Content-Type", ""))
             js = resp.read().decode("utf-8")
             self.assertIn("SoundFX", js)
+            self.assertIn("renderGridTicker", js)
 
     def test_server_simulation_actions(self):
         # 1. Probe proxy a

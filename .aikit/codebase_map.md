@@ -10,7 +10,7 @@
 - **Total Classes**: `51`
 - **Total Top-Level Functions**: `49`
 - **Total Class Methods**: `336`
-- **Total Source Lines**: `7816`
+- **Total Source Lines**: `7820`
 
 ---
 
@@ -558,7 +558,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `529` lines (`22726` bytes)
+**Size**: `533` lines (`22923` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`

@@ -5,19 +5,9 @@
     "last_phase": "implementation",
     "active_phase": 3,
     "status": "in_progress",
-    "updated_at": 1792438508.879341
+    "updated_at": 1792438637.5045006
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-endgame-legacy-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 3/4] Engine and API: run_summary with epilogues/stats, best-combo settlement on all outcomes, /api/state run_summary payload",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792386457.3513916,
-      "timestamp_str": "2026-10-19 08:07:37"
-    },
     {
       "task_id": "task-cyberpulse-endgame-legacy-v1",
       "phase": "phase 4",
@@ -227,6 +217,16 @@
       "status": "in_progress",
       "timestamp": 1792438508.879341,
       "timestamp_str": "2026-10-19 22:35:08"
+    },
+    {
+      "task_id": "task-cyberpulse-world-simulation-v1",
+      "phase": "implementation",
+      "phase_num": 3,
+      "description": "[milestone 4/5] Web Cyberdeck grid ticker: index.html grid bar (clock/shift/alert/market/ticker), style.css grid-bar theme-aware styles and headline flash, app.js renderGridTicker reading data.world and useful as gState.world fallback; node --check clean; static asset assertions; test 189/189, aikit check 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792438637.5045006,
+      "timestamp_str": "2026-10-19 22:37:17"
     }
   ]
 }
