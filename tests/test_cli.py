@@ -68,6 +68,21 @@ class TestCLI(unittest.TestCase):
         self.assertIn("Grid:", out)
         self.assertIn("Market:", out)
 
+    def test_lay_low_command_and_shift_doctrine(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "lay_low 2;world;status")
+        self.assertEqual(code, 0)
+        self.assertIn("LAY LOW", out)
+        self.assertIn("Ghosted the connection for 2 turn", out)
+        self.assertIn("Doctrine:", out)
+        self.assertIn("Shift:", out)
+        self.assertIn("Re-secured hosts:", out)
+
+    def test_lay_low_rejects_bad_turn_count(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "lay_low later;lay_low 9")
+        self.assertEqual(code, 0)
+        self.assertIn("Usage: lay_low", out)
+        self.assertIn("Lay low accepts 1-3 turns", out)
+
     def test_shop_command_reports_market_index(self):
         code, out = self.run_cli("--seed", "1337", "--exec", "shop")
         self.assertEqual(code, 0)

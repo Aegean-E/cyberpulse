@@ -101,6 +101,8 @@ def print_hud(engine: GameEngine) -> None:
         else:
             hunter_tag = f" | 📡 Hunter: {h.name} ({dist_str})"
     print(f"[*] Grid:       {world_info['clock']} | Alert: {world.alert_level}% | Market: x{world_info['market_multiplier']}{hunter_tag}")
+    print(f"[*] Shift:      {world_info['shift']} // {world_info['shift_tagline']}")
+    print(f"[*] Doctrine:   {world_info['shift_effect']}")
     print("--------------------------------------------------------------------------")
     print("Discovered Subnet Nodes:")
     for cid in curr.connected_ids:
@@ -241,8 +243,10 @@ def print_world(engine: GameEngine) -> None:
     print("|                    >> LIVING GRID // CITY PULSE <<                       |")
     print("+==========================================================================+")
     print(f"[*] Clock:      {summary['clock']}")
-    print(f"[*] Shift:      {summary['shift']} | Grid Alert: {summary['alert_level']}%")
-    print(f"[*] Market:     x{summary['market_multiplier']} black-market index | Re-secured hosts: {summary['resecured_count']}")
+    print(f"[*] Shift:      {summary['shift']} // {summary['shift_tagline']}")
+    print(f"[*] Doctrine:   {summary['shift_effect']}")
+    print(f"[*] Grid Alert: {summary['alert_level']}% | Market: x{summary['market_multiplier']} black-market index")
+    print(f"[*] Response:   Re-secured hosts: {summary['resecured_count']}")
     print("--------------------------------------------------------------------------")
     print("Latest headlines:")
     for item in summary["news"][-8:]:
@@ -464,6 +468,17 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
 
     if action in ("world", "city", "grid"):
         print_world(engine)
+        return True
+
+    if action in ("lay_low", "laylow", "wait", "rest"):
+        turns = 1
+        if len(parts) > 1:
+            if not parts[1].isdigit():
+                print("Usage: lay_low [1-3] (ghost the connection and recover CPU)")
+                return True
+            turns = int(parts[1])
+        ok, msg = engine.lay_low(turns)
+        print(msg)
         return True
 
     if action in ("news", "wire", "headlines"):

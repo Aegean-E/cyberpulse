@@ -9,8 +9,8 @@
 - **Total Python Modules**: `26`
 - **Total Classes**: `55`
 - **Total Top-Level Functions**: `58`
-- **Total Class Methods**: `368`
-- **Total Source Lines**: `8724`
+- **Total Class Methods**: `370`
+- **Total Source Lines**: `8754`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `868` lines (`39998` bytes)
+**Size**: `883` lines (`40619` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -381,7 +381,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `330` lines (`13965` bytes)
+**Size**: `345` lines (`14644` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -392,6 +392,8 @@
   - Method `.test_main_menu_starts_run_then_quits()`
   - Method `.test_story_quests_contacts_and_overdrive_commands()`
   - Method `.test_world_news_commands_and_hud_grid_line()`
+  - Method `.test_lay_low_command_and_shift_doctrine()`
+  - Method `.test_lay_low_rejects_bad_turn_count()`
   - Method `.test_shop_command_reports_market_index()`
   - Method `.test_agent_zero_alliance_after_act_three()`
   - Method `.test_jackout_records_best_combo_in_career()`
