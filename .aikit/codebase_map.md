@@ -7,10 +7,10 @@
 
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `26`
-- **Total Classes**: `53`
-- **Total Top-Level Functions**: `56`
-- **Total Class Methods**: `357`
-- **Total Source Lines**: `8434`
+- **Total Classes**: `55`
+- **Total Top-Level Functions**: `58`
+- **Total Class Methods**: `364`
+- **Total Source Lines**: `8620`
 
 ---
 
@@ -326,9 +326,10 @@
 ### [`cyberpulse/world.py`](cyberpulse/world.py)
 > *Living-grid world simulation: in-game clock, corporate alert, news, and grid response.*
 
-**Size**: `420` lines (`13804` bytes)
+**Size**: `512` lines (`17189` bytes)
 
 **Classes:**
+- `class ShiftProfile` - *Tactical posture of the grid during one in-game shift.*
 - `class AmbientEvent` - *A deterministic grid event that can nudge credits, CPU, trace, alert, or topology.*
 
 **Functions:**
@@ -336,21 +337,23 @@
 - `def clamp(value, low, high)`
 - `def clock_minute_text(minute)` - *Render an in-game minute of day as HH:MM.*
 - `def shift_name(minute)` - *Return the named shift covering an in-game minute of day.*
+- `def shift_profile(minute)` - *Return the tactical profile of the shift covering an in-game minute of day.*
+- `def shift_effect_text(profile)` - *Render a compact human-readable summary of a shift's mechanical modifiers.*
 - `def clock_label(world)` - *Return a compact clock label such as ``Day 2 13:45 (Afternoon)``.*
 - `def record_news(world, tick, source, headline, tone)` - *Append a headline to the living-grid feed, keeping the newest entries.*
 - `def format_news_item(item)`
 - `def advance_clock(world, turns)` - *Advance the in-game clock, rolling over to the next day at midnight.*
 - `def adjust_alert(world, delta)` - *Raise or lower the grid-wide corporate alert level within 0-100.*
 - `def adjust_market(world, delta)` - *Nudge the black-market price multiplier within its bounds.*
-- `def drift_market(world, rng)` - *Random-walk the black market, pulled upward while the grid is hot.*
+- `def drift_market(world, rng, bias)` - *Random-walk the black market, pulled toward a shift-biased target while the grid is hot.*
 - `def market_multiplier(world)` - *Current black-market price multiplier applied to shop costs.*
 - `def patrol_pressure(world)` - *Trace added per turn by NetWatch patrol sweeps at higher alert levels.*
 - `def ambient_event_for(seed, tick, alert_level, turns_since_event)` - *Roll one deterministic ambient event for a world tick, or None for a quiet turn.*
-- `def plan_resecures(seed, tick, alert_level, nodes, current_node_id)` - *Choose hosts the grid re-secures this tick: hot grid, cooled-down, looted targets.*
+- `def plan_resecures(seed, tick, alert_level, nodes, current_node_id, chance_delta)` - *Choose hosts the grid re-secures this tick: hot grid, cooled-down, looted targets.*
 - `def apply_resecure(node)` - *Undo a breach in place and restore the host's defensive posture.*
 - `def find_shortest_path(nodes, start_id, goal_id)` - *Find the shortest unweighted path of node IDs from start_id to goal_id using BFS.*
 - `def calculate_distance(nodes, start_id, goal_id)` - *Return the hop distance between start_id and goal_id, or -1 if unreachable.*
-- `def deploy_hunter(world, nodes, tick)` - *Deploy an active NetWatch Hunter if alert level exceeds threshold and none is active.*
+- `def deploy_hunter(world, nodes, tick)` - *Deploy an active NetWatch Hunter if the shift-adjusted alert threshold is met and none is active.*
 - `def step_hunter(hunter, nodes, player_node_id, rng)` - *Advance the hunter by 1 hop along the network graph towards the player or random neighbor if confused.*
 - `def neutralize_hunter(hunter, reason)` - *Neutralize an active NetWatch hunter.*
 - `def world_summary(world)` - *Serialize the living-grid snapshot for CLI and Web consumers.*
@@ -360,7 +363,7 @@
 ### [`start.py`](start.py)
 > *Zero-friction launcher for CyberPulse terminal and Web Cyberdeck.*
 
-**Size**: `28` lines (`744` bytes)
+**Size**: `29` lines (`745` bytes)
 
 **Functions:**
 - `def start(argv)` - *Launch the Web Cyberdeck by default, or forward custom CLI arguments.*
@@ -676,17 +679,23 @@
 ### [`tests/test_world.py`](tests/test_world.py)
 > *Unit tests for the living-grid world simulation module.*
 
-**Size**: `344` lines (`14082` bytes)
+**Size**: `437` lines (`18230` bytes)
 
 **Classes:**
 - `class TestWorldClock`
   - Method `.test_clock_text_and_shifts()`
   - Method `.test_advance_clock_rolls_days()`
   - Method `.test_clock_label_and_summary()`
+- `class TestShiftProfiles`
+  - Method `.test_shift_profile_boundaries()`
+  - Method `.test_shift_modifiers_create_distinct_tradeoffs()`
+  - Method `.test_shift_effect_text_is_human_readable()`
+  - Method `.test_world_summary_documents_the_shift()`
 - `class TestWorldAlertAndMarket`
   - Method `.test_alert_clamps()`
   - Method `.test_market_bounds_and_multiplier()`
   - Method `.test_market_drift_is_bounded_and_deterministic()`
+  - Method `.test_market_drift_shift_bias_moves_the_target()`
   - Method `.test_patrol_pressure_thresholds()`
 - `class TestNewsFeed`
   - Method `.test_record_news_formats_and_trims()`
@@ -700,6 +709,7 @@
   - Method `.test_recent_breach_and_current_node_are_exempt()`
   - Method `.test_core_is_never_resecured()`
   - Method `.test_high_alert_eventually_resecures_and_is_deterministic()`
+  - Method `.test_resecure_chance_delta_changes_response_rate()`
   - Method `.test_apply_resecure_restores_defenses()`
 - `class TestWorldPersistence`
   - Method `.test_world_state_roundtrip()`
@@ -711,6 +721,7 @@
   - Method `.test_world_state_with_hunters_roundtrip()`
   - Method `.test_find_shortest_path_and_distance()`
   - Method `.test_deploy_hunter_threshold()`
+  - Method `.test_deploy_hunter_threshold_follows_the_shift()`
   - Method `.test_step_hunter_moves_and_intercepts()`
   - Method `.test_step_hunter_confused()`
   - Method `.test_neutralize_hunter()`

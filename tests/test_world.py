@@ -16,8 +16,10 @@ from cyberpulse.models import (
 )
 from cyberpulse.world import (
     AMBIENT_EVENTS,
+    HUNTER_ALERT_THRESHOLD,
     MARKET_CEILING,
     MARKET_FLOOR,
+    SHIFT_PROFILES,
     adjust_alert,
     adjust_market,
     advance_clock,
@@ -35,7 +37,9 @@ from cyberpulse.world import (
     patrol_pressure,
     plan_resecures,
     record_news,
+    shift_effect_text,
     shift_name,
+    shift_profile,
     step_hunter,
     world_rng,
     world_summary,
@@ -88,6 +92,59 @@ class TestWorldClock(unittest.TestCase):
         self.assertEqual(summary["news_count"], 0)
 
 
+class TestShiftProfiles(unittest.TestCase):
+    def test_shift_profile_boundaries(self):
+        cases = (
+            (0, "late_night", "Late Night"),
+            (5 * 60 + 59, "late_night", "Late Night"),
+            (6 * 60, "morning", "Morning"),
+            (11 * 60 + 59, "morning", "Morning"),
+            (12 * 60, "afternoon", "Afternoon"),
+            (17 * 60 + 59, "afternoon", "Afternoon"),
+            (18 * 60, "evening", "Evening"),
+            (23 * 60 + 59, "evening", "Evening"),
+        )
+        for minute, key, label in cases:
+            profile = shift_profile(minute)
+            self.assertEqual(profile.key, key, minute)
+            self.assertEqual(profile.label, label, minute)
+            self.assertEqual(shift_name(minute), label, minute)
+            self.assertIs(profile, SHIFT_PROFILES[key])
+
+    def test_shift_modifiers_create_distinct_tradeoffs(self):
+        night = shift_profile(2 * 60)
+        morning = shift_profile(8 * 60)
+        afternoon = shift_profile(13 * 60)
+        evening = shift_profile(20 * 60)
+
+        self.assertGreater(night.market_bias, 0)
+        self.assertGreater(night.alert_decay_bonus, 0)
+        self.assertLess(night.resecure_chance_delta, 0)
+        self.assertGreater(night.hunter_threshold_delta, 0)
+
+        self.assertLess(morning.market_bias, 0)
+        self.assertGreater(morning.resecure_chance_delta, afternoon.resecure_chance_delta)
+        self.assertLess(afternoon.hunter_threshold_delta, morning.hunter_threshold_delta)
+        self.assertGreater(evening.alert_decay_bonus, 0)
+
+    def test_shift_effect_text_is_human_readable(self):
+        text = shift_effect_text(shift_profile(2 * 60))
+        self.assertIn("market +5%", text)
+        self.assertIn("re-secure -10%", text)
+        self.assertIn(f"hunters at {HUNTER_ALERT_THRESHOLD + 10}%+", text)
+        self.assertIn("alert decay +1/turn", text)
+
+    def test_world_summary_documents_the_shift(self):
+        summary = world_summary(WorldState(minute=20 * 60))
+        self.assertEqual(summary["shift_key"], "evening")
+        self.assertEqual(summary["shift_tagline"], SHIFT_PROFILES["evening"].tagline)
+        self.assertEqual(
+            summary["shift_modifiers"]["hunter_threshold"],
+            HUNTER_ALERT_THRESHOLD + SHIFT_PROFILES["evening"].hunter_threshold_delta,
+        )
+        self.assertIn("re-secure", summary["shift_effect"])
+
+
 class TestWorldAlertAndMarket(unittest.TestCase):
     def test_alert_clamps(self):
         world = WorldState(alert_level=95)
@@ -109,6 +166,15 @@ class TestWorldAlertAndMarket(unittest.TestCase):
         self.assertEqual(first.market_index, second.market_index)
         self.assertGreaterEqual(first.market_index, MARKET_FLOOR)
         self.assertLessEqual(first.market_index, MARKET_CEILING)
+
+    def test_market_drift_shift_bias_moves_the_target(self):
+        neutral = WorldState(alert_level=10, market_index=1.0)
+        marked_up = WorldState(alert_level=10, market_index=1.0)
+        for tick in range(60):
+            drift_market(neutral, world_rng(3, tick, "drift"))
+            drift_market(marked_up, world_rng(3, tick, "drift"), bias=0.20)
+        self.assertGreater(marked_up.market_index, neutral.market_index)
+        self.assertLessEqual(marked_up.market_index, MARKET_CEILING)
 
     def test_patrol_pressure_thresholds(self):
         self.assertEqual(patrol_pressure(WorldState(alert_level=10)), 0)
@@ -185,6 +251,19 @@ class TestGridResponse(unittest.TestCase):
             self.assertLessEqual(len(picks), 1)
             for node_id in picks:
                 self.assertIn(node_id, nodes)
+
+    def test_resecure_chance_delta_changes_response_rate(self):
+        nodes = {
+            "node_a": make_node("node_a", security_level=1, breached_turn=0),
+            "node_b": make_node("node_b", security_level=1, breached_turn=0),
+        }
+        slow = sum(
+            1 for tick in range(80) if plan_resecures(11, tick, 100, nodes, "safe", chance_delta=-0.09)
+        )
+        fast = sum(
+            1 for tick in range(80) if plan_resecures(11, tick, 100, nodes, "safe", chance_delta=0.09)
+        )
+        self.assertGreater(fast, slow)
 
     def test_apply_resecure_restores_defenses(self):
         node = make_node("node_a", breached_turn=4)
@@ -309,6 +388,20 @@ class TestNetWatchHunterSimulation(unittest.TestCase):
         dup = deploy_hunter(world, self.nodes, tick=7)
         self.assertIsNone(dup)
         self.assertEqual(len(world.hunters), 1)
+
+    def test_deploy_hunter_threshold_follows_the_shift(self):
+        night = WorldState(alert_level=65, minute=2 * 60)
+        self.assertIsNone(deploy_hunter(night, self.nodes, tick=1))
+        self.assertEqual(night.hunters, [])
+
+        night.alert_level = 70
+        self.assertIsNotNone(deploy_hunter(night, self.nodes, tick=2))
+
+        afternoon = WorldState(alert_level=55, minute=13 * 60)
+        self.assertIsNotNone(deploy_hunter(afternoon, self.nodes, tick=1))
+
+        morning = WorldState(alert_level=60, minute=8 * 60)
+        self.assertIsNotNone(deploy_hunter(morning, self.nodes, tick=1))
 
     def test_step_hunter_moves_and_intercepts(self):
         rng = world_rng(42, 1, "test")

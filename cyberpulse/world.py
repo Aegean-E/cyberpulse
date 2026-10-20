@@ -22,6 +22,58 @@ SHIFT_BOUNDS = ((0, "Late Night"), (6, "Morning"), (12, "Afternoon"), (18, "Even
 
 
 @dataclass(frozen=True)
+class ShiftProfile:
+    """Tactical posture of the grid during one in-game shift."""
+    key: str
+    label: str
+    tagline: str
+    market_bias: float = 0.0
+    alert_decay_bonus: int = 0
+    resecure_chance_delta: float = 0.0
+    hunter_threshold_delta: int = 0
+
+
+SHIFT_PROFILES: Dict[str, ShiftProfile] = {
+    "late_night": ShiftProfile(
+        key="late_night",
+        label="Late Night",
+        tagline="Ghost hours: skeleton NetWatch crew, slow re-secures, night-market markups.",
+        market_bias=0.05,
+        alert_decay_bonus=1,
+        resecure_chance_delta=-0.10,
+        hunter_threshold_delta=10,
+    ),
+    "morning": ShiftProfile(
+        key="morning",
+        label="Morning",
+        tagline="Audit hours: sysadmins at their desks and the morning market undercuts rivals.",
+        market_bias=-0.03,
+        alert_decay_bonus=0,
+        resecure_chance_delta=0.10,
+        hunter_threshold_delta=0,
+    ),
+    "afternoon": ShiftProfile(
+        key="afternoon",
+        label="Afternoon",
+        tagline="Peak ops: fast re-secures and hair-trigger hunter deployment.",
+        market_bias=0.02,
+        alert_decay_bonus=0,
+        resecure_chance_delta=0.05,
+        hunter_threshold_delta=-5,
+    ),
+    "evening": ShiftProfile(
+        key="evening",
+        label="Evening",
+        tagline="Shift change: handover lag slows re-secures, but patrols stay wired.",
+        market_bias=-0.01,
+        alert_decay_bonus=1,
+        resecure_chance_delta=-0.05,
+        hunter_threshold_delta=5,
+    ),
+}
+
+
+@dataclass(frozen=True)
 class AmbientEvent:
     """A deterministic grid event that can nudge credits, CPU, trace, alert, or topology."""
     key: str
@@ -131,6 +183,33 @@ def shift_name(minute: int) -> str:
     return name
 
 
+def shift_profile(minute: int) -> ShiftProfile:
+    """Return the tactical profile of the shift covering an in-game minute of day."""
+    hour = (int(minute) % (24 * 60)) // 60
+    if hour < 6:
+        return SHIFT_PROFILES["late_night"]
+    if hour < 12:
+        return SHIFT_PROFILES["morning"]
+    if hour < 18:
+        return SHIFT_PROFILES["afternoon"]
+    return SHIFT_PROFILES["evening"]
+
+
+def shift_effect_text(profile: ShiftProfile) -> str:
+    """Render a compact human-readable summary of a shift's mechanical modifiers."""
+    parts = []
+    if profile.alert_decay_bonus:
+        parts.append(f"alert decay {profile.alert_decay_bonus:+d}/turn")
+    if profile.resecure_chance_delta:
+        parts.append(f"re-secure {profile.resecure_chance_delta:+.0%}")
+    if profile.market_bias:
+        parts.append(f"market {profile.market_bias:+.0%}")
+    if profile.hunter_threshold_delta:
+        threshold = HUNTER_ALERT_THRESHOLD + profile.hunter_threshold_delta
+        parts.append(f"hunters at {threshold}%+")
+    return ", ".join(parts) if parts else "standard corporate posture"
+
+
 def clock_label(world: WorldState) -> str:
     """Return a compact clock label such as ``Day 2 13:45 (Afternoon)``."""
     return f"Day {world.day} {clock_minute_text(world.minute)} ({shift_name(world.minute)})"
@@ -175,10 +254,10 @@ def adjust_market(world: WorldState, delta: float) -> float:
     return world.market_index
 
 
-def drift_market(world: WorldState, rng: random.Random) -> float:
-    """Random-walk the black market, pulled upward while the grid is hot."""
-    hot_target = 1.0 + max(0, world.alert_level - 50) / 500.0
-    drift = rng.uniform(-0.05, 0.05) + (hot_target - world.market_index) * 0.20
+def drift_market(world: WorldState, rng: random.Random, bias: float = 0.0) -> float:
+    """Random-walk the black market, pulled toward a shift-biased target while the grid is hot."""
+    target = clamp(1.0 + max(0, world.alert_level - 50) / 500.0 + float(bias), MARKET_FLOOR, MARKET_CEILING)
+    drift = rng.uniform(-0.05, 0.05) + (target - world.market_index) * 0.20
     return adjust_market(world, drift)
 
 
@@ -224,6 +303,7 @@ def plan_resecures(
     alert_level: int,
     nodes: Dict[str, Node],
     current_node_id: str,
+    chance_delta: float = 0.0,
 ) -> List[str]:
     """Choose hosts the grid re-secures this tick: hot grid, cooled-down, looted targets."""
     if alert_level < RESECURE_ALERT_THRESHOLD:
@@ -239,7 +319,8 @@ def plan_resecures(
             continue
         if node.breached_turn < 0 or tick - node.breached_turn < RESECURE_COOLDOWN:
             continue
-        chance = min(0.60, 0.10 + (alert_level - RESECURE_ALERT_THRESHOLD) / 200.0 + node.security_level * 0.03)
+        chance = 0.10 + (alert_level - RESECURE_ALERT_THRESHOLD) / 200.0 + node.security_level * 0.03
+        chance = clamp(chance + float(chance_delta), 0.01, 0.60)
         if rng.random() < chance:
             picks.append(node.node_id)
     return picks
@@ -296,8 +377,9 @@ def calculate_distance(nodes: Dict[str, Node], start_id: str, goal_id: str) -> i
 
 
 def deploy_hunter(world: WorldState, nodes: Dict[str, Node], tick: int) -> Optional[NetWatchHunter]:
-    """Deploy an active NetWatch Hunter if alert level exceeds threshold and none is active."""
-    if world.alert_level < HUNTER_ALERT_THRESHOLD:
+    """Deploy an active NetWatch Hunter if the shift-adjusted alert threshold is met and none is active."""
+    threshold = HUNTER_ALERT_THRESHOLD + shift_profile(world.minute).hunter_threshold_delta
+    if world.alert_level < threshold:
         return None
     for h in world.hunters:
         if h.status in ("hunting", "confused"):
@@ -406,11 +488,21 @@ def neutralize_hunter(hunter: NetWatchHunter, reason: str = "logic_bomb") -> str
 def world_summary(world: WorldState) -> Dict[str, Any]:
     """Serialize the living-grid snapshot for CLI and Web consumers."""
     active_hunters = [h for h in world.hunters if h.status in ("hunting", "confused", "intercepted")]
+    profile = shift_profile(world.minute)
     return {
         "clock": clock_label(world),
         "day": world.day,
         "minute": world.minute,
         "shift": shift_name(world.minute),
+        "shift_key": profile.key,
+        "shift_tagline": profile.tagline,
+        "shift_effect": shift_effect_text(profile),
+        "shift_modifiers": {
+            "market_bias": profile.market_bias,
+            "alert_decay_bonus": profile.alert_decay_bonus,
+            "resecure_chance_delta": profile.resecure_chance_delta,
+            "hunter_threshold": HUNTER_ALERT_THRESHOLD + profile.hunter_threshold_delta,
+        },
         "alert_level": world.alert_level,
         "market_multiplier": market_multiplier(world),
         "resecured_count": world.resecured_count,
