@@ -184,6 +184,13 @@ body:not(.crt-effects) .crt-flicker {
   text-shadow: 0 0 8px var(--c-danger-glow);
 }
 
+.grid-chip.shift-chip {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--c-accent);
+}
+
 .grid-chip.hunter-chip {
   color: var(--c-danger);
   font-weight: 700;

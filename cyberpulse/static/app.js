@@ -191,6 +191,7 @@ function initUIEvents() {
   // Action Buttons
   document.getElementById("btn-scan").addEventListener("click", handleScan);
   document.getElementById("btn-spoof").addEventListener("click", handleSpoof);
+  document.getElementById("btn-lay-low").addEventListener("click", handleLayLow);
   document.getElementById("btn-jackout").addEventListener("click", handleJackout);
   document.getElementById("btn-cves-open").addEventListener("click", openCvesModal);
   document.getElementById("btn-rig-open").addEventListener("click", openRigModal);
@@ -360,6 +361,9 @@ function initUIEvents() {
     } else if (key === "KeyO") {
       e.preventDefault();
       handleOverdrive();
+    } else if (key === "KeyL") {
+      e.preventDefault();
+      handleLayLow();
     }
   });
 }
@@ -402,6 +406,7 @@ function renderGridTicker(world) {
 
   document.getElementById("grid-clock").textContent = (world.clock || "Day 1 08:00").toUpperCase();
   document.getElementById("grid-shift").textContent = (world.shift || "Morning").toUpperCase();
+  document.getElementById("grid-shift-effect").textContent = (world.shift_effect || "Standard posture").toUpperCase();
 
   const alertEl = document.getElementById("grid-alert");
   const alertLevel = world.alert_level || 0;
@@ -584,6 +589,20 @@ async function handleOverdrive() {
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || "Overdrive refused.", "warn");
+  }
+}
+
+async function handleLayLow() {
+  sfx.click();
+  addTerminalLog("Ghosting the connection and letting the grid move...", "info");
+  const res = await apiPost("/api/action", { action: "lay_low", turns: 1 });
+  if (res && res.ok) {
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "Cannot lay low right now.", "warn");
   }
 }
 

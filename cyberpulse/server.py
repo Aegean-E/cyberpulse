@@ -345,6 +345,11 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 
+            if action in ("lay_low", "wait"):
+                ok, msg = engine.lay_low(payload.get("turns", 1))
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
             if action in ("contact", "talk", "interact"):
                 contact_id = payload.get("contact_id") or payload.get("target") or ""
                 mode = payload.get("mode", "talk")

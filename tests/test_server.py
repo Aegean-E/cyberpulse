@@ -66,6 +66,7 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn("clock", res["world"])
         self.assertIn("alert_level", res["world"])
+        self.assertIn("shift_effect", res["world"])
         self.assertIn("news", res)
 
         status, data = self._get("/api/state")
@@ -147,6 +148,8 @@ class TestCyberdeckServer(unittest.TestCase):
             self.assertIn("CYBERPULSE", html)
             self.assertIn('id="grid-ticker"', html)
             self.assertIn('id="grid-alert"', html)
+            self.assertIn('id="grid-shift-effect"', html)
+            self.assertIn('id="btn-lay-low"', html)
 
         # GET /style.css
         url_css = f"{self.base_url}/style.css"
@@ -165,6 +168,8 @@ class TestCyberdeckServer(unittest.TestCase):
             js = resp.read().decode("utf-8")
             self.assertIn("SoundFX", js)
             self.assertIn("renderGridTicker", js)
+            self.assertIn("handleLayLow", js)
+            self.assertIn("grid-shift-effect", js)
 
     def test_server_simulation_actions(self):
         # 1. Probe proxy a
@@ -545,6 +550,48 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertFalse(res["ok"])
         self.assertIn("No active NetWatch hunters", res["message"])
+
+    def test_lay_low_api_action(self):
+        session = self.server.RequestHandlerClass.server_session
+        engine = session.engine
+        world = engine.state.world
+        saved = (
+            world.alert_level,
+            world.minute,
+            world.day,
+            world.turns_since_event,
+            engine.state.trace_percent,
+            engine.deck.cpu_cycles,
+            engine.state.turns_elapsed,
+        )
+        world.alert_level = 0
+        world.turns_since_event = -50
+        engine.state.trace_percent = 0
+        engine.deck.cpu_cycles = 0
+        start_turns = engine.state.turns_elapsed
+        try:
+            status, res = self._post("/api/action", {"action": "lay_low", "turns": 2})
+            self.assertEqual(status, 200)
+            self.assertTrue(res["ok"])
+            self.assertIn("LAY LOW", res["message"])
+            self.assertEqual(res["state"]["state"]["turns_elapsed"], start_turns + 2)
+            self.assertEqual(res["state"]["deck"]["cpu_cycles"], 2)
+            self.assertIn("shift_effect", res["state"]["world"])
+
+            status, alias = self._post("/api/action", {"action": "wait", "turns": 1})
+            self.assertEqual(status, 200)
+            self.assertTrue(alias["ok"])
+            self.assertIn("LAY LOW", alias["message"])
+        finally:
+            (
+                world.alert_level,
+                world.minute,
+                world.day,
+                world.turns_since_event,
+                engine.state.trace_percent,
+                engine.deck.cpu_cycles,
+                engine.state.turns_elapsed,
+            ) = saved
 
 
 if __name__ == "__main__":
