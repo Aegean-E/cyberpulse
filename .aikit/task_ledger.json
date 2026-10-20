@@ -2,42 +2,13 @@
   "version": 1,
   "active_task": {
     "task_id": "task-cyberpulse-shift-downtime-v1",
-    "last_phase": "phase 3",
-    "active_phase": 3,
-    "status": "in_progress",
-    "updated_at": 1792511695.2289944
+    "last_phase": "phase 4",
+    "active_phase": 5,
+    "status": "completed",
+    "updated_at": 1792522718.7257433,
+    "completed_at": 1792522792.7682116
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-world-simulation-v1",
-      "phase": "implementation",
-      "phase_num": 3,
-      "description": "[milestone 2/5] Engine grid integration: advance_turn pipeline replaces nine turn/tick pairs, tick_world clock+alert+market+ambient+patrol, breach/daemon/trace/jackout news hooks, alert raises, host re-secure with daemon recall, re-breach anti-farm guard (fresh_data gates rewards, combo and quest credit); 8 integration tests; test 182/182, aikit check 4/4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792438294.8396587,
-      "timestamp_str": "2026-10-19 22:31:34"
-    },
-    {
-      "task_id": "task-cyberpulse-world-simulation-v1",
-      "phase": "implementation",
-      "phase_num": 3,
-      "description": "[milestone 3/5] Grid surfaces and market prices: CLI world/news commands, HUD grid line, market-aware shop costs (CLI/buy), POST shop_buy multiplier, GET /api/world, world block and market-aware shop_items in /api/state, server /api/shop market_multiplier; 7 new tests; test 189/189, aikit check 4/4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792438508.879341,
-      "timestamp_str": "2026-10-19 22:35:08"
-    },
-    {
-      "task_id": "task-cyberpulse-world-simulation-v1",
-      "phase": "implementation",
-      "phase_num": 3,
-      "description": "[milestone 4/5] Web Cyberdeck grid ticker: index.html grid bar (clock/shift/alert/market/ticker), style.css grid-bar theme-aware styles and headline flash, app.js renderGridTicker reading data.world and useful as gState.world fallback; node --check clean; static asset assertions; test 189/189, aikit check 4/4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792438637.5045006,
-      "timestamp_str": "2026-10-19 22:37:17"
-    },
     {
       "task_id": "task-cyberpulse-world-simulation-v1",
       "phase": "verification",
@@ -222,6 +193,35 @@
       "status": "in_progress",
       "timestamp": 1792511695.2289944,
       "timestamp_str": "2026-10-20 18:54:55"
+    },
+    {
+      "task_id": "task-cyberpulse-shift-downtime-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[milestone 4/5] Web surfaces: lay_low/wait API action, LAY LOW button and [L] hotkey, shift doctrine chip wired from world_summary.shift_effect; 218 tests, 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792522718.5671563,
+      "timestamp_str": "2026-10-20 21:58:38"
+    },
+    {
+      "task_id": "task-cyberpulse-shift-downtime-v1",
+      "phase": "phase 4",
+      "phase_num": 4,
+      "description": "[milestone 5/5] ADR-017, README, codebase map refresh, 4/4 Phase 4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792522718.7257433,
+      "timestamp_str": "2026-10-20 21:58:38"
+    },
+    {
+      "task_id": "task-cyberpulse-shift-downtime-v1",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-shift-downtime-v1' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792522792.768213,
+      "timestamp_str": "2026-10-20 21:59:52"
     }
   ]
 }
