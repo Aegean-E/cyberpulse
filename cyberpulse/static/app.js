@@ -595,7 +595,8 @@ async function handleOverdrive() {
 async function handleLayLow() {
   sfx.click();
   addTerminalLog("Ghosting the connection and letting the grid move...", "info");
-  const res = await apiPost("/api/action", { action: "lay_low", turns: 1 });
+  const turns = parseInt(document.getElementById("lay-low-turns").value, 10);
+  const res = await apiPost("/api/action", { action: "lay_low", turns });
   if (res && res.ok) {
     addTerminalLog(res.message, "success");
     state.data = res.state;

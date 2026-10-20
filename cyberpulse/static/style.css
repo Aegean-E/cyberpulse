@@ -191,6 +191,25 @@ body:not(.crt-effects) .crt-flicker {
   color: var(--c-accent);
 }
 
+.action-select {
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  color: var(--c-text);
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  min-width: 70px;
+  height: 2.1rem;
+}
+
+.action-select:focus {
+  outline: none;
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 2px var(--c-accent-glow);
+}
+
 .grid-chip.hunter-chip {
   color: var(--c-danger);
   font-weight: 700;
