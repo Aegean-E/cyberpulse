@@ -30,7 +30,7 @@ From inside the `projects/cyberpulse` directory:
 cyberpulse/
 ├── .aikit/                   <- this project's memory: record, ledger, decisions
 ├── .gitignore                <- transient AIKit state excluded
-├── LICENSE                   <- MIT Open Source License
+├── LICENSE                   <- AGPLv3 Open Source License
 ├── README.md
 ├── pyproject.toml            <- build and package configuration
 ├── start.bat                 <- Windows one-click launcher
