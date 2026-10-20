@@ -9,8 +9,8 @@
 - **Total Python Modules**: `26`
 - **Total Classes**: `55`
 - **Total Top-Level Functions**: `58`
-- **Total Class Methods**: `364`
-- **Total Source Lines**: `8620`
+- **Total Class Methods**: `368`
+- **Total Source Lines**: `8724`
 
 ---
 
@@ -57,7 +57,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `2145` lines (`98901` bytes)
+**Size**: `2199` lines (`101219` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -89,8 +89,9 @@
   - Method `.add_trace(raw_amount)` - *Increase system trace, mitigated by ICE dampeners. 100% triggers lockout & loss of loot.*
   - Method `.regenerate_cpu(amount)` - *Cool down cyberdeck processing units and recover CPU cycles.*
   - Method `.advance_turn()` - *Advance the run clock one turn: daemons harvest, then the living grid reacts.*
+  - Method `.lay_low(turns)` - *Ghost the connection for a few turns: recover CPU while the grid keeps moving.*
   - Method `.tick_world()` - *Advance the in-game clock, alert, market, ambient events, and grid response.*
-  - Method `._decay_alert()` - *Cool the grid while trace is low; a hot trace keeps corporate response elevated.*
+  - Method `._decay_alert(shift_bonus)` - *Cool the grid while trace is low; a hot trace keeps corporate response elevated.*
   - Method `._apply_ambient_event(event)` - *Apply a rolled ambient grid event to the deck, loot, alert, or topology.*
   - Method `._reveal_frontier_node()` - *Reveal one locked node adjacent to the current host, else any locked node.*
   - Method `._recall_daemons(node_id)` - *Remove player daemons from a host after the grid re-secures it.*
@@ -492,12 +493,15 @@
 ### [`tests/test_grid.py`](tests/test_grid.py)
 > *Integration tests for living-grid simulation wired into the game engine.*
 
-**Size**: `190` lines (`7858` bytes)
+**Size**: `240` lines (`9974` bytes)
 
 **Classes:**
 - `class TestGridIntegration`
   - Method `.setUp()`
   - Method `.test_advance_turn_moves_clock_daemons_and_market()`
+  - Method `.test_lay_low_advances_time_and_recovers_cpu()`
+  - Method `.test_lay_low_rejects_invalid_input_and_terminal_runs()`
+  - Method `.test_tick_world_shift_changes_alert_decay()`
   - Method `.test_breach_raises_alert_and_publishes_news()`
   - Method `.test_trace_thresholds_publish_news()`
   - Method `.test_patrol_pressure_adds_trace_at_high_alert()`

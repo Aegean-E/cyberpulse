@@ -38,12 +38,14 @@ from cyberpulse.world import (
     ambient_event_for,
     apply_resecure,
     calculate_distance,
+    clock_label,
     deploy_hunter,
     drift_market,
     neutralize_hunter,
     patrol_pressure,
     plan_resecures,
     record_news,
+    shift_profile,
     step_hunter,
     world_rng,
     world_summary as build_world_summary,
@@ -185,6 +187,8 @@ CRAFTING_RECIPES: Dict[str, VirusCraftRecipe] = {
 
 class GameEngine:
     """Manages gameplay rules, push-your-luck risk, and victory/defeat conditions."""
+
+    MAX_LAY_LOW_TURNS = 3
 
     def __init__(self, seed: int = 1337, career_profile: Optional[CareerProfile] = None):
         self.seed = int(seed)
@@ -749,16 +753,59 @@ class GameEngine:
         messages.extend(self.tick_world())
         return messages
 
+    def lay_low(self, turns: int = 1) -> Tuple[bool, str]:
+        """Ghost the connection for a few turns: recover CPU while the grid keeps moving."""
+        if self.state.is_game_over:
+            return False, "Cannot lay low: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot lay low: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot lay low: mission already complete."
+        try:
+            count = int(turns)
+        except (TypeError, ValueError):
+            return False, "Lay low accepts a whole number of turns (1-3)."
+        if count < 1 or count > self.MAX_LAY_LOW_TURNS:
+            return False, f"Lay low accepts 1-{self.MAX_LAY_LOW_TURNS} turns."
+
+        world = self.state.world
+        cpu_before = self.deck.cpu_cycles
+        trace_before = self.state.trace_percent
+        alert_before = world.alert_level
+        turns_before = self.state.turns_elapsed
+        messages: List[str] = []
+        for _ in range(count):
+            self.regenerate_cpu(1)
+            messages.extend(self.advance_turn())
+            if self.state.is_game_over or self.state.is_jacked_out or self.state.is_victory:
+                break
+
+        elapsed = self.state.turns_elapsed - turns_before
+        summary = (
+            f"🛰️ [LAY LOW] Ghosted the connection for {elapsed} turn(s) until {clock_label(world)}: "
+            f"CPU {self.deck.cpu_cycles - cpu_before:+d}, trace {trace_before}% -> {self.state.trace_percent}%, "
+            f"alert {alert_before}% -> {world.alert_level}%."
+        )
+        if self.state.is_game_over:
+            summary += " The grid burned your deck while you idled."
+        elif self.state.is_victory:
+            summary += " The run reached a terminal state during downtime."
+        detail = " ".join(message for message in messages if message)
+        full_message = f"{summary} {detail}".strip()
+        self.state.message_log.append(summary)
+        return True, full_message
+
     def tick_world(self) -> List[str]:
         """Advance the in-game clock, alert, market, ambient events, and grid response."""
         if self.state.is_game_over or self.state.is_jacked_out or self.state.is_victory:
             return []
         world = self.state.world
         advance_clock(world)
-        drift_market(world, world_rng(self.seed, self.state.turns_elapsed, "drift"))
+        profile = shift_profile(world.minute)
+        drift_market(world, world_rng(self.seed, self.state.turns_elapsed, "drift"), bias=profile.market_bias)
         world.turns_since_event += 1
         messages: List[str] = []
-        self._decay_alert()
+        self._decay_alert(profile.alert_decay_bonus)
 
         event = ambient_event_for(
             self.seed, self.state.turns_elapsed, world.alert_level, world.turns_since_event
@@ -781,7 +828,12 @@ class GameEngine:
                 return messages
 
         for node_id in plan_resecures(
-            self.seed, self.state.turns_elapsed, world.alert_level, self.nodes, self.state.current_node_id
+            self.seed,
+            self.state.turns_elapsed,
+            world.alert_level,
+            self.nodes,
+            self.state.current_node_id,
+            chance_delta=profile.resecure_chance_delta,
         ):
             node = self.nodes[node_id]
             message = apply_resecure(node)
@@ -854,14 +906,16 @@ class GameEngine:
                     self.state.message_log.append(prox_msg)
         return messages
 
-    def _decay_alert(self) -> int:
+    def _decay_alert(self, shift_bonus: int = 0) -> int:
         """Cool the grid while trace is low; a hot trace keeps corporate response elevated."""
         trace = self.state.trace_percent
         if trace >= 70:
-            return adjust_alert(self.state.world, 1)
-        if trace >= 40:
-            return adjust_alert(self.state.world, -1)
-        return adjust_alert(self.state.world, -2)
+            base = 1
+        elif trace >= 40:
+            base = -1
+        else:
+            base = -2
+        return adjust_alert(self.state.world, base - int(shift_bonus))
 
     def _apply_ambient_event(self, event: AmbientEvent) -> List[str]:
         """Apply a rolled ambient grid event to the deck, loot, alert, or topology."""

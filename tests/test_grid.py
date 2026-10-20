@@ -23,6 +23,56 @@ class TestGridIntegration(unittest.TestCase):
         self.assertGreaterEqual(world.market_index, MARKET_FLOOR)
         self.assertLessEqual(world.market_index, MARKET_CEILING)
 
+    def test_lay_low_advances_time_and_recovers_cpu(self):
+        self.engine.state.world.alert_level = 0
+        self.engine.state.world.turns_since_event = -50
+        self.engine.deck.cpu_cycles = 0
+        start_minute = self.engine.state.world.minute
+        start_turns = self.engine.state.turns_elapsed
+
+        ok, message = self.engine.lay_low(2)
+
+        self.assertTrue(ok)
+        self.assertEqual(self.engine.state.turns_elapsed, start_turns + 2)
+        self.assertEqual(self.engine.state.world.minute, (start_minute + 30) % (24 * 60))
+        self.assertEqual(self.engine.deck.cpu_cycles, 2)
+        self.assertIn("LAY LOW", message)
+        self.assertIn("2 turn", message)
+        self.assertIn("CPU +2", message)
+
+    def test_lay_low_rejects_invalid_input_and_terminal_runs(self):
+        for bad in (0, 4, -1, "later"):
+            ok, message = self.engine.lay_low(bad)
+            self.assertFalse(ok, bad)
+            self.assertIn("Lay low", message)
+
+        for flag in ("is_game_over", "is_jacked_out", "is_victory"):
+            engine = GameEngine(seed=5)
+            engine.state.world.turns_since_event = -50
+            setattr(engine.state, flag, True)
+            start_turns = engine.state.turns_elapsed
+            ok, message = engine.lay_low(1)
+            self.assertFalse(ok, flag)
+            self.assertIn("Cannot lay low", message)
+            self.assertEqual(engine.state.turns_elapsed, start_turns)
+
+    def test_tick_world_shift_changes_alert_decay(self):
+        night = GameEngine(seed=11)
+        morning = GameEngine(seed=11)
+        for engine, minute in ((night, 2 * 60), (morning, 8 * 60)):
+            engine.state.world.alert_level = 50
+            engine.state.trace_percent = 20
+            engine.state.world.turns_since_event = -50
+            engine.state.world.minute = minute
+
+        for _ in range(3):
+            night.state.world.minute = 2 * 60
+            morning.state.world.minute = 8 * 60
+            night.tick_world()
+            morning.tick_world()
+
+        self.assertLess(night.state.world.alert_level, morning.state.world.alert_level)
+
     def test_breach_raises_alert_and_publishes_news(self):
         alert_before = self.engine.state.world.alert_level
 

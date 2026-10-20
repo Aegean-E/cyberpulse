@@ -5,25 +5,9 @@
     "last_phase": "phase 3",
     "active_phase": 3,
     "status": "in_progress",
-    "updated_at": 1792511577.126535
+    "updated_at": 1792511647.57599
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-world-simulation-v1",
-      "phase": "planning",
-      "phase_num": 2,
-      "description": "[1/5] Plan: Grid Pulse world simulation layer - clock/shifts, grid alert, generated news, ambient events, host re-securing, drifting market prices, CLI/Web surfaces, tests, ADR-015",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792437574.52709,
-      "timestamp_str": "2026-10-19 22:19:34",
-      "impact_assessment": {
-        "why": "The grid is static between runs: turns advance only to tick daemons, hosts never react to loud intrusions, black-market prices never move, and nothing in or out of game reports on the player's actions, so the advertised simulation depth is thin.",
-        "benefits": "A living-grid feedback loop: every turn advances an in-game clock and generates events; loud play raises grid alert, which drives headlines, patrol trace, host re-securing, and market prices, with consequences legible in both CLI and Web.",
-        "risks": "contract: GameState and Node gain additive defaulted fields and shop gains an optional price modifier; dependency: none (stdlib only); concurrency: server serializes sessions with its existing lock; state: old saves must load with default world state and nodes without breach ledgers",
-        "mitigation": "Additive dataclass defaults plus from_dict backfill, a dedicated deterministic world RNG independent from engine.rng, failing-first golden-path and old-save tests, aikit check after each milestone, and ADR-015 documenting the schema change."
-      }
-    },
     {
       "task_id": "task-cyberpulse-world-simulation-v1",
       "phase": "implementation",
@@ -228,6 +212,16 @@
       "status": "in_progress",
       "timestamp": 1792511577.126535,
       "timestamp_str": "2026-10-20 18:52:57"
+    },
+    {
+      "task_id": "task-cyberpulse-shift-downtime-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[milestone 2/5] Engine integration: shift-aware tick_world (market bias, alert decay, re-secure delta), lay_low downtime action with 1-3 cap, terminal guards, CPU recovery and event reporting; 3 integration tests; test 215/215, aikit check 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792511647.57599,
+      "timestamp_str": "2026-10-20 18:54:07"
     }
   ]
 }
