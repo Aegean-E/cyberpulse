@@ -9,8 +9,8 @@
 - **Total Python Modules**: `26`
 - **Total Classes**: `55`
 - **Total Top-Level Functions**: `58`
-- **Total Class Methods**: `370`
-- **Total Source Lines**: `8754`
+- **Total Class Methods**: `371`
+- **Total Source Lines**: `8805`
 
 ---
 
@@ -253,7 +253,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `638` lines (`28425` bytes)
+**Size**: `643` lines (`28676` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -364,7 +364,7 @@
 ### [`start.py`](start.py)
 > *Zero-friction launcher for CyberPulse terminal and Web Cyberdeck.*
 
-**Size**: `29` lines (`745` bytes)
+**Size**: `28` lines (`744` bytes)
 
 **Functions:**
 - `def start(argv)` - *Launch the Web Cyberdeck by default, or forward custom CLI arguments.*
@@ -595,7 +595,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `553` lines (`23766` bytes)
+**Size**: `600` lines (`25641` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -637,6 +637,7 @@
   - Method `.test_static_assets_do_not_wait_for_session_lock()`
   - Method `.test_get_world_and_state_contains_hunters()`
   - Method `.test_counter_hunter_api_action()`
+  - Method `.test_lay_low_api_action()`
 
 ---
 
