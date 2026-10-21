@@ -335,6 +335,27 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(report["vector"], "pretext")
         self.assertEqual(report["employee"], "Alice Vance")
 
+    def test_social_chance_follows_the_shift(self):
+        night = GameEngine(seed=42)
+        morning = GameEngine(seed=42)
+        night.state.world.minute = 2 * 60   # Late Night
+        morning.state.world.minute = 8 * 60  # Morning
+
+        night.deck.cpu_cycles = 5
+        morning.deck.cpu_cycles = 5
+        _, _, night_report = night.social_engineer("192.168.1.10", vector="pretext")
+        _, _, morning_report = morning.social_engineer("192.168.1.10", vector="pretext")
+
+        self.assertAlmostEqual(
+            morning_report["chance"] - night_report["chance"], 0.25, places=2
+        )
+        self.assertEqual(night_report["shift"], "Late Night")
+        self.assertEqual(morning_report["shift"], "Morning")
+        self.assertAlmostEqual(night_report["shift_modifier"], -0.15)
+        self.assertAlmostEqual(morning_report["shift_modifier"], 0.10)
+        self.assertIn("Shift timing", "".join(night.state.message_log))
+
+
     def test_game_over_and_jacked_out_guards(self):
         # When game over
         self.engine.state.is_game_over = True

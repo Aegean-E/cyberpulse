@@ -8,9 +8,9 @@
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `26`
 - **Total Classes**: `55`
-- **Total Top-Level Functions**: `60`
-- **Total Class Methods**: `384`
-- **Total Source Lines**: `9073`
+- **Total Top-Level Functions**: `62`
+- **Total Class Methods**: `388`
+- **Total Source Lines**: `9141`
 
 ---
 
@@ -57,7 +57,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `2280` lines (`105337` bytes)
+**Size**: `2293` lines (`105931` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -330,7 +330,7 @@
 ### [`cyberpulse/world.py`](cyberpulse/world.py)
 > *Living-grid world simulation: in-game clock, corporate alert, news, and grid response.*
 
-**Size**: `536` lines (`18001` bytes)
+**Size**: `553` lines (`18655` bytes)
 
 **Classes:**
 - `class ShiftProfile` - *Tactical posture of the grid during one in-game shift.*
@@ -345,6 +345,8 @@
 - `def shift_name(minute)` - *Return the named shift covering an in-game minute of day.*
 - `def shift_profile(minute)` - *Return the tactical profile of the shift covering an in-game minute of day.*
 - `def shift_effect_text(profile)` - *Render a compact human-readable summary of a shift's mechanical modifiers.*
+- `def social_shift_modifier(minute)` - *Return how much the current shift helps or hinders social engineering.*
+- `def apply_social_shift(chance, minute)` - *Blend a base social-engineering chance with the shift modifier, clamped to 5-95%.*
 - `def clock_label(world)` - *Return a compact clock label such as ``Day 2 13:45 (Afternoon)``.*
 - `def record_news(world, tick, source, headline, tone)` - *Append a headline to the living-grid feed, keeping the newest entries.*
 - `def format_news_item(item)`
@@ -426,7 +428,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `881` lines (`37259` bytes)
+**Size**: `902` lines (`38201` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -457,6 +459,7 @@
   - Method `.test_antivirus_status_and_evasion()`
   - Method `.test_cve_catalog_and_exploit_execution()`
   - Method `.test_social_engineering_vectors()`
+  - Method `.test_social_chance_follows_the_shift()`
   - Method `.test_game_over_and_jacked_out_guards()`
   - Method `.test_defensive_input_sanitization()`
   - Method `.test_exploit_service_turn_advancement()`
@@ -698,7 +701,7 @@
 ### [`tests/test_world.py`](tests/test_world.py)
 > *Unit tests for the living-grid world simulation module.*
 
-**Size**: `466` lines (`19422` bytes)
+**Size**: `483` lines (`20374` bytes)
 
 **Classes:**
 - `class TestWorldClock`
@@ -709,6 +712,9 @@
   - Method `.test_shift_profile_boundaries()`
   - Method `.test_shift_modifiers_create_distinct_tradeoffs()`
   - Method `.test_shift_effect_text_is_human_readable()`
+  - Method `.test_shift_profiles_carry_social_deltas()`
+  - Method `.test_shift_effect_text_documents_social_surface()`
+  - Method `.test_apply_social_shift_clamps_and_modifies()`
   - Method `.test_world_summary_documents_the_shift()`
   - Method `.test_alert_tier_boundaries()`
   - Method `.test_world_summary_includes_alert_tier()`

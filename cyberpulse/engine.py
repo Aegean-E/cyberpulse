@@ -38,6 +38,7 @@ from cyberpulse.world import (
     alert_tier,
     ambient_event_for,
     apply_resecure,
+    apply_social_shift,
     calculate_distance,
     clock_label,
     deploy_hunter,
@@ -46,7 +47,9 @@ from cyberpulse.world import (
     patrol_pressure,
     plan_resecures,
     record_news,
+    shift_name,
     shift_profile,
+    social_shift_modifier,
     step_hunter,
     tier_rank,
     world_rng,
@@ -2032,6 +2035,11 @@ class GameEngine:
         else:  # VISHING
             base_chance = 0.90 if awareness == SecurityAwarenessLevel.NAIVE else (0.70 if awareness == SecurityAwarenessLevel.STANDARD else 0.50)
 
+        # The living clock matters: staff availability and alertness follow the shift.
+        current_shift = shift_name(self.state.world.minute)
+        shift_modifier = social_shift_modifier(self.state.world.minute)
+        base_chance = apply_social_shift(base_chance, self.state.world.minute)
+
         roll = self.rng.random()
         success = roll <= base_chance
 
@@ -2045,7 +2053,11 @@ class GameEngine:
             "success": success,
             "roll": round(roll, 2),
             "chance": round(base_chance, 2),
+            "shift": current_shift,
+            "shift_modifier": shift_modifier,
         }
+
+        shift_note = f"   * Shift timing ({current_shift}): social vectors {shift_modifier:+.0%}.\n"
 
         if success:
             emp.compromised = True
@@ -2081,6 +2093,7 @@ class GameEngine:
 
             tag = "🎣 PHISHING SUCCESS" if vector_key == SocialVectorType.SPEAR_PHISH else f"🎭 SOCIAL ENGINEERING SUCCESS [{vector_key.upper()}]"
             msg = f"{tag}: Employee at {node.hostname} clicked credential lure!\n" if vector_key == SocialVectorType.SPEAR_PHISH else f"{tag}: Compromised {emp.name} ({emp.role}) at {node.hostname}!\n"
+            msg += shift_note
             if lowered:
                 msg += f"   * Security tier downgraded to Level {node.security_level} (Buffer RAM required reduced to {node.security_level * 16}MB)!\n"
             if fw_bypass_notice:
@@ -2096,7 +2109,7 @@ class GameEngine:
             if node.antivirus:
                 node.antivirus.alert_level = min(100, node.antivirus.alert_level + 20)
             tag = "🎣 PHISHING FAILED" if vector_key == SocialVectorType.SPEAR_PHISH else f"🎭 SOCIAL ENGINEERING FAILED [{vector_key.upper()}]"
-            msg = f"{tag}: {emp.name} on {node.hostname} flagged lure. IDS alert triggered (Trace +8%)!"
+            msg = f"{tag}: {emp.name} on {node.hostname} flagged lure. IDS alert triggered (Trace +8%)!\n{shift_note}"
             self.state.message_log.append(msg)
             return False, msg, report
 

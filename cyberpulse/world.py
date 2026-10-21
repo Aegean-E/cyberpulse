@@ -54,6 +54,7 @@ class ShiftProfile:
     alert_decay_bonus: int = 0
     resecure_chance_delta: float = 0.0
     hunter_threshold_delta: int = 0
+    social_delta: float = 0.0
 
 
 SHIFT_PROFILES: Dict[str, ShiftProfile] = {
@@ -65,6 +66,7 @@ SHIFT_PROFILES: Dict[str, ShiftProfile] = {
         alert_decay_bonus=1,
         resecure_chance_delta=-0.10,
         hunter_threshold_delta=10,
+        social_delta=-0.15,
     ),
     "morning": ShiftProfile(
         key="morning",
@@ -74,6 +76,7 @@ SHIFT_PROFILES: Dict[str, ShiftProfile] = {
         alert_decay_bonus=0,
         resecure_chance_delta=0.10,
         hunter_threshold_delta=0,
+        social_delta=0.10,
     ),
     "afternoon": ShiftProfile(
         key="afternoon",
@@ -83,6 +86,7 @@ SHIFT_PROFILES: Dict[str, ShiftProfile] = {
         alert_decay_bonus=0,
         resecure_chance_delta=0.05,
         hunter_threshold_delta=-5,
+        social_delta=0.0,
     ),
     "evening": ShiftProfile(
         key="evening",
@@ -92,6 +96,7 @@ SHIFT_PROFILES: Dict[str, ShiftProfile] = {
         alert_decay_bonus=1,
         resecure_chance_delta=-0.05,
         hunter_threshold_delta=5,
+        social_delta=0.05,
     ),
 }
 
@@ -227,10 +232,22 @@ def shift_effect_text(profile: ShiftProfile) -> str:
         parts.append(f"re-secure {profile.resecure_chance_delta:+.0%}")
     if profile.market_bias:
         parts.append(f"market {profile.market_bias:+.0%}")
+    if profile.social_delta:
+        parts.append(f"social vectors {profile.social_delta:+.0%}")
     if profile.hunter_threshold_delta:
         threshold = HUNTER_ALERT_THRESHOLD + profile.hunter_threshold_delta
         parts.append(f"hunters at {threshold}%+")
     return ", ".join(parts) if parts else "standard corporate posture"
+
+
+def social_shift_modifier(minute: int) -> float:
+    """Return how much the current shift helps or hinders social engineering."""
+    return shift_profile(minute).social_delta
+
+
+def apply_social_shift(chance: float, minute: int) -> float:
+    """Blend a base social-engineering chance with the shift modifier, clamped to 5-95%."""
+    return round(clamp(float(chance) + social_shift_modifier(minute), 0.05, 0.95), 3)
 
 
 def clock_label(world: WorldState) -> str:

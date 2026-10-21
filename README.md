@@ -135,7 +135,7 @@ python -m cyberpulse.cli --seed 42069
 | `evade <ip> [method]` | Blind host AV scanner via `rootkit` (hook) or `spoof` (morphing) | Active memory EDR evasion & daemon protection |
 | `cve` / `exploits` | Catalog weaponized CVE exploits, requirements (RAM/CPU), and stealth ratings | Exploit payload arsenal & zero-day repertoire |
 | `exploit <ip> <port> [cve]` | Weaponize a specific CVE or auto-match zero-day payload to breach open port | System penetration & root shell acquisition |
-| `social <ip> [vec] [emp]` | Multi-vector social engineering (`spear_phish`, `pretext`, `bait`, `vishing`) | Human factor exploitation & credential harvesting |
+| `social <ip> [vec] [emp]` | Multi-vector social engineering (`spear_phish`, `pretext`, `bait`, `vishing`); success odds follow the in-game shift | Human factor exploitation & credential harvesting |
 | `phish <ip>` | Legacy quick spear-phish credential lure against target staff | Social engineering & security downgrade |
 | `ls [ip]` | List virtual directory contents on breached host (`/etc`, `/home`, `/data`) | Target file discovery & intel gathering |
 | `steal <file>` / `download` | Exfiltrate data for credits; auto-archives copy to local rig `/loot/` | Data theft & primary heist objective |
@@ -196,7 +196,7 @@ python -m cyberpulse.cli --seed 42069
 - **Deterministic World Events**: Ambient events, headlines, and re-secure rolls use a dedicated per-tick RNG stream seeded from `(seed, tick, stream)`, so the reward RNG sequence and every seeded gameplay outcome stay reproducible.
 - **Backward-Compatible World State**: Old saves without a world clock load with a fresh Day 1 world; the new fields are additive and atomic with the existing savegame.
 - **NetWatch Active Hunters & Pursuit Simulation**: Alert 60%+ mobilizes autonomous ICE hunters that track player location across network graph hops, trigger connection clashes on interception (+15% trace, -2 CPU), quarantine unmonitored daemons, and react to scent scrambling (`spoof`/`wipe_logs`) and countermeasures (`logic_bomb`/`ghost_protocol`).
-- **Tactical Shift Dynamics & Downtime**: The four in-game shifts (Late Night, Morning, Afternoon, Evening) apply distinct modifiers to alert decay, re-secure chance, market bias, and hunter deployment thresholds, so the clock carries real tactical weight. `lay_low`/`wait` trades 1-3 turns of grid movement (with its patrol, hunter, and ambient risk) for CPU recovery, exposed in both the CLI and the Web Cyberdeck shift chip.
+- **Tactical Shift Dynamics & Downtime**: The four in-game shifts (Late Night, Morning, Afternoon, Evening) apply distinct modifiers to alert decay, re-secure chance, market bias, hunter deployment thresholds, and social-engineering odds (staff answer lures differently at 03:00 than at 09:00), so the clock carries real tactical weight. `lay_low`/`wait` trades 1-3 turns of grid movement (with its patrol, hunter, and ambient risk) for CPU recovery, exposed in both the CLI and the Web Cyberdeck shift chip.
 - **Fast Test Shield**: 100% test pass rate across unit and integration suites in about a second via `python -m unittest discover`.
 
 

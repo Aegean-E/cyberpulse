@@ -27,6 +27,7 @@ from cyberpulse.world import (
     alert_tier,
     ambient_event_for,
     apply_resecure,
+    apply_social_shift,
     calculate_distance,
     clock_label,
     clock_minute_text,
@@ -135,6 +136,22 @@ class TestShiftProfiles(unittest.TestCase):
         self.assertIn("re-secure -10%", text)
         self.assertIn(f"hunters at {HUNTER_ALERT_THRESHOLD + 10}%+", text)
         self.assertIn("alert decay +1/turn", text)
+
+    def test_shift_profiles_carry_social_deltas(self):
+        self.assertAlmostEqual(SHIFT_PROFILES["late_night"].social_delta, -0.15)
+        self.assertAlmostEqual(SHIFT_PROFILES["morning"].social_delta, 0.10)
+        self.assertAlmostEqual(SHIFT_PROFILES["afternoon"].social_delta, 0.0)
+        self.assertAlmostEqual(SHIFT_PROFILES["evening"].social_delta, 0.05)
+
+    def test_shift_effect_text_documents_social_surface(self):
+        text = shift_effect_text(shift_profile(2 * 60))
+        self.assertIn("social", text)
+
+    def test_apply_social_shift_clamps_and_modifies(self):
+        self.assertAlmostEqual(apply_social_shift(0.75, 2 * 60), 0.60)  # late night -0.15
+        self.assertAlmostEqual(apply_social_shift(0.75, 8 * 60), 0.85)  # morning +0.10
+        self.assertAlmostEqual(apply_social_shift(0.02, 2 * 60), 0.05)  # floor
+        self.assertAlmostEqual(apply_social_shift(0.99, 8 * 60), 0.95)  # ceiling
 
     def test_world_summary_documents_the_shift(self):
         summary = world_summary(WorldState(minute=20 * 60))
