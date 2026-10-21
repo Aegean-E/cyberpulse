@@ -87,7 +87,7 @@ CyberPulse's mechanics are grounded in cognitive neuroscience and behavioral gam
 5. **Autonomy & Competence Loop (Ryan & Deci Self-Determination Theory - PENS)**:
    - Tactical agency through branching network topologies, upgrade pathways, and cyberdeck customization in the Black Market vendor.
 6. **Combo Streaks & Voluntary Risk (Sensation Seeking / Flow Channel)**:
-   - Consecutive successful breaches build a reward multiplier (up to +50%). `overdrive` lets the player voluntarily burn CPU and trace to prime the next combo, tightening the flow channel between boredom and lockout. Best combo is recorded in the career dossier, and combo milestones appear in the run epilogue.
+   - Consecutive successful breaches build a reward multiplier (up to +50%). `overdrive` lets the player voluntarily burn CPU and trace to prime the next combo, tightening the flow channel between boredom and lockout. Any detected failure (burned puzzle, flagged social lure, hunter clash, antivirus quarantine) breaks the streak, so the multiplier is a real stake rather than a ratchet. Best combo is recorded in the career dossier, and combo milestones appear in the run epilogue.
 7. **Narrative Transportation & Character Attachment**:
    - Five story acts, a mission board, and four persistent operatives turn abstract objectives into relationships. Act progression unlocks new dialogue, jobs, and one-time favors that materially change the run, while trust tracks your standing with each operative.
 8. **Implementation Intentions (Gollwitzer)**:
@@ -148,7 +148,7 @@ python -m cyberpulse.cli --seed 42069
 | `scan` | Scan surrounding connected nodes to reveal topology and IP addresses | Information foraging & strategic autonomy |
 | `spoof` | Burn 3 CPU cycles to bounce your proxy and reduce security trace by 25% | Risk mitigation & resource trade-offs |
 | `overdrive` | Burn 2 CPU and 8% trace to stack +1 combo and +10 unbanked credits | Voluntary risk, combo priming & dopamine anticipation |
-| `lay_low [1-3]` / `wait` | Ghost the connection for 1-3 turns: +1 CPU per turn while the grid keeps moving | Downtime recovery & shift-aware risk management |
+| `lay_low [1-3]` / `wait` | Ghost the connection for 1-3 turns: +1 CPU and up to -2% trace per turn while the grid keeps moving | Downtime recovery & shift-aware risk management |
 | `world` / `city` / `grid` | Show the in-game clock, shift doctrine, grid alert, market index, and latest headlines | Living world awareness & consequence telemetry |
 | `news` / `wire` | Read the generated grid news wire (`news 20` for a longer feed) | Diegetic feedback & attribution of events |
 | `hunter` / `radar` | Display active NetWatch Hunter threat assessment, location, distance, and scent | Counter-surveillance & proximity telemetry |
@@ -192,6 +192,7 @@ python -m cyberpulse.cli --seed 42069
 - **Dynamic Resource Loop**: Turn-based CPU cooling (+1/turn) and hardware RAM constraints (`security_level * 16` MB).
 - **Living Grid Simulation**: Every turn advances a 15-minute in-game clock, drifts the black-market index (0.80x-1.35x, applied to shop prices and to the fence payout of stolen data), and cools or sustains the corporate alert level from your current trace.
 - **Reactive Corporate Response**: Alert 50%+ enables NetWatch patrol trace and sysadmin re-securing of breached hosts (12-turn cooldown, one host per turn, never your current host or the Nexus core); re-secured hosts restore their defenses and quarantine embedded daemons.
+- **Corporate Posture Escalation**: The grid reports a named posture (GREEN/AMBER/RED/BLACK) in the CLI and Web ticker. Each breached host keeps the corporation mobilized, slowing alert decay by up to 3 per turn across a wide footprint, and every posture change is announced on the news wire in both directions - so a loud run visibly escalates the city against you, and a quiet one lets it stand down.
 - **Anti-Farm Breach Ledger**: A re-secured host pays no second reward, combo, or quest credit, so grid healing cannot be farmed for infinite credits.
 - **Deterministic World Events**: Ambient events, headlines, and re-secure rolls use a dedicated per-tick RNG stream seeded from `(seed, tick, stream)`, so the reward RNG sequence and every seeded gameplay outcome stay reproducible.
 - **Backward-Compatible World State**: Old saves without a world clock load with a fresh Day 1 world; the new fields are additive and atomic with the existing savegame.

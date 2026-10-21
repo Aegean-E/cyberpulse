@@ -9,8 +9,8 @@
 - **Total Python Modules**: `26`
 - **Total Classes**: `55`
 - **Total Top-Level Functions**: `62`
-- **Total Class Methods**: `392`
-- **Total Source Lines**: `9215`
+- **Total Class Methods**: `394`
+- **Total Source Lines**: `9244`
 
 ---
 
@@ -57,7 +57,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `2306` lines (`106480` bytes)
+**Size**: `2314` lines (`106911` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -511,13 +511,15 @@
 ### [`tests/test_grid.py`](tests/test_grid.py)
 > *Integration tests for living-grid simulation wired into the game engine.*
 
-**Size**: `288` lines (`12059` bytes)
+**Size**: `309` lines (`12790` bytes)
 
 **Classes:**
 - `class TestGridIntegration`
   - Method `.setUp()`
   - Method `.test_advance_turn_moves_clock_daemons_and_market()`
   - Method `.test_lay_low_advances_time_and_recovers_cpu()`
+  - Method `.test_lay_low_cools_trace_while_ghosted()`
+  - Method `.test_lay_low_trace_cooling_stops_at_zero()`
   - Method `.test_lay_low_rejects_invalid_input_and_terminal_runs()`
   - Method `.test_tick_world_shift_changes_alert_decay()`
   - Method `.test_breach_raises_alert_and_publishes_news()`

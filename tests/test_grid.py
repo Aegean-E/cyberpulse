@@ -40,6 +40,27 @@ class TestGridIntegration(unittest.TestCase):
         self.assertIn("2 turn", message)
         self.assertIn("CPU +2", message)
 
+    def test_lay_low_cools_trace_while_ghosted(self):
+        self.engine.state.trace_percent = 10
+        self.engine.state.world.alert_level = 0
+        self.engine.state.world.turns_since_event = -50
+
+        ok, message = self.engine.lay_low(2)
+
+        self.assertTrue(ok)
+        self.assertEqual(self.engine.state.trace_percent, 6)
+        self.assertIn("ghost cooling", message.lower())
+
+    def test_lay_low_trace_cooling_stops_at_zero(self):
+        self.engine.state.trace_percent = 1
+        self.engine.state.world.alert_level = 0
+        self.engine.state.world.turns_since_event = -50
+
+        ok, _ = self.engine.lay_low(2)
+
+        self.assertTrue(ok)
+        self.assertEqual(self.engine.state.trace_percent, 0)
+
     def test_lay_low_rejects_invalid_input_and_terminal_runs(self):
         for bad in (0, 4, -1, "later"):
             ok, message = self.engine.lay_low(bad)

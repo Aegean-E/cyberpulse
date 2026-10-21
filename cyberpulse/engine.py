@@ -195,6 +195,7 @@ class GameEngine:
     """Manages gameplay rules, push-your-luck risk, and victory/defeat conditions."""
 
     MAX_LAY_LOW_TURNS = 3
+    LAY_LOW_TRACE_COOLING = 2
 
     def __init__(self, seed: int = 1337, career_profile: Optional[CareerProfile] = None):
         self.seed = int(seed)
@@ -786,14 +787,21 @@ class GameEngine:
         messages: List[str] = []
         for _ in range(count):
             self.regenerate_cpu(1)
+            # A silent connection lets NetWatch lose the scent: trace cools while ghosted.
+            if self.state.trace_percent > 0:
+                self.state.trace_percent = max(0, self.state.trace_percent - self.LAY_LOW_TRACE_COOLING)
             messages.extend(self.advance_turn())
             if self.state.is_game_over or self.state.is_jacked_out or self.state.is_victory:
                 break
 
         elapsed = self.state.turns_elapsed - turns_before
+        cooling_note = (
+            f"ghost cooling -{self.LAY_LOW_TRACE_COOLING}%/turn, " if trace_before > 0 else ""
+        )
         summary = (
             f"🛰️ [LAY LOW] Ghosted the connection for {elapsed} turn(s) until {clock_label(world)}: "
-            f"CPU {self.deck.cpu_cycles - cpu_before:+d}, trace {trace_before}% -> {self.state.trace_percent}%, "
+            f"CPU {self.deck.cpu_cycles - cpu_before:+d}, {cooling_note}"
+            f"trace {trace_before}% -> {self.state.trace_percent}%, "
             f"alert {alert_before}% -> {world.alert_level}%."
         )
         if self.state.is_game_over:
