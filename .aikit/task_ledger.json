@@ -1,99 +1,14 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-shift-downtime-v1",
-    "last_phase": "phase 4",
+    "task_id": "task-cyberpulse-livgrid-v1",
+    "last_phase": "in_progress",
     "active_phase": 5,
     "status": "completed",
-    "updated_at": 1792522718.7257433,
-    "completed_at": 1792522792.7682116
+    "updated_at": 1792621413.6480787,
+    "completed_at": 1792621461.4207184
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-world-simulation-v1",
-      "phase": "verification",
-      "phase_num": 4,
-      "description": "[milestone 5/5] Documentation and ADR: ADR-015 records the living-grid design, RNG isolation, re-secure rules and anti-farm ledger; README gains the simulation pitch, presence mechanic, world/news commands, play-flow step, Web ticker note and six architecture guarantees; knowledge map regenerated; test 189/189, aikit check 4/4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792438706.550825,
-      "timestamp_str": "2026-10-19 22:38:26"
-    },
-    {
-      "task_id": "task-cyberpulse-world-simulation-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-world-simulation-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792438731.0119157,
-      "timestamp_str": "2026-10-19 22:38:51"
-    },
-    {
-      "task_id": "task-cyberpulse-netwatch-hunters-v1",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/5] Plan: NetWatch Counter-Infiltration & Active Hunters - NetWatchHunter model, autonomous grid tracking, interception mechanics, countermeasures (stealth/logic bomb), CLI/Web surfaces, tests, ADR-016",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792439429.3858545,
-      "timestamp_str": "2026-10-19 22:50:29",
-      "impact_assessment": {
-        "why": "At high grid alert (60%+), corporate response is currently passive and non-spatial; players lack a direct predatory threat to outmaneuver across subnets, reducing late-game tension.",
-        "benefits": "Active NetWatch hunters add thrilling cat-and-mouse spatial tactics: players must track hunter proximity, make evasive lateral moves, wipe logs to throw off scent, or deploy exploit chips to counter-attack.",
-        "risks": "contract: WorldState gains hunters list with default; dependency: none (pure stdlib); concurrency: mutations serialized by existing session lock; state: existing saves load cleanly with empty hunters list",
-        "mitigation": "Additive defaults on WorldState and NetWatchHunter dataclasses, from_dict backward compatibility tests, isolated world_rng stream, failing-first unit/integration tests for hunter pathfinding and interception."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-netwatch-hunters-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 1/5] Models and simulation core: NetWatchHunter model, hunters list in WorldState with backward-compatible serialization, BFS shortest-path & distance, hunter deployment at alert 60+, hunter step & confusion logic, neutralization; 7 unit tests; test 196/196, aikit check 4/4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792439578.1773634,
-      "timestamp_str": "2026-10-19 22:52:58"
-    },
-    {
-      "task_id": "task-cyberpulse-netwatch-hunters-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 2/5] Engine integration: tick_world hunter deployment at alert 60+, active hunter stepping towards player, connection interception with trace spike and CPU drain, breached-node daemon purges, proximity warnings, scramble_hunter_radar on spoof/wipe/ghost, counter_hunter method; 5 integration tests; test 201/201, aikit check 4/4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792439786.811328,
-      "timestamp_str": "2026-10-19 22:56:26"
-    },
-    {
-      "task_id": "task-cyberpulse-netwatch-hunters-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 3/5] CLI hunter surfaces: print_hunters radar report with sector location, distance and scent tracking, hunter proximity warnings on HUD grid line, hunter/radar command dispatch, counter hunter [logic_bomb|ghost_protocol|cpu_burst] countermeasures; 1 CLI test; test 202/202, aikit check 4/4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792439963.660082,
-      "timestamp_str": "2026-10-19 22:59:23"
-    },
-    {
-      "task_id": "task-cyberpulse-netwatch-hunters-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 4/5] Web Cyberdeck & API: GET /api/world and /api/state telemetry with active_hunters, hunters, nearest_hunter_distance, POST /api/action counter/counter_hunter handlers, index.html grid-hunter ticker chip, style.css pulsating hunter-chip styles, app.js live ticker updates and animated 2D canvas threat beacon; 2 server tests; test 204/204, aikit check 4/4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792440203.0398743,
-      "timestamp_str": "2026-10-19 23:03:23"
-    },
-    {
-      "task_id": "task-cyberpulse-netwatch-hunters-v1",
-      "phase": "phase 4",
-      "phase_num": 4,
-      "description": "[milestone 5/5] Verification and delivery: ADR-016 documents NetWatch hunters and pursuit simulation; README updated with hunter/counter commands, architecture guarantees, and presence telemetry; JS syntax verified clean; 204/204 tests green; aikit check 4/4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792440292.6533077,
-      "timestamp_str": "2026-10-19 23:04:52"
-    },
     {
       "task_id": "task-cyberpulse-netwatch-hunters-v1",
       "phase": "completed",
@@ -222,6 +137,91 @@
       "status": "completed",
       "timestamp": 1792522792.768213,
       "timestamp_str": "2026-10-20 21:59:52"
+    },
+    {
+      "task_id": "task-cyberpulse-livgrid-v1",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/6] Plan: living-grid deepening - combo tension on detected failures, alert escalation tiers with intrusion-footprint decay, shift-aware social engineering, market-coupled loot fencing, host-scaled daemon yields, lay-low trace cooling",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792615230.4278755,
+      "timestamp_str": "2026-10-21 23:40:30",
+      "impact_assessment": {
+        "why": "Balance audit found the combo streak is a risk-free ratchet (only lockout resets it), alert pressure decays faster than loud play accumulates it (hunters/re-secures are dead content in typical runs), lay_low is dominated by spoof/wipe_logs, and the living market/shift systems do not touch the social layer or loot income - undermining the simulation feel and the push-your-luck loop",
+        "benefits": "Restores loss aversion on combos, revives hunter/re-secure content mid-run, gives the clock tactical weight for social vectors, couples alert heat to loot value (self-balancing loud play), rewards deep daemon placement, and makes downtime a genuine third trace tool",
+        "risks": "contract: world_summary/ShiftProfile gain additive fields (old saves fine, from_dict defaults); dependency: CLI/server puzzle-exhaustion paths must call break_combo; concurrency: none (single-threaded engine); state: no new persisted fields, engine-transient tier cache only",
+        "mitigation": "Additive-only schema changes, failing-first tests per milestone, full unittest discover after each milestone, market pinned in exact-value economy tests, aikit check gate before commits"
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-livgrid-v1",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[2/6] Combo tension: break_combo resets streak on burned puzzles (CLI+Web), flagged social lures, hunter clashes, and AV quarantines; best combo preserved; 5 failing-first tests added; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792615759.3485045,
+      "timestamp_str": "2026-10-21 23:49:19"
+    },
+    {
+      "task_id": "task-cyberpulse-livgrid-v1",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[3/6] Corporate escalation: named alert tiers GREEN/AMBER/RED/BLACK in world summaries (CLI status, world, radar + Web ticker), breached-host footprint slows alert decay up to +3/turn, tier crossings publish posture news both directions, load-safe baseline resync; 5 failing-first tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792617300.0884962,
+      "timestamp_str": "2026-10-22 00:15:00"
+    },
+    {
+      "task_id": "task-cyberpulse-livgrid-v1",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[4/6] Shift-aware social engineering: ShiftProfile.social_delta (late night -15%, morning +10%, evening +5%), clamped 5-95% blend helper, shift telemetry in social reports and outcome messages, doctrine text updated; 4 failing-first tests; README shift docs; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792618049.75866,
+      "timestamp_str": "2026-10-22 00:27:29"
+    },
+    {
+      "task_id": "task-cyberpulse-livgrid-v1",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[5/6] Market-coupled loot fencing: download payouts scale with the live black-market index (clamped 0.80-1.35, minimum 1 Cred), fence rate surfaced in exfiltration messages, rate captured pre-tick for determinism; 3 failing-first tests; README updated; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792618325.1911798,
+      "timestamp_str": "2026-10-22 00:32:05"
+    },
+    {
+      "task_id": "task-cyberpulse-livgrid-v1",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[6/6] Host-scaled daemon yields: keylogger/siphon yield is 15 + 5*security_level (20-40 CR/turn, deep hosts pay more but carry hotter EDR), deploy message reports the live rate; 1 failing-first test; README updated; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792621280.5936165,
+      "timestamp_str": "2026-10-22 01:21:20"
+    },
+    {
+      "task_id": "task-cyberpulse-livgrid-v1",
+      "phase": "in_progress",
+      "phase_num": 5,
+      "description": "[7/7] Docs and closure: lay-low ghost cooling, README mechanics/architecture updates, ADR-018 recorded; full suite 238 green; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792621413.6480787,
+      "timestamp_str": "2026-10-22 01:23:33"
+    },
+    {
+      "task_id": "task-cyberpulse-livgrid-v1",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-livgrid-v1' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792621461.4207199,
+      "timestamp_str": "2026-10-22 01:24:21"
     }
   ]
 }
