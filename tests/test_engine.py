@@ -208,6 +208,46 @@ class TestEngine(unittest.TestCase):
         self.assertIn(vfile.path, self.engine.state.looted_payloads)
         self.assertGreaterEqual(self.engine.state.unbanked_creds, creds_before + vfile.value_creds)
 
+    def test_loot_payout_follows_the_market(self):
+        self.engine.complete_breach("node_proxy_a")
+
+        # Hot black market: stolen data fences above list price.
+        self.engine.state.world.market_index = 1.20
+        creds_before = self.engine.state.unbanked_creds
+        ok, msg, vfile = self.engine.download_file("192.168.1.10", "/home/admin/network_map.txt")
+
+        self.assertTrue(ok)
+        self.assertEqual(
+            self.engine.state.unbanked_creds,
+            creds_before + int(round(vfile.value_creds * 1.20)),
+        )
+        self.assertIn("x1.2", msg)
+
+    def test_loot_payout_discounts_at_cold_market(self):
+        self.engine.complete_breach("node_proxy_a")
+
+        self.engine.state.world.market_index = 0.80
+        creds_before = self.engine.state.unbanked_creds
+        ok, msg, vfile = self.engine.download_file("192.168.1.10", "/home/admin/network_map.txt")
+
+        self.assertTrue(ok)
+        self.assertEqual(
+            self.engine.state.unbanked_creds,
+            creds_before + int(round(vfile.value_creds * 0.80)),
+        )
+        self.assertIn("x0.8", msg)
+
+    def test_loot_fencing_never_pays_zero_for_valuable_data(self):
+        self.engine.complete_breach("node_proxy_a")
+
+        self.engine.state.world.market_index = 0.001  # below the floor; clamped
+        creds_before = self.engine.state.unbanked_creds
+        ok, _, vfile = self.engine.download_file("192.168.1.10", "/home/admin/network_map.txt")
+
+        self.assertTrue(ok)
+        self.assertGreater(vfile.value_creds, 0)
+        self.assertGreaterEqual(self.engine.state.unbanked_creds, creds_before + 1)
+
     def test_wipe_logs_trace_reduction(self):
         self.engine.complete_breach("node_proxy_a")
         self.engine.state.trace_percent = 50

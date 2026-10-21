@@ -138,7 +138,7 @@ python -m cyberpulse.cli --seed 42069
 | `social <ip> [vec] [emp]` | Multi-vector social engineering (`spear_phish`, `pretext`, `bait`, `vishing`); success odds follow the in-game shift | Human factor exploitation & credential harvesting |
 | `phish <ip>` | Legacy quick spear-phish credential lure against target staff | Social engineering & security downgrade |
 | `ls [ip]` | List virtual directory contents on breached host (`/etc`, `/home`, `/data`) | Target file discovery & intel gathering |
-| `steal <file>` / `download` | Exfiltrate data for credits; auto-archives copy to local rig `/loot/` | Data theft & primary heist objective |
+| `steal <file>` / `download` | Exfiltrate data; payout fences at the live black-market index (hot grid, hotter price); auto-archives a copy to local rig `/loot/` | Data theft & primary heist objective |
 | `keylogger [ip]` | Deploy passive background keylogger daemon on breached host (+25 CR/turn) | In-game persistent background surveillance |
 | `daemons` | Monitor all active background listener daemons and their credit yields | Passive income & risk telemetry |
 | `workshop` | Inspect malware crafting lab recipes and synthesis requirements | In-game virus & exploit workshop |
@@ -190,7 +190,7 @@ python -m cyberpulse.cli --seed 42069
 - **Branching Alliance**: The Act III Agent Zero choice is persisted in the savegame and changes trust, rewards, dialogue, and the epilogue; old saves default to no choice.
 - **Same-Origin Web Cyberdeck**: The REST API sends no wildcard CORS grant and serializes state mutations, keeping the local game session private to its own page.
 - **Dynamic Resource Loop**: Turn-based CPU cooling (+1/turn) and hardware RAM constraints (`security_level * 16` MB).
-- **Living Grid Simulation**: Every turn advances a 15-minute in-game clock, drifts the black-market index (0.80x-1.35x, applied to shop prices), and cools or sustains the corporate alert level from your current trace.
+- **Living Grid Simulation**: Every turn advances a 15-minute in-game clock, drifts the black-market index (0.80x-1.35x, applied to shop prices and to the fence payout of stolen data), and cools or sustains the corporate alert level from your current trace.
 - **Reactive Corporate Response**: Alert 50%+ enables NetWatch patrol trace and sysadmin re-securing of breached hosts (12-turn cooldown, one host per turn, never your current host or the Nexus core); re-secured hosts restore their defenses and quarantine embedded daemons.
 - **Anti-Farm Breach Ledger**: A re-secured host pays no second reward, combo, or quest credit, so grid healing cannot be farmed for infinite credits.
 - **Deterministic World Events**: Ambient events, headlines, and re-secure rolls use a dedicated per-tick RNG stream seeded from `(seed, tick, stream)`, so the reward RNG sequence and every seeded gameplay outcome stay reproducible.

@@ -43,6 +43,7 @@ from cyberpulse.world import (
     clock_label,
     deploy_hunter,
     drift_market,
+    market_multiplier,
     neutralize_hunter,
     patrol_pressure,
     plan_resecures,
@@ -1779,13 +1780,20 @@ class GameEngine:
         if not vfile:
             return False, f"File '{file_path}' not found on {node.hostname}.", None
 
+        # Stolen data fences at the live black-market index: a hot grid pays more.
+        fence_rate = market_multiplier(self.state.world)
+
         self.add_trace(8)
         self.advance_turn()
 
         already_looted = vfile.path in self.state.looted_payloads
         if not already_looted:
             self.state.looted_payloads.append(vfile.path)
-            self.state.unbanked_creds += vfile.value_creds
+            if vfile.value_creds > 0:
+                payout = max(1, int(round(vfile.value_creds * fence_rate)))
+            else:
+                payout = 0
+            self.state.unbanked_creds += payout
 
         # Archive copy into player's local deck filesystem under /loot/<filename>
         loot_name = vfile.path.split("/")[-1]
@@ -1797,7 +1805,10 @@ class GameEngine:
 
         msg = f"📥 EXFILTRATION COMPLETE: Stole '{vfile.path}' ({vfile.size_kb}KB) from {node.hostname}."
         if vfile.value_creds > 0 and not already_looted:
-            msg += f" Data sold on darknet for +{vfile.value_creds} unbanked Creds! Archived to local rig ({loot_path})."
+            msg += (
+                f" Fenced on the black market at x{fence_rate} index: +{payout} unbanked Creds!"
+                f" Archived to local rig ({loot_path})."
+            )
 
         contract = self.state.active_contract
         if contract and not contract.completed:
