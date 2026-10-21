@@ -35,6 +35,7 @@ from cyberpulse.world import (
     AmbientEvent,
     adjust_alert,
     advance_clock,
+    alert_tier,
     ambient_event_for,
     apply_resecure,
     calculate_distance,
@@ -47,6 +48,7 @@ from cyberpulse.world import (
     record_news,
     shift_profile,
     step_hunter,
+    tier_rank,
     world_rng,
     world_summary as build_world_summary,
 )
@@ -223,6 +225,7 @@ class GameEngine:
         self._sync_story_quests()
         self.pending_puzzles: Dict[str, Any] = {}
         self.run_settled: bool = False
+        self._last_alert_tier: Optional[str] = alert_tier(self.state.world.alert_level)
 
     def get_current_node(self) -> Node:
         return self.nodes[self.state.current_node_id]
@@ -542,6 +545,9 @@ class GameEngine:
             self.state.quests = initial_quests()
         if not self.state.contacts:
             self.state.contacts = initial_contacts()
+        # A swapped-in save may carry a different alert level than the fresh engine,
+        # so resync the corporate posture baseline silently on the next grid pulse.
+        self._last_alert_tier = None
         self._sync_story_quests()
 
     def story_summary(self) -> Dict[str, Any]:
@@ -800,6 +806,9 @@ class GameEngine:
         if self.state.is_game_over or self.state.is_jacked_out or self.state.is_victory:
             return []
         world = self.state.world
+        if self._last_alert_tier is None:
+            # Silent baseline sync so loaded saves do not report a phantom escalation.
+            self._last_alert_tier = alert_tier(world.alert_level)
         advance_clock(world)
         profile = shift_profile(world.minute)
         drift_market(world, world_rng(self.seed, self.state.turns_elapsed, "drift"), bias=profile.market_bias)
@@ -905,10 +914,63 @@ class GameEngine:
                     prox_msg = f"⚠️ [HUNTER PROXIMITY] {hunter.name} detected 1 hop away at {target_name}!"
                     messages.append(prox_msg)
                     self.state.message_log.append(prox_msg)
+
+        tier_msg = self._announce_alert_tier()
+        if tier_msg:
+            messages.append(tier_msg)
         return messages
 
+    def _intrusion_footprint(self) -> int:
+        """Count currently-breached hosts the corporation still has to clean up."""
+        return sum(
+            1
+            for node in self.nodes.values()
+            if node.status == NodeStatus.BREACHED and node.node_type != NodeType.GATEWAY
+        )
+
+    def _announce_alert_tier(self) -> Optional[str]:
+        """Report a corporate posture change to the wire and the run log."""
+        before_tier = self._last_alert_tier or alert_tier(self.state.world.alert_level)
+        after_tier = alert_tier(self.state.world.alert_level)
+        self._last_alert_tier = after_tier
+        if before_tier == after_tier:
+            return None
+
+        escalating = tier_rank(after_tier) > tier_rank(before_tier)
+        if escalating:
+            headlines = {
+                "AMBER": ("OmniCorp PR", "OmniCorp raises grid posture to AMBER: intrusion reports under review."),
+                "RED": ("NetWatch", "NetWatch escalates the grid to RED: active counter-intrusion protocols."),
+                "BLACK": ("NetWatch", "NetWatch declares BLACK alert: total corporate mobilization against the intruder."),
+            }
+            source, headline = headlines.get(after_tier, ("GridWire", f"Grid posture shifts to {after_tier}."))
+            tone = "alert" if after_tier in ("RED", "BLACK") else "neutral"
+            message = (
+                f"🚨 [GRID POSTURE] Corporate response escalated {before_tier} -> {after_tier} "
+                f"(alert {self.state.world.alert_level}%)."
+            )
+        else:
+            headlines = {
+                "AMBER": ("GridWire", "Corporate posture relaxes to AMBER after a quieter shift on the grid."),
+                "GREEN": ("GridWire", "OmniCorp stands down to GREEN: the Sprawl breathes again."),
+            }
+            source, headline = headlines.get(after_tier, ("GridWire", f"Grid posture cools to {after_tier}."))
+            tone = "positive"
+            message = (
+                f"😌 [GRID POSTURE] Corporate response cooled {before_tier} -> {after_tier} "
+                f"(alert {self.state.world.alert_level}%)."
+            )
+
+        record_news(self.state.world, self.state.turns_elapsed, source, headline, tone=tone)
+        self.state.message_log.append(message)
+        return message
+
     def _decay_alert(self, shift_bonus: int = 0) -> int:
-        """Cool the grid while trace is low; a hot trace keeps corporate response elevated."""
+        """Cool the grid while trace is low; a hot trace keeps corporate response elevated.
+
+        A wide intrusion footprint (breached hosts the corporation still sees as
+        compromised) keeps sysadmins mobilized, slowing the decay by up to 3 per turn.
+        """
         trace = self.state.trace_percent
         if trace >= 70:
             base = 1
@@ -916,7 +978,8 @@ class GameEngine:
             base = -1
         else:
             base = -2
-        return adjust_alert(self.state.world, base - int(shift_bonus))
+        footprint_penalty = min(3, self._intrusion_footprint() // 2)
+        return adjust_alert(self.state.world, base - int(shift_bonus) + footprint_penalty)
 
     def _apply_ambient_event(self, event: AmbientEvent) -> List[str]:
         """Apply a rolled ambient grid event to the deck, loot, alert, or topology."""

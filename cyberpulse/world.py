@@ -20,6 +20,29 @@ AMBIENT_EVENT_COOLDOWN = 2
 
 SHIFT_BOUNDS = ((0, "Late Night"), (6, "Morning"), (12, "Afternoon"), (18, "Evening"))
 
+# Named corporate response postures ordered by alert level. RED enables re-secures
+# and hunters, BLACK sustains the heaviest patrol sweeps.
+ALERT_TIERS = ((0, "GREEN"), (30, "AMBER"), (55, "RED"), (75, "BLACK"))
+TIER_ORDER = tuple(label for _, label in ALERT_TIERS)
+
+
+def alert_tier(alert_level: int) -> str:
+    """Return the named corporate response posture for a grid alert level."""
+    level = int(alert_level)
+    tier = ALERT_TIERS[0][1]
+    for bound, label in ALERT_TIERS:
+        if level >= bound:
+            tier = label
+    return tier
+
+
+def tier_rank(tier: str) -> int:
+    """Return the ordering index of a named alert tier (GREEN=0 .. BLACK=3)."""
+    try:
+        return TIER_ORDER.index(str(tier))
+    except ValueError:
+        return 0
+
 
 @dataclass(frozen=True)
 class ShiftProfile:
@@ -504,6 +527,7 @@ def world_summary(world: WorldState) -> Dict[str, Any]:
             "hunter_threshold": HUNTER_ALERT_THRESHOLD + profile.hunter_threshold_delta,
         },
         "alert_level": world.alert_level,
+        "alert_tier": alert_tier(world.alert_level),
         "market_multiplier": market_multiplier(world),
         "resecured_count": world.resecured_count,
         "news_count": len(world.news),

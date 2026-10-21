@@ -8,9 +8,9 @@
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `26`
 - **Total Classes**: `55`
-- **Total Top-Level Functions**: `58`
-- **Total Class Methods**: `377`
-- **Total Source Lines**: `8925`
+- **Total Top-Level Functions**: `60`
+- **Total Class Methods**: `384`
+- **Total Source Lines**: `9073`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `886` lines (`40846` bytes)
+**Size**: `887` lines (`41032` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -57,7 +57,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `2217` lines (`102118` bytes)
+**Size**: `2280` lines (`105337` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -91,6 +91,8 @@
   - Method `.advance_turn()` - *Advance the run clock one turn: daemons harvest, then the living grid reacts.*
   - Method `.lay_low(turns)` - *Ghost the connection for a few turns: recover CPU while the grid keeps moving.*
   - Method `.tick_world()` - *Advance the in-game clock, alert, market, ambient events, and grid response.*
+  - Method `._intrusion_footprint()` - *Count currently-breached hosts the corporation still has to clean up.*
+  - Method `._announce_alert_tier()` - *Report a corporate posture change to the wire and the run log.*
   - Method `._decay_alert(shift_bonus)` - *Cool the grid while trace is low; a hot trace keeps corporate response elevated.*
   - Method `._apply_ambient_event(event)` - *Apply a rolled ambient grid event to the deck, loot, alert, or topology.*
   - Method `._reveal_frontier_node()` - *Reveal one locked node adjacent to the current host, else any locked node.*
@@ -328,13 +330,15 @@
 ### [`cyberpulse/world.py`](cyberpulse/world.py)
 > *Living-grid world simulation: in-game clock, corporate alert, news, and grid response.*
 
-**Size**: `512` lines (`17189` bytes)
+**Size**: `536` lines (`18001` bytes)
 
 **Classes:**
 - `class ShiftProfile` - *Tactical posture of the grid during one in-game shift.*
 - `class AmbientEvent` - *A deterministic grid event that can nudge credits, CPU, trace, alert, or topology.*
 
 **Functions:**
+- `def alert_tier(alert_level)` - *Return the named corporate response posture for a grid alert level.*
+- `def tier_rank(tier)` - *Return the ordering index of a named alert tier (GREEN=0 .. BLACK=3).*
 - `def world_rng(seed, tick, stream)` - *Return a deterministic per-tick RNG stream independent of the engine reward RNG.*
 - `def clamp(value, low, high)`
 - `def clock_minute_text(minute)` - *Render an in-game minute of day as HH:MM.*
@@ -500,7 +504,7 @@
 ### [`tests/test_grid.py`](tests/test_grid.py)
 > *Integration tests for living-grid simulation wired into the game engine.*
 
-**Size**: `257` lines (`10689` bytes)
+**Size**: `288` lines (`12059` bytes)
 
 **Classes:**
 - `class TestGridIntegration`
@@ -515,6 +519,8 @@
   - Method `.test_ambient_grid_events_fire_and_publish()`
   - Method `.test_grid_resecures_host_and_recalls_daemons()`
   - Method `.test_rebreach_after_resecure_pays_nothing()`
+  - Method `.test_breached_footprint_slows_alert_decay()`
+  - Method `.test_alert_tier_escalation_publishes_news()`
   - Method `.test_world_summary_and_news_feed_shapes()`
   - Method `.test_hunter_deployment_on_alert_threshold()`
   - Method `.test_hunter_advances_and_intercepts_player()`
@@ -692,7 +698,7 @@
 ### [`tests/test_world.py`](tests/test_world.py)
 > *Unit tests for the living-grid world simulation module.*
 
-**Size**: `437` lines (`18230` bytes)
+**Size**: `466` lines (`19422` bytes)
 
 **Classes:**
 - `class TestWorldClock`
@@ -704,6 +710,9 @@
   - Method `.test_shift_modifiers_create_distinct_tradeoffs()`
   - Method `.test_shift_effect_text_is_human_readable()`
   - Method `.test_world_summary_documents_the_shift()`
+  - Method `.test_alert_tier_boundaries()`
+  - Method `.test_world_summary_includes_alert_tier()`
+  - Method `.test_alert_tiers_are_ordered_and_unique()`
 - `class TestWorldAlertAndMarket`
   - Method `.test_alert_clamps()`
   - Method `.test_market_bounds_and_multiplier()`

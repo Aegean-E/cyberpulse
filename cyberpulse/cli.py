@@ -100,7 +100,7 @@ def print_hud(engine: GameEngine) -> None:
             hunter_tag = f" | ⚠️ HUNTER CLOSE: {h.name} (1 hop)!"
         else:
             hunter_tag = f" | 📡 Hunter: {h.name} ({dist_str})"
-    print(f"[*] Grid:       {world_info['clock']} | Alert: {world.alert_level}% | Market: x{world_info['market_multiplier']}{hunter_tag}")
+    print(f"[*] Grid:       {world_info['clock']} | Alert: {world.alert_level}% [{world_info['alert_tier']}] | Market: x{world_info['market_multiplier']}{hunter_tag}")
     print(f"[*] Shift:      {world_info['shift']} // {world_info['shift_tagline']}")
     print(f"[*] Doctrine:   {world_info['shift_effect']}")
     print("--------------------------------------------------------------------------")
@@ -120,8 +120,9 @@ def print_hunters(engine: GameEngine) -> None:
     print("|              >> NETWATCH COUNTER-INFILTRATION RADAR <<                   |")
     print("+==========================================================================+")
     if not active:
+        radar_summary = engine.world_summary()
         print("[*] Radar Status: CLEAR. No active NetWatch hunter signatures in sector.")
-        print(f"[*] Grid Corporate Alert: {world.alert_level}% (Hunters deploy at >=60%)")
+        print(f"[*] Grid Corporate Alert: {world.alert_level}% [{radar_summary['alert_tier']}] (Hunters deploy at >={radar_summary['shift_modifiers']['hunter_threshold']}%)")
     else:
         for h in active:
             loc_node = engine.nodes.get(h.current_node_id)
@@ -245,7 +246,7 @@ def print_world(engine: GameEngine) -> None:
     print(f"[*] Clock:      {summary['clock']}")
     print(f"[*] Shift:      {summary['shift']} // {summary['shift_tagline']}")
     print(f"[*] Doctrine:   {summary['shift_effect']}")
-    print(f"[*] Grid Alert: {summary['alert_level']}% | Market: x{summary['market_multiplier']} black-market index")
+    print(f"[*] Grid Alert: {summary['alert_level']}% [{summary['alert_tier']}] | Market: x{summary['market_multiplier']} black-market index")
     print(f"[*] Response:   Re-secured hosts: {summary['resecured_count']}")
     print("--------------------------------------------------------------------------")
     print("Latest headlines:")

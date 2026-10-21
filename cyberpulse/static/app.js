@@ -410,7 +410,8 @@ function renderGridTicker(world) {
 
   const alertEl = document.getElementById("grid-alert");
   const alertLevel = world.alert_level || 0;
-  alertEl.textContent = `GRID ALERT ${alertLevel}%`;
+  const alertTier = world.alert_tier || "";
+  alertEl.textContent = `GRID ALERT ${alertLevel}%${alertTier ? ` [${alertTier}]` : ""}`;
   alertEl.classList.toggle("hot", alertLevel >= 50);
 
   const market = world.market_multiplier || 1;

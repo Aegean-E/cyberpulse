@@ -155,6 +155,37 @@ class TestGridIntegration(unittest.TestCase):
         self.assertEqual(self.engine.state.combo_streak, combo)
         self.assertEqual(quest.progress, quest_progress)
 
+    def test_breached_footprint_slows_alert_decay(self):
+        loud = GameEngine(seed=11)
+        quiet = GameEngine(seed=11)
+        for engine in (loud, quiet):
+            engine.state.world.alert_level = 50
+            engine.state.trace_percent = 0
+            engine.state.world.turns_since_event = -50
+
+        for node_id in ("node_proxy_a", "node_proxy_b", "node_vault_1", "node_vault_2"):
+            loud.nodes[node_id].status = NodeStatus.BREACHED
+        loud.nodes["node_vault_1"].breached_turn = 0
+        loud.nodes["node_vault_2"].breached_turn = 0
+
+        for _ in range(3):
+            loud.tick_world()
+            quiet.tick_world()
+
+        self.assertGreater(loud.state.world.alert_level, quiet.state.world.alert_level)
+        self.assertLess(loud.state.world.alert_level, 50 + 3, "footprint slows decay, it must not run away")
+
+    def test_alert_tier_escalation_publishes_news(self):
+        self.engine.state.world.alert_level = 25
+        self.engine.state.world.turns_since_event = -50
+        self.engine.complete_breach("node_proxy_b")  # +7 alert -> 32 (AMBER)
+
+        messages = self.engine.tick_world()
+
+        headlines = " ".join(item.headline for item in self.engine.state.world.news)
+        self.assertIn("AMBER", headlines)
+        self.assertTrue(any("GRID POSTURE" in m for m in messages + self.engine.state.message_log))
+
     def test_world_summary_and_news_feed_shapes(self):
         self.engine.complete_breach("node_proxy_a")
 

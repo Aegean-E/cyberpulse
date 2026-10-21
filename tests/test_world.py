@@ -15,6 +15,7 @@ from cyberpulse.models import (
     WorldState,
 )
 from cyberpulse.world import (
+    ALERT_TIERS,
     AMBIENT_EVENTS,
     HUNTER_ALERT_THRESHOLD,
     MARKET_CEILING,
@@ -23,6 +24,7 @@ from cyberpulse.world import (
     adjust_alert,
     adjust_market,
     advance_clock,
+    alert_tier,
     ambient_event_for,
     apply_resecure,
     calculate_distance,
@@ -143,6 +145,33 @@ class TestShiftProfiles(unittest.TestCase):
             HUNTER_ALERT_THRESHOLD + SHIFT_PROFILES["evening"].hunter_threshold_delta,
         )
         self.assertIn("re-secure", summary["shift_effect"])
+
+    def test_alert_tier_boundaries(self):
+        self.assertEqual(alert_tier(0), "GREEN")
+        self.assertEqual(alert_tier(29), "GREEN")
+        self.assertEqual(alert_tier(30), "AMBER")
+        self.assertEqual(alert_tier(54), "AMBER")
+        self.assertEqual(alert_tier(55), "RED")
+        self.assertEqual(alert_tier(74), "RED")
+        self.assertEqual(alert_tier(75), "BLACK")
+        self.assertEqual(alert_tier(100), "BLACK")
+        self.assertEqual(alert_tier(-5), "GREEN")
+        self.assertEqual(alert_tier(150), "BLACK")
+
+    def test_world_summary_includes_alert_tier(self):
+        summary = world_summary(WorldState(alert_level=62))
+        self.assertEqual(summary["alert_tier"], "RED")
+
+        summary_black = world_summary(WorldState(alert_level=90))
+        self.assertEqual(summary_black["alert_tier"], "BLACK")
+
+    def test_alert_tiers_are_ordered_and_unique(self):
+        thresholds = [bound for bound, _ in ALERT_TIERS]
+        labels = [label for _, label in ALERT_TIERS]
+        self.assertEqual(thresholds, sorted(thresholds))
+        self.assertEqual(len(set(labels)), len(labels))
+        self.assertIn("GREEN", labels)
+
 
 
 class TestWorldAlertAndMarket(unittest.TestCase):
