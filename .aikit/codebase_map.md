@@ -9,8 +9,8 @@
 - **Total Python Modules**: `26`
 - **Total Classes**: `55`
 - **Total Top-Level Functions**: `62`
-- **Total Class Methods**: `391`
-- **Total Source Lines**: `9192`
+- **Total Class Methods**: `392`
+- **Total Source Lines**: `9215`
 
 ---
 
@@ -57,7 +57,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `2304` lines (`106310` bytes)
+**Size**: `2306` lines (`106480` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -428,7 +428,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `942` lines (`39832` bytes)
+**Size**: `963` lines (`40830` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -458,6 +458,7 @@
   - Method `.test_phishing_dispatch()`
   - Method `.test_craft_virus_workshop()`
   - Method `.test_deploy_and_tick_keylogger_daemon()`
+  - Method `.test_daemon_yield_scales_with_host_security()`
   - Method `.test_firewall_inspection_and_bypass()`
   - Method `.test_antivirus_status_and_evasion()`
   - Method `.test_cve_catalog_and_exploit_execution()`

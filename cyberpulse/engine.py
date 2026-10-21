@@ -1946,17 +1946,19 @@ class GameEngine:
 
         self.deck.cpu_cycles -= 2
         daemon_id = f"dmn_{len(self.deck.active_daemons) + 1:03d}"
+        # Deeper hosts carry richer traffic: siphoning the core pays more than a border router.
+        daemon_yield = 15 + node.security_level * 5
         daemon = MalwareDaemon(
             daemon_id=daemon_id,
             daemon_type=daemon_type,
             target_node_id=node.node_id,
             target_ip=node.ip_address,
-            yield_per_turn=25,
+            yield_per_turn=daemon_yield,
             detection_risk=3,
         )
         self.deck.active_daemons.append(daemon)
         adjust_alert(self.state.world, 2)
-        msg = f"👾 DAEMON INITIALIZED: [{daemon_type.upper()}] active on {node.hostname} ({node.ip_address}). Passively harvesting +25 unbanked Creds/turn."
+        msg = f"👾 DAEMON INITIALIZED: [{daemon_type.upper()}] active on {node.hostname} ({node.ip_address}). Passively harvesting +{daemon_yield} unbanked Creds/turn."
         for line in self._progress_quests("deploy_daemon", daemon_type):
             msg += f"\n{line}"
         self.state.message_log.append(msg)

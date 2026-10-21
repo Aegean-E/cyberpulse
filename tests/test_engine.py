@@ -303,6 +303,27 @@ class TestEngine(unittest.TestCase):
         self.assertTrue(len(msgs) >= 1)
         self.assertGreater(self.engine.state.unbanked_creds, unbanked_before)
 
+    def test_daemon_yield_scales_with_host_security(self):
+        self.engine.complete_breach("node_ice_perimeter")  # security level 4
+        self.engine.deck.cpu_cycles = 8
+        ok, msg = self.engine.deploy_daemon("172.16.1.99", "keylogger")
+        self.assertTrue(ok)
+        deep_daemon = self.engine.deck.active_daemons[0]
+        self.assertEqual(deep_daemon.yield_per_turn, 35)
+        self.assertIn("+35", msg)
+
+        ok, msg = self.engine.deploy_daemon("node_gateway", "keylogger")  # security level 1
+        self.assertTrue(ok)
+        shallow_daemon = self.engine.deck.active_daemons[1]
+        self.assertEqual(shallow_daemon.yield_per_turn, 20)
+        self.assertIn("+20", msg)
+
+        # Harvesting applies the per-host yield (35 + 20).
+        self.engine.nodes["node_ice_perimeter"].antivirus.evaded = True
+        before = self.engine.state.unbanked_creds
+        self.engine.tick_daemons()
+        self.assertGreaterEqual(self.engine.state.unbanked_creds, before + 55)
+
     def test_firewall_inspection_and_bypass(self):
         # 1. Inspect firewall on node_proxy_b
         ok, msg, fw_dict = self.engine.get_firewall_status("192.168.1.20")

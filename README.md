@@ -139,7 +139,7 @@ python -m cyberpulse.cli --seed 42069
 | `phish <ip>` | Legacy quick spear-phish credential lure against target staff | Social engineering & security downgrade |
 | `ls [ip]` | List virtual directory contents on breached host (`/etc`, `/home`, `/data`) | Target file discovery & intel gathering |
 | `steal <file>` / `download` | Exfiltrate data; payout fences at the live black-market index (hot grid, hotter price); auto-archives a copy to local rig `/loot/` | Data theft & primary heist objective |
-| `keylogger [ip]` | Deploy passive background keylogger daemon on breached host (+25 CR/turn) | In-game persistent background surveillance |
+| `keylogger [ip]` | Deploy passive background keylogger daemon on breached host (yield scales with host security tier) | In-game persistent background surveillance |
 | `daemons` | Monitor all active background listener daemons and their credit yields | Passive income & risk telemetry |
 | `workshop` | Inspect malware crafting lab recipes and synthesis requirements | In-game virus & exploit workshop |
 | `craft <recipe>` | Synthesize custom virus chips (`keylogger_daemon`, `worm_replicator`, etc.) | Custom malware creation |
