@@ -875,6 +875,7 @@ class GameEngine:
             if action == "intercepted" or hunter.current_node_id == self.state.current_node_id:
                 hunter.status = "intercepted"
                 self.add_trace(15)
+                self.break_combo(f"{hunter.name} clashed with your connection")
                 cpu_drained = min(2, self.deck.cpu_cycles)
                 self.deck.cpu_cycles = max(0, self.deck.cpu_cycles - 2)
                 inter_msg = (
@@ -1052,6 +1053,21 @@ class GameEngine:
         msg = f"🛡️ IP Proxy bounced. Trace reduced by {reduced}% (current: {self.state.trace_percent}%)."
         self.state.message_log.append(msg)
         return True, msg
+
+    def break_combo(self, reason: str) -> bool:
+        """Shatter the active combo streak after a detected intrusion failure.
+
+        Loss aversion keeps the streak meaningful: any detected failure (burned-out
+        puzzle, flagged social lure, hunter clash, AV quarantine) resets the combo
+        while the career-relevant best combo is preserved.
+        """
+        if self.state.combo_streak <= 0:
+            return False
+        lost = self.state.combo_streak
+        self.state.combo_streak = 0
+        msg = f"💔 COMBO BROKEN: neural sync x{lost} lost — {reason}."
+        self.state.message_log.append(msg)
+        return True
 
     def overdrive(self) -> Tuple[bool, str]:
         """Burn CPU and trace to stack a combo before the next breach."""
@@ -1811,6 +1827,7 @@ class GameEngine:
                         if daemon in self.deck.active_daemons:
                             self.deck.active_daemons.remove(daemon)
                         self.add_trace(15)
+                        self.break_combo(f"{node.antivirus.name} quarantined your {daemon.daemon_type}")
                         node.antivirus.quarantine_log.append(f"Quarantined {daemon.daemon_type} on turn {self.state.turns_elapsed}")
                         q_msg = f"🛡️ [ANTIVIRUS QUARANTINE] {node.antivirus.name} on {node.hostname} detected and terminated background {daemon.daemon_type}! Alert Level: {node.antivirus.alert_level}%. Active Trace +15%!"
                         messages.append(q_msg)
@@ -2012,6 +2029,7 @@ class GameEngine:
             return True, msg, report
         else:
             self.add_trace(8)
+            self.break_combo("social lure flagged by target staff")
             if node.antivirus:
                 node.antivirus.alert_level = min(100, node.antivirus.alert_level + 20)
             tag = "🎣 PHISHING FAILED" if vector_key == SocialVectorType.SPEAR_PHISH else f"🎭 SOCIAL ENGINEERING FAILED [{vector_key.upper()}]"

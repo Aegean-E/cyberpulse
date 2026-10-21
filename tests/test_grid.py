@@ -199,6 +199,23 @@ class TestGridIntegration(unittest.TestCase):
         self.assertEqual(self.engine.deck.cpu_cycles, 3)  # drained by 2
         self.assertTrue(any("NETWATCH CLASH" in m for m in self.engine.state.message_log))
 
+    def test_hunter_intercept_breaks_combo(self):
+        self.engine.state.world.alert_level = 70
+        self.engine.advance_turn()
+        hunter = self.engine.state.world.hunters[0]
+        curr_node = self.engine.get_current_node()
+        hunter.current_node_id = curr_node.connected_ids[0]
+        hunter.status = "hunting"
+        self.engine.state.combo_streak = 2
+        self.engine.state.best_combo = 2
+
+        self.engine.advance_turn()
+
+        self.assertEqual(hunter.status, "intercepted")
+        self.assertEqual(self.engine.state.combo_streak, 0)
+        self.assertEqual(self.engine.state.best_combo, 2)
+        self.assertTrue(any("COMBO BROKEN" in m for m in self.engine.state.message_log))
+
     def test_hunter_scrambled_by_spoof_and_wipe(self):
         self.engine.state.world.alert_level = 70
         self.engine.advance_turn()

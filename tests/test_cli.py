@@ -319,6 +319,28 @@ class TestCLI(unittest.TestCase):
 
         self.assertTrue(solved)
         self.assertEqual(engine.nodes["node_proxy_a"].status, "BREACHED")
+
+    def test_failed_puzzle_breaks_combo(self):
+        from cyberpulse.cli import execute_hack_puzzle
+        from cyberpulse.engine import GameEngine
+
+        engine = GameEngine(seed=1337)
+        ok, _, puzzle, _ = engine.get_or_create_puzzle("node_proxy_a")
+        self.assertTrue(ok)
+        puzzle.target_freq = 50.0
+        puzzle.tolerance = 0.1
+        engine.state.combo_streak = 3
+        engine.state.best_combo = 3
+
+        with mock.patch("builtins.input", side_effect=["1.0", "2.0", "3.0"]):
+            solved = execute_hack_puzzle(engine, "node_proxy_a")
+
+        self.assertFalse(solved)
+        self.assertNotEqual(engine.nodes["node_proxy_a"].status, "BREACHED")
+        self.assertEqual(engine.state.combo_streak, 0)
+        self.assertEqual(engine.state.best_combo, 3)
+        self.assertTrue(any("COMBO BROKEN" in m for m in engine.state.message_log))
+
     def test_cli_hunter_and_counter_commands(self):
         code, out = self.run_cli("--seed", "1337", "--exec", "hunter")
         self.assertEqual(code, 0)

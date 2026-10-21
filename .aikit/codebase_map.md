@@ -9,8 +9,8 @@
 - **Total Python Modules**: `26`
 - **Total Classes**: `55`
 - **Total Top-Level Functions**: `58`
-- **Total Class Methods**: `371`
-- **Total Source Lines**: `8805`
+- **Total Class Methods**: `377`
+- **Total Source Lines**: `8925`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `883` lines (`40619` bytes)
+**Size**: `886` lines (`40846` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -57,7 +57,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `2199` lines (`101219` bytes)
+**Size**: `2217` lines (`102118` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -98,6 +98,7 @@
   - Method `.scramble_hunter_radar(turns)` - *Confuse active hunters' tracking algorithms for a number of turns.*
   - Method `.counter_hunter(method)` - *Deploy tactical countermeasures against an active NetWatch Hunter.*
   - Method `.spoof_ip()` - *Reduce active trace level by burning CPU cycles.*
+  - Method `.break_combo(reason)` - *Shatter the active combo streak after a detected intrusion failure.*
   - Method `.overdrive()` - *Burn CPU and trace to stack a combo before the next breach.*
   - Method `.scan_surroundings()` - *Scan adjacent nodes to reveal their security level and status.*
   - Method `.can_move_to(target_id)` - *Verify whether the player can transition to target node.*
@@ -253,7 +254,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `643` lines (`28676` bytes)
+**Size**: `646` lines (`28939` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -381,7 +382,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `345` lines (`14644` bytes)
+**Size**: `367` lines (`15522` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -412,6 +413,7 @@
   - Method `.test_bypass_rejects_non_numeric_port()`
   - Method `.test_minigame_eof_stops_batch_without_traceback()`
   - Method `.test_cli_reuses_pending_puzzle_attempts()`
+  - Method `.test_failed_puzzle_breaks_combo()`
   - Method `.test_cli_hunter_and_counter_commands()`
   - Method `.test_start_launcher_function()`
 
@@ -420,7 +422,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `824` lines (`35170` bytes)
+**Size**: `881` lines (`37259` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -473,6 +475,9 @@
   - Method `.test_mutating_actions_reject_after_victory()`
   - Method `.test_story_state_and_contacts_initialize()`
   - Method `.test_overdrive_stacks_combo_and_trace()`
+  - Method `.test_break_combo_resets_streak_keeps_best()`
+  - Method `.test_social_failure_breaks_combo()`
+  - Method `.test_av_quarantine_breaks_combo()`
   - Method `.test_gateway_quest_advances_story_and_unlocks_contact()`
   - Method `.test_main_story_quest_chain_reaches_finale()`
   - Method `.test_contact_job_and_favor()`
@@ -495,7 +500,7 @@
 ### [`tests/test_grid.py`](tests/test_grid.py)
 > *Integration tests for living-grid simulation wired into the game engine.*
 
-**Size**: `240` lines (`9974` bytes)
+**Size**: `257` lines (`10689` bytes)
 
 **Classes:**
 - `class TestGridIntegration`
@@ -513,6 +518,7 @@
   - Method `.test_world_summary_and_news_feed_shapes()`
   - Method `.test_hunter_deployment_on_alert_threshold()`
   - Method `.test_hunter_advances_and_intercepts_player()`
+  - Method `.test_hunter_intercept_breaks_combo()`
   - Method `.test_hunter_scrambled_by_spoof_and_wipe()`
   - Method `.test_counter_hunter_with_logic_bomb()`
   - Method `.test_counter_hunter_with_ghost_protocol()`

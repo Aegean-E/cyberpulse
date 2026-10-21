@@ -599,6 +599,63 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(self.engine.state.trace_percent, 8)
         self.assertEqual(self.engine.deck.cpu_cycles, start_cpu - 2)
 
+    def test_break_combo_resets_streak_keeps_best(self):
+        self.engine.state.combo_streak = 3
+        self.engine.state.best_combo = 3
+
+        broke = self.engine.break_combo("test failure")
+
+        self.assertTrue(broke)
+        self.assertEqual(self.engine.state.combo_streak, 0)
+        self.assertEqual(self.engine.state.best_combo, 3)
+        self.assertTrue(any("COMBO BROKEN" in m for m in self.engine.state.message_log))
+
+        # Breaking an empty combo is a no-op, not a repeated message.
+        self.assertFalse(self.engine.break_combo("nothing to break"))
+
+    def test_social_failure_breaks_combo(self):
+        self.engine.state.combo_streak = 2
+        self.engine.state.best_combo = 2
+        self.engine.deck.cpu_cycles = 5
+
+        class RiggedRng:
+            def random(self):
+                return 0.999
+
+            def randint(self, low, high):
+                return low
+
+        self.engine.rng = RiggedRng()
+        ok, msg, report = self.engine.social_engineer("192.168.1.10", vector="pretext")
+
+        self.assertFalse(ok)
+        self.assertTrue(report["success"] is False)
+        self.assertEqual(self.engine.state.combo_streak, 0)
+        self.assertEqual(self.engine.state.best_combo, 2)
+        self.assertTrue(any("COMBO BROKEN" in m for m in self.engine.state.message_log))
+
+    def test_av_quarantine_breaks_combo(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.deck.cpu_cycles = 6
+        ok, _ = self.engine.deploy_daemon("192.168.1.10", "keylogger")
+        self.assertTrue(ok)
+        self.engine.state.combo_streak = 2
+        self.engine.state.best_combo = 2
+
+        node = self.engine.nodes["node_proxy_a"]
+        node.antivirus.alert_level = 60
+
+        class RiggedRng:
+            def random(self):
+                return 0.0
+
+        self.engine.rng = RiggedRng()
+        messages = self.engine.tick_daemons()
+
+        self.assertTrue(any("QUARANTINE" in m for m in messages))
+        self.assertEqual(self.engine.state.combo_streak, 0)
+        self.assertEqual(self.engine.state.best_combo, 2)
+
     def test_gateway_quest_advances_story_and_unlocks_contact(self):
         self.engine.complete_breach("node_proxy_a")
         quest = self.engine._find_quest("q_gateway")

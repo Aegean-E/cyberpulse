@@ -555,6 +555,7 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 exhausted = not solved and p.attempts_left <= 0
                 if exhausted:
                     engine.add_trace(node.trace_rate)
+                    engine.break_combo(f"intrusion script burned out on {node.hostname}")
 
             elif isinstance(p, BufferPuzzle):
                 if not isinstance(guess, list):
@@ -566,6 +567,7 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                     engine.state.near_miss_count += 1
                 if not solved:
                     engine.add_trace(node.trace_rate)
+                    engine.break_combo(f"buffer injection corrupted on {node.hostname}")
                     exhausted = True
 
             elif isinstance(p, HashCrackPuzzle):
@@ -576,6 +578,7 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 exhausted = not solved and p.attempts_left <= 0
                 if exhausted:
                     engine.add_trace(node.trace_rate)
+                    engine.break_combo(f"hash crack locked out on {node.hostname}")
 
             if solved:
                 engine.clear_pending_puzzle(node_id)

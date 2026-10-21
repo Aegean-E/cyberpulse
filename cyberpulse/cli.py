@@ -407,6 +407,7 @@ def execute_hack_puzzle(engine: GameEngine, target_id: str, auto_solve: bool = F
                 return True
         engine.clear_pending_puzzle(target_id)
         engine.add_trace(node.trace_rate)
+        engine.break_combo(f"intrusion script burned out on {node.hostname}")
         return False
 
     elif p_type == "buffer" and isinstance(puzzle, BufferPuzzle):
@@ -423,6 +424,7 @@ def execute_hack_puzzle(engine: GameEngine, target_id: str, auto_solve: bool = F
             engine.complete_breach(target_id)
             return True
         engine.add_trace(node.trace_rate)
+        engine.break_combo(f"buffer injection corrupted on {node.hostname}")
         return False
 
     elif p_type == "hash" and isinstance(puzzle, HashCrackPuzzle):
@@ -439,6 +441,7 @@ def execute_hack_puzzle(engine: GameEngine, target_id: str, auto_solve: bool = F
                 return True
         engine.clear_pending_puzzle(target_id)
         engine.add_trace(node.trace_rate)
+        engine.break_combo(f"hash crack locked out on {node.hostname}")
         return False
 
     engine.clear_pending_puzzle(target_id)
