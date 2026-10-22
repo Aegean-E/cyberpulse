@@ -1,95 +1,20 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-heat-v2-verify",
+    "task_id": "task-cyberpulse-contracts-v1",
     "last_phase": "phase 4",
     "active_phase": 5,
     "status": "completed",
-    "updated_at": 1792649330.3942661,
+    "updated_at": 1792651365.191347,
     "impact_assessment": {
-      "why": "Close the verification follow-up with a passed gate shield.",
-      "benefits": "The heat-v2 mechanics and their Web presentation are consistent under review.",
-      "risks": "contract: docs/bookkeeping only; dependency: none",
+      "why": "Close with living documentation and a passed gate shield.",
+      "benefits": "The job loop is discoverable and its balance rationale recorded.",
+      "risks": "contract: docs/bookkeeping only",
       "mitigation": "aikit check cyberpulse."
     },
-    "completed_at": 1792649363.146168
+    "completed_at": 1792651380.1584105
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-shift-downtime-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-shift-downtime-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792522792.768213,
-      "timestamp_str": "2026-10-20 21:59:52"
-    },
-    {
-      "task_id": "task-cyberpulse-livgrid-v1",
-      "phase": "in_progress",
-      "phase_num": 2,
-      "description": "[1/6] Plan: living-grid deepening - combo tension on detected failures, alert escalation tiers with intrusion-footprint decay, shift-aware social engineering, market-coupled loot fencing, host-scaled daemon yields, lay-low trace cooling",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792615230.4278755,
-      "timestamp_str": "2026-10-21 23:40:30",
-      "impact_assessment": {
-        "why": "Balance audit found the combo streak is a risk-free ratchet (only lockout resets it), alert pressure decays faster than loud play accumulates it (hunters/re-secures are dead content in typical runs), lay_low is dominated by spoof/wipe_logs, and the living market/shift systems do not touch the social layer or loot income - undermining the simulation feel and the push-your-luck loop",
-        "benefits": "Restores loss aversion on combos, revives hunter/re-secure content mid-run, gives the clock tactical weight for social vectors, couples alert heat to loot value (self-balancing loud play), rewards deep daemon placement, and makes downtime a genuine third trace tool",
-        "risks": "contract: world_summary/ShiftProfile gain additive fields (old saves fine, from_dict defaults); dependency: CLI/server puzzle-exhaustion paths must call break_combo; concurrency: none (single-threaded engine); state: no new persisted fields, engine-transient tier cache only",
-        "mitigation": "Additive-only schema changes, failing-first tests per milestone, full unittest discover after each milestone, market pinned in exact-value economy tests, aikit check gate before commits"
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-livgrid-v1",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[2/6] Combo tension: break_combo resets streak on burned puzzles (CLI+Web), flagged social lures, hunter clashes, and AV quarantines; best combo preserved; 5 failing-first tests added; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792615759.3485045,
-      "timestamp_str": "2026-10-21 23:49:19"
-    },
-    {
-      "task_id": "task-cyberpulse-livgrid-v1",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[3/6] Corporate escalation: named alert tiers GREEN/AMBER/RED/BLACK in world summaries (CLI status, world, radar + Web ticker), breached-host footprint slows alert decay up to +3/turn, tier crossings publish posture news both directions, load-safe baseline resync; 5 failing-first tests; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792617300.0884962,
-      "timestamp_str": "2026-10-22 00:15:00"
-    },
-    {
-      "task_id": "task-cyberpulse-livgrid-v1",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[4/6] Shift-aware social engineering: ShiftProfile.social_delta (late night -15%, morning +10%, evening +5%), clamped 5-95% blend helper, shift telemetry in social reports and outcome messages, doctrine text updated; 4 failing-first tests; README shift docs; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792618049.75866,
-      "timestamp_str": "2026-10-22 00:27:29"
-    },
-    {
-      "task_id": "task-cyberpulse-livgrid-v1",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[5/6] Market-coupled loot fencing: download payouts scale with the live black-market index (clamped 0.80-1.35, minimum 1 Cred), fence rate surfaced in exfiltration messages, rate captured pre-tick for determinism; 3 failing-first tests; README updated; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792618325.1911798,
-      "timestamp_str": "2026-10-22 00:32:05"
-    },
-    {
-      "task_id": "task-cyberpulse-livgrid-v1",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[6/6] Host-scaled daemon yields: keylogger/siphon yield is 15 + 5*security_level (20-40 CR/turn, deep hosts pay more but carry hotter EDR), deploy message reports the live rate; 1 failing-first test; README updated; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792621280.5936165,
-      "timestamp_str": "2026-10-22 01:21:20"
-    },
     {
       "task_id": "task-cyberpulse-livgrid-v1",
       "phase": "in_progress",
@@ -270,6 +195,111 @@
       "status": "completed",
       "timestamp": 1792649363.14617,
       "timestamp_str": "2026-10-22 09:09:23"
+    },
+    {
+      "task_id": "task-cyberpulse-contracts-v1",
+      "phase": "phase 2",
+      "phase_num": 2,
+      "description": "[1/6] Plan: living Syndicate contracts - specific targets/objectives, risk tiers, deadlines, rush bonus, expiry consequences, trust-scaled payouts, CLI/Web clocks, tests, ADR-020",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792649845.0682833,
+      "timestamp_str": "2026-10-22 09:17:25",
+      "impact_assessment": {
+        "why": "Mechanics audit: the Syndicate contract is the only persistent goal besides static story quests, but after the initial job it degrades to a generic random node-type with no specific target, no deadline, no rush decision, and no relationship stake. That makes the largest reward source repetitive and removes time pressure from the clock/lay_low layer; operative trust is almost cosmetic. Deadlines also give the market, shifts, and downtime real opportunity cost.",
+        "benefits": "Adds a replayable risk/reward job loop with explicit targets, rotating objectives, deadline tension, rush bonuses, and trust that changes payout and deadline terms; makes lay_low and loud play trade against a job clock; gives landed contracts narrative attribution through their giver.",
+        "risks": "contract: BountyContract and GameState/state payload gain additive fields (old saves default to no deadline); generated contracts gain specific target_ip/target_file/objective, so legacy completion paths need an objective fallback; dependency: none (stdlib only); concurrency: server state mutations stay under the existing session lock; state: contract reward now depends on giver trust and completion turn, so tests that pin exact payouts must pin trust/rush conditions",
+        "mitigation": "Explicit backward-compatible objective inference, a dedicated world_rng contract stream to protect reward determinism, centralized contract finalization, failing-first unit/CLI/API tests, full discover after each milestone, and ADR-020."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-contracts-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[2/6] Contract model + generator: additive giver/risk/objective/deadline/rush/failed/description fields, objective_kind legacy inference, deterministic live-grid generator with specific host/file objectives, risk tiers and tuned 120/200/220 base rewards; manager checkpoint",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792651345.4965663,
+      "timestamp_str": "2026-10-22 09:42:25",
+      "impact_assessment": {
+        "why": "Replace generic sector bounties with concrete, replayable jobs.",
+        "benefits": "Specific targets and risk tiers; old saves stay compatible.",
+        "risks": "contract: additive fields; task-specific reward changes",
+        "mitigation": "Model/generation tests and dedicated world_rng stream."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-contracts-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[3/6] Contract clock and completion: tick_world warnings/expiry, deferred repost after the action tick, trust/alert failure cost, centralized payout with trust+rush bonuses, specific-target breach/extract/wipe checks, cooled sign-off and pre-tick contract capture; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792651350.7736173,
+      "timestamp_str": "2026-10-22 09:42:30",
+      "impact_assessment": {
+        "why": "Make deadlines consequential and stop action-tick ordering from completing the wrong contract or leaving a stealth job unconfirmable.",
+        "benefits": "Deterministic job pressure, no accidental replacement-contract payout, recoverable trace-limit failures.",
+        "risks": "contract: active contract may be briefly None between expiry and next tick; state: additive notice",
+        "mitigation": "Deadline, payout, target, expiry-tick, and sign-off tests."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-contracts-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[4/6] Contract surfaces: CLI contract/bounty briefing, HUD job clock and job alert, post-command notice printing; Web contract card risk/deadline/rush/notice; state payload exposes all contract fields; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792651355.2664115,
+      "timestamp_str": "2026-10-22 09:42:35",
+      "impact_assessment": {
+        "why": "A deadline the player cannot see is not a mechanic.",
+        "benefits": "Both clients make the job clock and expiry visible.",
+        "risks": "contract: CLI aliases and Web text only",
+        "mitigation": "CLI briefing and expiry-notice tests, Node syntax check."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-contracts-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[5/6] Verification and tuning: 269 tests green, generation distribution checked, rewards tuned to shop scale, legacy objective fallback, deadline ordering and wipe sign-off covered; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792651361.2852466,
+      "timestamp_str": "2026-10-22 09:42:41",
+      "impact_assessment": {
+        "why": "Validate the new loop under tests and balance simulation.",
+        "benefits": "No regression in legacy contracts; contract pay stays aligned with upgrade costs.",
+        "risks": "contract: none; state: none",
+        "mitigation": "Full discover, distribution script, 4/4 aikit gates."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-contracts-v1",
+      "phase": "phase 4",
+      "phase_num": 4,
+      "description": "[6/6] Docs and gates: README contract/job-clock sections, ADR-020, codebase map regenerated, 269 tests green, 4/4 Phase 4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792651365.191347,
+      "timestamp_str": "2026-10-22 09:42:45",
+      "impact_assessment": {
+        "why": "Close with living documentation and a passed gate shield.",
+        "benefits": "The job loop is discoverable and its balance rationale recorded.",
+        "risks": "contract: docs/bookkeeping only",
+        "mitigation": "aikit check cyberpulse."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-contracts-v1",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-contracts-v1' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792651380.1584115,
+      "timestamp_str": "2026-10-22 09:43:00"
     }
   ]
 }
