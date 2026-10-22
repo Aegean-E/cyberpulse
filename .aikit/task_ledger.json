@@ -1,109 +1,20 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-offer-board-v1",
+    "task_id": "task-cyberpulse-gapfix-v1",
     "last_phase": "phase 4",
     "active_phase": 5,
     "status": "completed",
-    "updated_at": 1792666223.6237557,
+    "updated_at": 1792676508.9142985,
     "impact_assessment": {
-      "why": "Close the job-board refinement with verified behavior and living docs.",
-      "benefits": "Choice loop is tested, persisted and documented.",
+      "why": "Close the gap-fix task with verified behavior and living documentation.",
+      "benefits": "All four residual job-board gaps are covered by tests and docs.",
       "risks": "contract: docs/bookkeeping only",
-      "mitigation": "aikit check cyberpulse."
+      "mitigation": "aikit check cyberpulse and full discover."
     },
-    "completed_at": 1792666249.6122882
+    "completed_at": 1792676545.8600945
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-heat-v2",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[5/6] Terminal-state safety + metric/stacking fixes: post-tick aborts for download, wipe_logs, social, bypass, evade; trace-before-credit for brute_miner/data_siphon; terminal notes on scan/move/probe; 80%+ trace warnings no longer counted as near misses; intercepted hunters block further deployments; 257 tests green; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792648384.2807074,
-      "timestamp_str": "2026-10-22 08:53:04",
-      "impact_assessment": {
-        "why": "Actions could pay out or mutate defenses after their own grid tick had already burned the deck, and an intercepted hunter did not prevent a second simultaneous clamp.",
-        "benefits": "Every action result now agrees with the terminal state, the near-miss metric is honest, and late-game hunter pressure cannot stack into an unavoidable one-tick death.",
-        "risks": "contract: behavior only, no schema change; dependency: none; state: none",
-        "mitigation": "Failing-first engine tests for download/bypass/social/brute burn, hunter no-stack test, full discover."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-heat-v2",
-      "phase": "phase 4",
-      "phase_num": 4,
-      "description": "[6/6] Docs, ADR and verification: README mechanics/commands/architecture updated, ADR-019 recorded, codebase map regenerated, 257 tests green, 4/4 Phase 4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792648459.7286894,
-      "timestamp_str": "2026-10-22 08:54:19",
-      "impact_assessment": {
-        "why": "Close the task with living documentation and a passed gate shield.",
-        "benefits": "The new risk loop is discoverable in-game and in the README, and the change is recorded for future balance work.",
-        "risks": "contract: docs only; dependency: none; state: ledger/map bookkeeping",
-        "mitigation": "aikit check cyberpulse and full unittest discover."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-heat-v2",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-heat-v2' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792648497.0517757,
-      "timestamp_str": "2026-10-22 08:54:57"
-    },
-    {
-      "task_id": "task-cyberpulse-heat-v2-verify",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/2] Plan: independent verification of heat-v2; fix UI state sync on terminal server errors, lockdown badge/hack gating, honest dampened failure trace, stale intercepted hunter label",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792649283.8146708,
-      "timestamp_str": "2026-10-22 09:08:03",
-      "impact_assessment": {
-        "why": "Post-commit verification found client-side desync when an action now ends the run, a misleading dampener trace figure, and a stale hunter status label.",
-        "benefits": "Correct game-over presentation in the Web client, accurate trace messaging, and honest hunter telemetry.",
-        "risks": "contract: Web-only response handling plus one world status transition; dependency: none; concurrency: unchanged server lock; state: no schema change",
-        "mitigation": "Targeted failing-first tests for the hunter transition and dampened penalty; node --check for app.js; full suite and aikit check."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-heat-v2-verify",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[2/2] Verification fixes: applyStateSnapshot refreshes Web state on failed jackout/steal/wipe/exploit/bypass/evade; buffer near-miss keeps its bay open; lockdown badge disables hack; dampened failure trace reported accurately; intercepted hunter returns to hunting once it leaves the player host; 259 tests green; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792649295.206571,
-      "timestamp_str": "2026-10-22 09:08:15",
-      "impact_assessment": {
-        "why": "Make the new terminal-state behavior visible and keep telemetry honest.",
-        "benefits": "No stale HUD after a lethal action, no misleading trace figures, no stale INTERCEPTED label.",
-        "risks": "contract: Web behavior and hunter status label only",
-        "mitigation": "Two new tests, node syntax check, full suite, 4/4 gates."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-heat-v2-verify",
-      "phase": "phase 4",
-      "phase_num": 4,
-      "description": "[2/2] Verification complete: 259 tests green, Node syntax check OK, 4/4 aikit gates; codebase map and ADR test count refreshed; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792649330.3942661,
-      "timestamp_str": "2026-10-22 09:08:50",
-      "impact_assessment": {
-        "why": "Close the verification follow-up with a passed gate shield.",
-        "benefits": "The heat-v2 mechanics and their Web presentation are consistent under review.",
-        "risks": "contract: docs/bookkeeping only; dependency: none",
-        "mitigation": "aikit check cyberpulse."
-      }
-    },
     {
       "task_id": "task-cyberpulse-heat-v2-verify",
       "phase": "completed",
@@ -306,6 +217,95 @@
       "status": "completed",
       "timestamp": 1792666249.6122892,
       "timestamp_str": "2026-10-22 13:50:49"
+    },
+    {
+      "task_id": "task-cyberpulse-gapfix-v1",
+      "phase": "phase 2",
+      "phase_num": 2,
+      "description": "[1/5] Plan: close offer-board gaps - paid single-offer drop, persisted contract sequence for unique IDs, trust tiers with dialogue/second favor, and a recon fallback objective for exhausted grids; tests, CLI/Web, ADR-022",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792672524.9520442,
+      "timestamp_str": "2026-10-22 15:35:24",
+      "impact_assessment": {
+        "why": "Residual gaps: players cannot pass a single bad offer, IDs can collide after reload, trust has no dialogue/unlock effect, and a fully stripped grid stops posting work.",
+        "benefits": "A complete choice loop, collision-free IDs, relationship progression with a real unlock, and a repeatable low-risk contract when the grid has no fresh breach/extract/wipe target.",
+        "risks": "contract: GameState.contract_seq/ContactProfile bonus favor/Quest? additive, BountyContract objective recon reuses existing objective field; offer drop spends banked Creds; dependency: none; concurrency: server actions stay under the session lock; state: new additive fields default for old saves, recon completion captures the active contract before its tick",
+        "mitigation": "Backward-compatible defaults, dedicated offer-drop and recon tests, storage round-trip for contract_seq, full discover after each milestone, and ADR-022."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-gapfix-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[2/5] Offer drops and IDs: drop_offer charges a 30 CR broker fee, removes one offer, refills without re-posting the dropped signature; persisted GameState.contract_seq gives collision-free IDs and safe old-save migration; CLI/Web/API surfaces; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792676475.7412004,
+      "timestamp_str": "2026-10-22 16:41:15",
+      "impact_assessment": {
+        "why": "Close the single-bad-offer and reload-ID-collision gaps.",
+        "benefits": "Paid reroll choice and stable IDs.",
+        "risks": "contract: additive state; fee requires banked credits",
+        "mitigation": "Engine/storage/server tests and full suite."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-gapfix-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[3/5] Trust progression: Neutral/Trusted/Inner Circle tiers, tier dialogue in CLI/Web, Inner Circle second favor, trust-gated Kilo secondary quest with lock reason in CLI/Web; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792676486.3007536,
+      "timestamp_str": "2026-10-22 16:41:26",
+      "impact_assessment": {
+        "why": "Trust previously changed contract terms only.",
+        "benefits": "Relationships now alter dialogue, unlocks, and available favors.",
+        "risks": "contract: additive Quest/Contact fields; legacy quests remain ungated",
+        "mitigation": "Trust gate, tier dialogue, and second-favor tests."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-gapfix-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[4/5] Recon fallback: repeatable low-paying probe jobs when no breach/extract/wipe target remains, pre-tick contract capture, trace-limited confirmation and cooled retry, exhausted-grid test; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792676500.6257544,
+      "timestamp_str": "2026-10-22 16:41:40",
+      "impact_assessment": {
+        "why": "A fully stripped grid previously stopped posting work.",
+        "benefits": "Late-run continuity without an infinite high-value farm.",
+        "risks": "contract: new objective value only; uses existing target fields",
+        "mitigation": "Exhausted-grid and probe-completion tests."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-gapfix-v1",
+      "phase": "phase 4",
+      "phase_num": 4,
+      "description": "[5/5] Verification and docs: 283 tests green, legacy contract-seq migration covered, README gap-fix copy, ADR-022, codebase map regenerated, 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792676508.9142985,
+      "timestamp_str": "2026-10-22 16:41:48",
+      "impact_assessment": {
+        "why": "Close the gap-fix task with verified behavior and living documentation.",
+        "benefits": "All four residual job-board gaps are covered by tests and docs.",
+        "risks": "contract: docs/bookkeeping only",
+        "mitigation": "aikit check cyberpulse and full discover."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-gapfix-v1",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-gapfix-v1' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792676545.860096,
+      "timestamp_str": "2026-10-22 16:42:25"
     }
   ]
 }
