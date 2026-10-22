@@ -188,12 +188,14 @@ class TestEngine(unittest.TestCase):
         self.assertIn("requires logs to be wiped", msg)
         self.assertFalse(contract.completed)
 
-        # Wiping the target host's logs completes the contract and dispatches the next one.
+        # Wiping the target host's logs completes the contract and opens the next job board.
         ok, msg = self.engine.wipe_logs("10.0.4.15")
         self.assertTrue(ok)
         self.assertIn("CONTRACT COMPLETED", msg)
+        self.assertIn("Job board refreshed", msg)
         self.assertTrue(contract.completed)
-        self.assertIsNot(self.engine.state.active_contract, contract)
+        self.assertIsNone(self.engine.state.active_contract)
+        self.assertGreaterEqual(len(self.engine.state.contract_offers), 1)
 
     def test_generated_contracts_are_concrete_and_deterministic(self):
         other = GameEngine(seed=42)
@@ -233,8 +235,76 @@ class TestEngine(unittest.TestCase):
 
         self.engine.tick_world()
 
-        self.assertIsNotNone(self.engine.state.active_contract)
-        self.assertIn("New job posted", self.engine.state.contract_notice)
+        self.assertIsNone(self.engine.state.active_contract)
+        self.assertGreaterEqual(len(self.engine.state.contract_offers), 1)
+        self.assertIn("job offer(s)", self.engine.state.contract_notice)
+
+    def test_initial_offer_board_contains_three_distinct_jobs(self):
+        offers = self.engine.state.contract_offers
+
+        self.assertEqual(len(offers), 3)
+        signatures = {(offer.objective_kind, offer.target_ip, offer.target_file) for offer in offers}
+        self.assertEqual(len(signatures), 3)
+        for offer in offers:
+            self.assertTrue(offer.offer_expires_turn > self.engine.state.turns_elapsed)
+            self.assertEqual(offer.expires_turn, 0)
+            self.assertGreater(offer.deadline_turns, 0)
+            self.assertTrue(offer.contract_id)
+
+    def test_accept_contract_starts_deadline_and_refills_board(self):
+        declined, _ = self.engine.decline_contract()
+        self.assertTrue(declined)
+        self.engine.state.turns_elapsed += 1
+        offer = self.engine.state.contract_offers[0]
+        offer_id = offer.contract_id
+        offer_deadline = offer.deadline_turns
+        turns = self.engine.state.turns_elapsed
+
+        ok, msg = self.engine.accept_contract(offer_id)
+
+        self.assertTrue(ok)
+        self.assertIn("JOB ACCEPTED", msg)
+        self.assertIs(self.engine.state.active_contract, offer)
+        self.assertEqual(offer.expires_turn, turns + offer_deadline)
+        self.assertEqual(offer.rush_turn, turns + max(4, offer_deadline // 2))
+        self.assertEqual(offer.offer_expires_turn, 0)
+        self.assertNotIn(offer, self.engine.state.contract_offers)
+        self.assertEqual(len(self.engine.state.contract_offers), 3)
+
+        again, reason = self.engine.accept_contract(self.engine.state.contract_offers[0].contract_id)
+        self.assertFalse(again)
+        self.assertIn("already have an active contract", reason)
+
+    def test_decline_contract_costs_trust_without_alert(self):
+        contract = self.engine.state.active_contract
+        contact = self.engine._find_contact(contract.giver)
+        trust_before = contact.trust
+        alert_before = self.engine.state.world.alert_level
+
+        ok, msg = self.engine.decline_contract()
+
+        self.assertTrue(ok)
+        self.assertIn("CONTRACT DECLINED", msg)
+        self.assertIsNone(self.engine.state.active_contract)
+        self.assertTrue(contract.failed)
+        self.assertEqual(contact.trust, max(-1, trust_before - 1))
+        self.assertEqual(self.engine.state.world.alert_level, alert_before)
+        self.assertEqual(len(self.engine.state.contract_offers), 3)
+        self.assertEqual(self.engine.state.contract_decline_until_turn, 1)
+        ok, reason = self.engine.accept_contract(self.engine.state.contract_offers[0].contract_id)
+        self.assertFalse(ok)
+        self.assertIn("one grid turn", reason)
+
+    def test_offer_shelf_life_rotates_the_board(self):
+        expired = self.engine.state.contract_offers[0]
+        self.engine.state.turns_elapsed = expired.offer_expires_turn
+
+        added = self.engine._refresh_contract_offers()
+
+        live_ids = {offer.contract_id for offer in self.engine.state.contract_offers}
+        self.assertNotIn(expired.contract_id, live_ids)
+        self.assertGreaterEqual(len(added), 1)
+        self.assertEqual(len(self.engine.state.contract_offers), 3)
 
     def test_contract_payout_includes_trust_and_rush(self):
         contract = self.engine.state.active_contract

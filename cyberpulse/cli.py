@@ -66,7 +66,7 @@ def print_hud(engine: GameEngine) -> None:
         status_tag = "[COMPLETED]" if contract.completed else "[ACTIVE]"
         contract_str = f"{contract.title}{target_info} (+{contract.reward_creds} Creds) {status_tag}"
     else:
-        contract_str = "None"
+        contract_str = f"None | Offers: {len(engine.state.contract_offers)} (run contracts)"
 
     print("\n+==========================================================================+")
     print("|          >> CYBERPULSE // NEURAL INTRUSION HARNESS v0.3.0 <<             |")
@@ -129,34 +129,46 @@ def print_hud(engine: GameEngine) -> None:
 def print_contract(engine: GameEngine) -> None:
     contract = engine.state.active_contract
     print("\n+==========================================================================+")
-    print("|                 >> SYNDICATE CONTRACT BRIEFING <<                        |")
+    print("|                 >> SYNDICATE JOB BOARD // CONTRACTS <<                  |")
     print("+==========================================================================+")
-    if not contract:
-        print("[*] No active contract. The Syndicate has no fresh work for this grid.")
-        if engine.state.contract_notice:
-            print(f"[!] Alert:     {engine.state.contract_notice}")
-        print("+==========================================================================+")
-        return
-    contact = engine._find_contact(contract.giver)
-    giver = f"{contact.name} ({contact.handle})" if contact else "The Syndicate"
-    remaining = contract.expires_turn - engine.state.turns_elapsed if contract.expires_turn else None
-    print(f"[*] Job:       {contract.title} [{contract.risk_tier.upper()} RISK]")
-    print(f"[*] Broker:    {giver}")
-    print(f"[*] Objective: {contract.description or contract.objective_kind.upper()}")
-    print(f"[*] Target:    {contract.target_ip or contract.target_node_type}")
-    if contract.target_file:
-        print(f"[*] Payload:   {contract.target_file}")
-    print(f"[*] Stealth:   trace must stay <= {contract.max_trace_limit}% at confirmation")
-    print(f"[*] Payout:    +{contract.reward_creds} base Creds" + (f" +{contract.bonus_creds} rush bonus" if contract.bonus_creds else ""))
-    if remaining is None:
-        print("[*] Deadline:  none (legacy contract)")
+    if contract:
+        contact = engine._find_contact(contract.giver)
+        giver = f"{contact.name} ({contact.handle})" if contact else "The Syndicate"
+        remaining = contract.expires_turn - engine.state.turns_elapsed if contract.expires_turn else None
+        print(f"[*] ACTIVE:    {contract.title} [{contract.risk_tier.upper()} RISK]")
+        print(f"[*] Broker:    {giver}")
+        print(f"[*] Objective: {contract.description or contract.objective_kind.upper()}")
+        print(f"[*] Target:    {contract.target_ip or contract.target_node_type}")
+        if contract.target_file:
+            print(f"[*] Payload:   {contract.target_file}")
+        print(f"[*] Stealth:   trace must stay <= {contract.max_trace_limit}% at confirmation")
+        print(f"[*] Payout:    +{contract.reward_creds} base Creds" + (f" +{contract.bonus_creds} rush bonus" if contract.bonus_creds else ""))
+        if remaining is None:
+            print("[*] Deadline:  none (legacy contract)")
+        else:
+            state = "EXPIRED" if remaining <= 0 else f"{remaining} turn(s) left"
+            print(f"[*] Deadline:  {state} (turn {contract.expires_turn})")
+            if contract.rush_turn:
+                print(f"[*] Rush:      complete by turn {contract.rush_turn} for the bonus")
+        print("[*] Decline:   decline_contract (costs giver trust)")
+        print("--------------------------------------------------------------------------")
     else:
-        state = "EXPIRED" if remaining <= 0 else f"{remaining} turn(s) left"
-        print(f"[*] Deadline:  {state} (turn {contract.expires_turn})")
-        if contract.rush_turn:
-            print(f"[*] Rush:      complete by turn {contract.rush_turn} for the bonus")
+        print("[*] ACTIVE:    none — choose an offer below with accept_job <id>")
     if engine.state.contract_notice:
         print(f"[!] Alert:     {engine.state.contract_notice}")
+    print("\n>>> POSTED OFFERS")
+    offers = engine.state.contract_offers
+    if not offers:
+        print("[*] No fresh Syndicate work on this grid. Advance the clock or wait for re-secure.")
+    for index, offer in enumerate(offers, start=1):
+        contact = engine._find_contact(offer.giver)
+        giver = contact.name if contact else "Syndicate"
+        offer_left = offer.offer_expires_turn - engine.state.turns_elapsed if offer.offer_expires_turn else None
+        offer_clock = f"offer expires in {offer_left} turn(s)" if offer_left is not None else "no offer expiry"
+        print(f"[{index}] {offer.title} [{offer.risk_tier.upper()} RISK] — {giver}")
+        print(f"    {offer.description}")
+        print(f"    Target: {offer.target_ip or offer.target_node_type} | Window: {offer.deadline_turns} turns | {offer_clock}")
+        print(f"    Pay: +{offer.reward_creds} base (+{offer.bonus_creds} rush) | ACCEPT: accept_job {offer.contract_id}")
     print("+==========================================================================+")
 
 
@@ -409,7 +421,7 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
             print_career(save_mgr.load_career())
             continue
         if choice in ("6", "help", "how"):
-            print("Commands: status, contract, bounty, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
+            print("Commands: status, contract, bounty, accept_job, decline_contract, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
             print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
             print("          move, overdrive, spoof, cash_out, shop, buy, career, save, load, quit")
             continue
@@ -565,6 +577,19 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
 
     if action in ("contract", "contracts", "bounty", "job"):
         print_contract(engine)
+        return True
+
+    if action in ("accept_job", "take_job", "accept_contract"):
+        if len(parts) < 2:
+            print("Usage: accept_job <contract_id>  (run `contracts` to list posted offers)")
+            return True
+        ok, msg = engine.accept_contract(parts[1])
+        print(msg)
+        return True
+
+    if action in ("decline_contract", "decline_job", "decline"):
+        ok, msg = engine.decline_contract()
+        print(msg)
         return True
 
     if action in ("quests", "missions", "jobs"):
@@ -848,7 +873,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("No saved game found.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: contract, bounty, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, spoof, cash_out, shop, buy, career, status, save, load, quit")
+    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, spoof, cash_out, shop, buy, career, status, save, load, quit")
     return True
 
 

@@ -9,8 +9,8 @@
 - **Total Python Modules**: `26`
 - **Total Classes**: `55`
 - **Total Top-Level Functions**: `66`
-- **Total Class Methods**: `454`
-- **Total Source Lines**: `10519`
+- **Total Class Methods**: `466`
+- **Total Source Lines**: `10799`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `956` lines (`44924` bytes)
+**Size**: `981` lines (`46473` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -58,7 +58,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `2830` lines (`130921` bytes)
+**Size**: `2945` lines (`136541` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -118,8 +118,13 @@
   - Method `._contract_candidates(objective)` - *Return hosts that can still satisfy a fresh job for this objective.*
   - Method `._choose_contract_risk(rng)`
   - Method `._contract_deadline(objective, node, risk, trust, rng)`
+  - Method `._activate_contract(contract)` - *Start an accepted job's clock and clear its board shelf life.*
+  - Method `._offer_signature(contract)`
+  - Method `._refresh_contract_offers()` - *Expire stale board entries and fill the board with distinct concrete jobs.*
   - Method `._build_contract()` - *Generate a concrete, deadline-bound job from the live grid state.*
-  - Method `.dispatch_next_contract()` - *Dispatch a concrete Syndicate job, or clear the board when the run is exhausted.*
+  - Method `.dispatch_next_contract()` - *Dispatch and immediately accept a concrete job (legacy/test helper).*
+  - Method `.accept_contract(contract_id)` - *Accept a posted offer and start its deadline clock.*
+  - Method `.decline_contract()` - *Walk away from the active job: lose giver trust, keep the board stocked.*
   - Method `._contract_targets_node(contract, node)`
   - Method `._contract_completes_on_breach(contract, node)` - *Return True when a node breach satisfies a contract without extra objectives.*
   - Method `._contract_download_matches(contract, node, vfile)` - *Return True when this download advances the active contract.*
@@ -127,7 +132,7 @@
   - Method `._contract_payout(contract)` - *Return (total, trust_bonus, rush_bonus) for a completed job.*
   - Method `._finalize_contract(contract, node)` - *Pay a completed job once, reward its giver's trust, and dispatch the next job.*
   - Method `._fail_contract(contract)` - *Expire a job, cost its giver trust, raise heat, and post the next contract.*
-  - Method `._check_contract_clock()` - *Warn near a deadline, expire a missed job, and repost when the board is empty.*
+  - Method `._check_contract_clock()` - *Warn near a deadline, expire a missed job, and rotate the offer board.*
   - Method `.complete_breach(node_id)` - *Mark node as breached, evaluate variable-ratio rewards, and check contracts.*
   - Method `.use_exploit(exploit_name, target_id)` - *Deploy an executable exploit chip loaded in cyberdeck firmware.*
   - Method `.jackout()` - *Push-Your-Luck extraction: safely bank all unbanked credits and looted payloads.*
@@ -158,7 +163,7 @@
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `584` lines (`20631` bytes)
+**Size**: `594` lines (`21174` bytes)
 
 **Classes:**
 - `class NodeType`
@@ -289,7 +294,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `661` lines (`29765` bytes)
+**Size**: `672` lines (`30334` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -425,7 +430,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `385` lines (`16201` bytes)
+**Size**: `396` lines (`16653` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -436,6 +441,7 @@
   - Method `.test_main_menu_starts_run_then_quits()`
   - Method `.test_contract_briefing_and_job_clock()`
   - Method `.test_contract_expiry_is_surfaced_in_cli()`
+  - Method `.test_decline_contract_command_opens_the_board()`
   - Method `.test_story_quests_contacts_and_overdrive_commands()`
   - Method `.test_world_news_commands_and_hud_grid_line()`
   - Method `.test_lay_low_command_and_shift_doctrine()`
@@ -467,7 +473,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `1319` lines (`55007` bytes)
+**Size**: `1389` lines (`58350` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -490,6 +496,10 @@
   - Method `.test_bounty_contract_fulfillment()`
   - Method `.test_generated_contracts_are_concrete_and_deterministic()`
   - Method `.test_contract_deadline_warns_then_expires()`
+  - Method `.test_initial_offer_board_contains_three_distinct_jobs()`
+  - Method `.test_accept_contract_starts_deadline_and_refills_board()`
+  - Method `.test_decline_contract_costs_trust_without_alert()`
+  - Method `.test_offer_shelf_life_rotates_the_board()`
   - Method `.test_contract_payout_includes_trust_and_rush()`
   - Method `.test_breach_contract_requires_its_named_target()`
   - Method `.test_extract_contract_requires_named_file_and_stealth()`
@@ -680,7 +690,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `623` lines (`26804` bytes)
+**Size**: `644` lines (`27835` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -719,6 +729,7 @@
   - Method `.test_contact_talk_job_and_favor_actions()`
   - Method `.test_agent_zero_alliance_action()`
   - Method `.test_accept_quest_action()`
+  - Method `.test_contract_board_decline_and_accept_action()`
   - Method `.test_accept_quest_after_jackout_is_rejected()`
   - Method `.test_static_assets_do_not_wait_for_session_lock()`
   - Method `.test_get_world_and_state_contains_hunters()`
@@ -749,7 +760,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `201` lines (`7292` bytes)
+**Size**: `218` lines (`7906` bytes)
 
 **Classes:**
 - `class TestStorage`
@@ -767,6 +778,7 @@
   - Method `.test_rng_state_is_preserved_across_save_and_load()`
   - Method `.test_old_save_without_rng_state_keeps_legacy_reseed()`
   - Method `.test_save_preserves_pending_puzzle_attempts()`
+  - Method `.test_save_preserves_contract_offer_board()`
   - Method `.test_failed_replace_reports_no_save()`
 
 ---

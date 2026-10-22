@@ -519,6 +519,15 @@ function renderHUD(data) {
       contractStatus += ` | ${gState.contract_notice}`;
     }
     document.getElementById("contract-status").textContent = contractStatus;
+  } else if ((gState.contract_offers || []).length) {
+    document.getElementById("contract-card").classList.remove("hidden");
+    document.getElementById("contract-bounty-val").textContent = `${gState.contract_offers.length} JOBS`;
+    document.getElementById("contract-title").textContent = "SYNDICATE JOB BOARD OPEN";
+    document.getElementById("contract-status").textContent =
+      "Open MISSION BOARD to accept a posted contract." +
+      (gState.contract_notice ? ` | ${gState.contract_notice}` : "");
+  } else {
+    document.getElementById("contract-card").classList.add("hidden");
   }
 
   // Check Game Over / Victory Overlays
@@ -1563,7 +1572,89 @@ function openQuestsModal() {
     grid.appendChild(card);
   });
 
+  const gState = state.data.state || {};
+  const active = gState.active_contract;
+  const offers = gState.contract_offers || [];
+  const jobBoard = document.getElementById("job-board");
+  jobBoard.innerHTML = "";
+
+  if (active) {
+    const remaining = active.expires_turn ? active.expires_turn - gState.turns_elapsed : null;
+    const card = document.createElement("div");
+    card.className = "quest-card quest-active";
+    card.innerHTML = `
+      <div class="quest-card-head">
+        <span class="quest-title">ACTIVE: ${active.title}</span>
+        <span class="quest-status">${(active.risk_tier || "standard").toUpperCase()}</span>
+      </div>
+      <div class="quest-desc">${active.description || ""}</div>
+      <div class="quest-meta">TARGET: ${active.target_ip || active.target_node_type} | TRACE LIMIT: ${active.max_trace_limit}% | ${remaining === null ? "NO DEADLINE" : `${Math.max(0, remaining)} TURNS LEFT`} | PAY: ${active.reward_creds} CR</div>
+      <button class="hack-btn small-btn decline-job-btn">DECLINE CONTRACT</button>
+    `;
+    card.querySelector(".decline-job-btn").addEventListener("click", handleDeclineContract);
+    jobBoard.appendChild(card);
+  }
+
+  offers.forEach((offer) => {
+    const card = document.createElement("div");
+    card.className = `quest-card ${active ? "quest-locked" : "quest-available"}`;
+    const offerLeft = offer.offer_expires_turn ? offer.offer_expires_turn - gState.turns_elapsed : null;
+    card.innerHTML = `
+      <div class="quest-card-head">
+        <span class="quest-title">${offer.title}</span>
+        <span class="quest-status">${(offer.risk_tier || "standard").toUpperCase()}</span>
+      </div>
+      <div class="quest-desc">${offer.description || ""}</div>
+      <div class="quest-meta">TARGET: ${offer.target_ip || offer.target_node_type} | WINDOW: ${offer.deadline_turns} TURNS | PAY: ${offer.reward_creds} CR (+${offer.bonus_creds} RUSH)${offerLeft === null ? "" : ` | OFFER ${Math.max(0, offerLeft)} TURNS`}</div>
+      ${active ? "" : `<button class="hack-btn small-btn accept-contract-btn" data-contract="${offer.contract_id}">ACCEPT CONTRACT</button>`}
+    `;
+    const acceptBtn = card.querySelector(".accept-contract-btn");
+    if (acceptBtn) {
+      acceptBtn.addEventListener("click", () => handleAcceptContract(offer.contract_id));
+    }
+    jobBoard.appendChild(card);
+  });
+
+  if (!active && offers.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "quest-desc";
+    empty.textContent = "No fresh Syndicate work. Advance the grid or wait for a host to re-secure.";
+    jobBoard.appendChild(empty);
+  }
+
   document.getElementById("modal-quests").classList.remove("hidden");
+}
+
+async function handleAcceptContract(contractId) {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "accept_contract", contract_id: contractId });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+    openQuestsModal();
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "Contract unavailable.", "warn");
+    applyStateSnapshot(res);
+  }
+}
+
+async function handleDeclineContract() {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "decline_contract" });
+  if (res && res.ok) {
+    sfx.warning ? sfx.warning() : sfx.click();
+    addTerminalLog(res.message, "warn");
+    state.data = res.state;
+    renderHUD(res.state);
+    openQuestsModal();
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "No active contract.", "warn");
+    applyStateSnapshot(res);
+  }
 }
 
 async function handleAcceptQuest(questId) {

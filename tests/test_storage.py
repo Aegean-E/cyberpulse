@@ -182,6 +182,23 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(restored.attempts_left, 2)
         self.assertEqual(restored.target_freq, puzzle.target_freq)
 
+    def test_save_preserves_contract_offer_board(self):
+        engine = GameEngine(seed=42)
+        offer_ids = [offer.contract_id for offer in engine.state.contract_offers]
+        self.save_mgr.save(engine)
+
+        loaded = self.save_mgr.load()
+
+        self.assertIsNotNone(loaded)
+        self.assertEqual(
+            [offer.contract_id for offer in loaded.state.contract_offers],
+            offer_ids,
+        )
+        self.assertEqual(
+            [offer.deadline_turns for offer in loaded.state.contract_offers],
+            [offer.deadline_turns for offer in engine.state.contract_offers],
+        )
+
     def test_failed_replace_reports_no_save(self):
         engine = GameEngine(seed=5)
 

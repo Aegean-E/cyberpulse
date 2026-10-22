@@ -53,7 +53,9 @@ class TestCLI(unittest.TestCase):
         code, out = self.run_cli("--seed", "1337", "--exec", "contract;status")
 
         self.assertEqual(code, 0)
-        self.assertIn("SYNDICATE CONTRACT BRIEFING", out)
+        self.assertIn("SYNDICATE JOB BOARD", out)
+        self.assertIn("POSTED OFFERS", out)
+        self.assertIn("accept_job", out)
         self.assertIn("Deadline", out)
         self.assertIn("Rush", out)
         self.assertIn("Job Clock", out)
@@ -65,7 +67,16 @@ class TestCLI(unittest.TestCase):
 
         self.assertEqual(code, 0)
         self.assertIn("CONTRACT EXPIRED", out)
-        self.assertIn("New job posted", out)
+        self.assertIn("job offer(s)", out)
+        self.assertIn("accept_job", out)
+
+    def test_decline_contract_command_opens_the_board(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "contracts;decline_contract;contracts")
+
+        self.assertEqual(code, 0)
+        self.assertIn("CONTRACT DECLINED", out)
+        self.assertIn("ACTIVE:    none", out)
+        self.assertIn("POSTED OFFERS", out)
 
     def test_story_quests_contacts_and_overdrive_commands(self):
         batch_cmds = "story;quests;contacts;overdrive;status"

@@ -192,10 +192,12 @@ CRAFTING_RECIPES: Dict[str, VirusCraftRecipe] = {
 
 
 CONTRACT_RISK: Dict[str, Dict[str, float]] = {
-    "standard": {"reward": 1.0, "max_trace": 80, "rush": 0.20, "duration_delta": 0},
-    "priority": {"reward": 1.2, "max_trace": 70, "rush": 0.22, "duration_delta": -3},
-    "black": {"reward": 1.5, "max_trace": 60, "rush": 0.25, "duration_delta": -5},
+    "standard": {"reward": 1.0, "max_trace": 80, "rush": 0.20, "duration_delta": 0, "offer_ttl": 10},
+    "priority": {"reward": 1.2, "max_trace": 70, "rush": 0.22, "duration_delta": -3, "offer_ttl": 8},
+    "black": {"reward": 1.5, "max_trace": 60, "rush": 0.25, "duration_delta": -5, "offer_ttl": 6},
 }
+
+CONTRACT_BOARD_SIZE = 3
 
 CONTRACT_BASE_REWARD: Dict[str, int] = {"breach": 120, "extract": 200, "wipe": 220}
 
@@ -255,6 +257,8 @@ class GameEngine:
         self.pending_puzzles: Dict[str, Any] = {}
         self.run_settled: bool = False
         self._last_alert_tier: Optional[str] = alert_tier(self.state.world.alert_level)
+        self._contract_seq = 0
+        self._refresh_contract_offers()
 
     def get_current_node(self) -> Node:
         return self.nodes[self.state.current_node_id]
@@ -578,6 +582,8 @@ class GameEngine:
         # so resync the corporate posture baseline silently on the next grid pulse.
         self._last_alert_tier = None
         self._sync_story_quests()
+        if not self.state.contract_offers:
+            self._refresh_contract_offers()
 
     def story_summary(self) -> Dict[str, Any]:
         title, subtitle = act_title(self.state.story_act)
@@ -1380,7 +1386,8 @@ class GameEngine:
 
     def _contract_rng(self) -> random.Random:
         """Dedicated contract stream so contract generation never shifts reward rolls."""
-        return world_rng(self.seed, self.state.turns_elapsed, "contract")
+        self._contract_seq += 1
+        return world_rng(self.seed, self.state.turns_elapsed, f"contract:{self._contract_seq}")
 
     def _contract_giver(self, objective: str, risk: str) -> str:
         """Pick the operative whose trust and voice fit the job."""
@@ -1436,9 +1443,47 @@ class GameEngine:
         duration += min(3, max(0, trust) // 2)
         duration += rng.randint(-2, 2)
         duration = max(8, duration)
-        expires_turn = self.state.turns_elapsed + duration
-        rush_turn = self.state.turns_elapsed + max(4, duration // 2)
-        return expires_turn, rush_turn
+        return duration, max(4, duration // 2)
+
+    def _activate_contract(self, contract: BountyContract) -> BountyContract:
+        """Start an accepted job's clock and clear its board shelf life."""
+        if contract.deadline_turns:
+            contract.expires_turn = self.state.turns_elapsed + contract.deadline_turns
+            contract.rush_turn = self.state.turns_elapsed + max(4, contract.deadline_turns // 2)
+        contract.offer_expires_turn = 0
+        contract.failed = False
+        return contract
+
+    def _offer_signature(self, contract: BountyContract) -> Tuple[str, str, str]:
+        return (contract.objective_kind, contract.target_ip or "", contract.target_file or "")
+
+    def _refresh_contract_offers(self) -> List[BountyContract]:
+        """Expire stale board entries and fill the board with distinct concrete jobs."""
+        now = self.state.turns_elapsed
+        self.state.contract_offers = [
+            offer
+            for offer in self.state.contract_offers
+            if not offer.offer_expires_turn or offer.offer_expires_turn > now
+        ]
+        signatures = {self._offer_signature(offer) for offer in self.state.contract_offers}
+        active = self.state.active_contract
+        if active and not active.completed and not active.failed:
+            signatures.add(self._offer_signature(active))
+
+        added: List[BountyContract] = []
+        attempts = 0
+        while len(self.state.contract_offers) < CONTRACT_BOARD_SIZE and attempts < 24:
+            attempts += 1
+            offer = self._build_contract()
+            if offer is None:
+                break
+            signature = self._offer_signature(offer)
+            if signature in signatures:
+                continue
+            self.state.contract_offers.append(offer)
+            signatures.add(signature)
+            added.append(offer)
+        return added
 
     def _build_contract(self) -> Optional[BountyContract]:
         """Generate a concrete, deadline-bound job from the live grid state."""
@@ -1458,7 +1503,8 @@ class GameEngine:
         giver = self._contract_giver(objective, risk)
         contact = self._find_contact(giver)
         trust = contact.trust if contact else 0
-        expires_turn, rush_turn = self._contract_deadline(objective, node, risk, trust, rng)
+        deadline_turns, _rush_offset = self._contract_deadline(objective, node, risk, trust, rng)
+        offer_expires_turn = self.state.turns_elapsed + int(CONTRACT_RISK[risk]["offer_ttl"])
 
         base_reward = CONTRACT_BASE_REWARD[objective] + node.security_level * 20
         reward = int(round(base_reward * CONTRACT_RISK[risk]["reward"]))
@@ -1525,16 +1571,20 @@ class GameEngine:
             giver=giver,
             risk_tier=risk,
             objective=objective,
-            expires_turn=expires_turn,
-            rush_turn=rush_turn,
+            expires_turn=0,
+            rush_turn=0,
             bonus_creds=bonus,
+            deadline_turns=deadline_turns,
+            offer_expires_turn=offer_expires_turn,
             description=description,
         )
         return contract
 
     def dispatch_next_contract(self) -> Optional[BountyContract]:
-        """Dispatch a concrete Syndicate job, or clear the board when the run is exhausted."""
+        """Dispatch and immediately accept a concrete job (legacy/test helper)."""
         new_contract = self._build_contract()
+        if new_contract:
+            self._activate_contract(new_contract)
         self.state.active_contract = new_contract
         if new_contract:
             self._log_story(
@@ -1542,6 +1592,65 @@ class GameEngine:
                 f"({new_contract.risk_tier.upper()} risk, deadline turn {new_contract.expires_turn})."
             )
         return new_contract
+
+    def accept_contract(self, contract_id: str) -> Tuple[bool, str]:
+        """Accept a posted offer and start its deadline clock."""
+        if self.state.is_game_over:
+            return False, "Cannot accept a contract: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot accept a contract: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot accept a contract: mission already complete."
+        active = self.state.active_contract
+        if active and not active.completed and not active.failed:
+            return False, (
+                f"You already have an active contract ({active.title}). Complete it or run "
+                "`decline_contract` before accepting another."
+            )
+        if self.state.turns_elapsed < self.state.contract_decline_until_turn:
+            return False, "The broker needs one grid turn to repost terms after a decline."
+        offer = next(
+            (candidate for candidate in self.state.contract_offers if candidate.contract_id == contract_id),
+            None,
+        )
+        if offer is None:
+            self._refresh_contract_offers()
+            return False, f"No posted contract offer with id '{contract_id}'."
+        if offer.offer_expires_turn and offer.offer_expires_turn <= self.state.turns_elapsed:
+            self._refresh_contract_offers()
+            return False, f"Offer '{offer.title}' expired before it was accepted."
+        self.state.contract_offers.remove(offer)
+        self.state.active_contract = self._activate_contract(offer)
+        self.state.contract_decline_until_turn = 0
+        self.state.contract_notice = (
+            f"JOB ACCEPTED: {offer.title} — deadline turn {offer.expires_turn} "
+            f"(rush by turn {offer.rush_turn})."
+        )
+        self._refresh_contract_offers()
+        self.state.message_log.append(self.state.contract_notice)
+        return True, self.state.contract_notice
+
+    def decline_contract(self) -> Tuple[bool, str]:
+        """Walk away from the active job: lose giver trust, keep the board stocked."""
+        if self.state.is_game_over or self.state.is_jacked_out or self.state.is_victory:
+            return False, "Cannot decline a contract: the run has already ended."
+        contract = self.state.active_contract
+        if contract is None or contract.completed or contract.failed:
+            return False, "There is no active contract to decline."
+        contract.failed = True
+        contact = self._find_contact(contract.giver)
+        if contact:
+            contact.trust = max(-1, contact.trust - 1)
+        self.state.active_contract = None
+        self.state.contract_decline_until_turn = self.state.turns_elapsed + 1
+        self._refresh_contract_offers()
+        message = (
+            f"CONTRACT DECLINED: {contract.title}. "
+            f"{contact.name if contact else 'The Syndicate'} trust -1; the board is refreshed."
+        )
+        self.state.contract_notice = message
+        self.state.message_log.append(message)
+        return True, message
 
     def _contract_targets_node(self, contract: BountyContract, node: Node) -> bool:
         if contract.target_ip and contract.target_ip != node.ip_address:
@@ -1620,8 +1729,13 @@ class GameEngine:
             f"Syndicate bounty cleared on {node.hostname}; payment released.",
             tone="positive",
         )
+        self.state.active_contract = None
+        self._refresh_contract_offers()
+        if self.state.contract_offers:
+            message += " Job board refreshed; choose the next contract."
+        else:
+            message += " No fresh offers remain; wait for the grid to re-secure a host."
         self.state.message_log.append(message)
-        self.dispatch_next_contract()
         return message
 
     def _fail_contract(self, contract: BountyContract) -> List[str]:
@@ -1644,14 +1758,15 @@ class GameEngine:
             tone="negative",
         )
         self.state.active_contract = None
-        message += " New job pending on the next grid tick."
+        message += " New offers pending on the next grid tick."
         self.state.contract_notice = message
         self.state.message_log.append(message)
         return [message]
 
     def _check_contract_clock(self) -> List[str]:
-        """Warn near a deadline, expire a missed job, and repost when the board is empty."""
+        """Warn near a deadline, expire a missed job, and rotate the offer board."""
         messages: List[str] = []
+        self._refresh_contract_offers()
         contract = self.state.active_contract
         if contract and not contract.completed and not contract.failed and contract.expires_turn:
             remaining = contract.expires_turn - self.state.turns_elapsed
@@ -1669,13 +1784,13 @@ class GameEngine:
                 self.state.message_log.append(warning)
                 messages.append(warning)
 
-        if self.state.active_contract is None:
+        if self.state.active_contract is None and self.state.contract_offers:
             previous_notice = self.state.contract_notice
-            next_contract = self.dispatch_next_contract()
-            if next_contract:
-                message = f"📡 NEW SYNDICATE CONTRACT: {next_contract.title} ({next_contract.risk_tier.upper()} risk)."
-                if "CONTRACT EXPIRED" in previous_notice:
-                    message = f"{previous_notice} New job posted: {next_contract.title}."
+            if "CONTRACT EXPIRED" in previous_notice and "job offer(s)" not in previous_notice:
+                message = (
+                    f"{previous_notice} {len(self.state.contract_offers)} job offer(s) are now "
+                    "on the board; accept one with accept_job <id>."
+                )
                 self.state.contract_notice = message
                 self.state.message_log.append(message)
                 messages.append(message)

@@ -59,6 +59,7 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertEqual(contract["risk_tier"], "priority")
         self.assertGreater(contract["expires_turn"], 0)
         self.assertGreater(contract["bonus_creds"], 0)
+        self.assertEqual(len(data["state"]["contract_offers"]), 3)
 
     def test_get_shop(self):
         status, data = self._get("/api/shop")
@@ -518,6 +519,26 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertTrue(res["ok"])
         self.assertTrue(any(q["quest_id"] == "q_side_ghost" and q["accepted"] for q in res["state"]["quests"]))
+
+    def test_contract_board_decline_and_accept_action(self):
+        self._post("/api/action", {"action": "reset", "seed": 1337})
+        _, declined = self._post("/api/action", {"action": "decline_contract"})
+        self.assertTrue(declined["ok"])
+        self.assertIsNone(declined["state"]["state"]["active_contract"])
+        offers = declined["state"]["state"]["contract_offers"]
+        self.assertEqual(len(offers), 3)
+        offer_id = offers[0]["contract_id"]
+        self._post("/api/action", {"action": "lay_low", "turns": 1})
+
+        _, accepted = self._post(
+            "/api/action", {"action": "accept_contract", "contract_id": offer_id}
+        )
+
+        self.assertTrue(accepted["ok"])
+        active = accepted["state"]["state"]["active_contract"]
+        self.assertEqual(active["contract_id"], offer_id)
+        self.assertGreater(active["expires_turn"], 0)
+        self.assertEqual(len(accepted["state"]["state"]["contract_offers"]), 3)
 
     def test_accept_quest_after_jackout_is_rejected(self):
         self._post("/api/action", {"action": "reset", "seed": 1337})

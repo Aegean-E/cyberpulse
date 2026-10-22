@@ -80,6 +80,8 @@ class BountyContract:
     bonus_creds: int = 0   # rush bonus
     failed: bool = False
     description: str = ""
+    offer_expires_turn: int = 0  # shelf life while the job sits on the board
+    deadline_turns: int = 0      # window length applied when the job is accepted
 
     @property
     def objective_kind(self) -> str:
@@ -545,6 +547,8 @@ class GameState:
     unbanked_creds: int = 0
     looted_payloads: List[str] = field(default_factory=list)
     active_contract: Optional[BountyContract] = None
+    contract_offers: List[BountyContract] = field(default_factory=list)
+    contract_decline_until_turn: int = 0
     near_miss_count: int = 0
     contract_notice: str = ""
     message_log: List[str] = field(default_factory=list)
@@ -570,6 +574,12 @@ class GameState:
         contract = BountyContract.from_dict(contract_data) if isinstance(contract_data, dict) else None
         data_clean = dict(data)
         data_clean["active_contract"] = contract
+        offers = data_clean.get("contract_offers")
+        if isinstance(offers, list):
+            data_clean["contract_offers"] = [
+                BountyContract.from_dict(offer) if isinstance(offer, dict) else offer
+                for offer in offers
+            ]
         quests = data_clean.get("quests")
         if isinstance(quests, list):
             data_clean["quests"] = [Quest.from_dict(q) if isinstance(q, dict) else q for q in quests]
