@@ -55,6 +55,10 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertIn("deck", data)
         self.assertIn("career", data)
         self.assertIn("lethal", data["extraction_risk"])
+        contract = data["state"]["active_contract"]
+        self.assertEqual(contract["risk_tier"], "priority")
+        self.assertGreater(contract["expires_turn"], 0)
+        self.assertGreater(contract["bonus_creds"], 0)
 
     def test_get_shop(self):
         status, data = self._get("/api/shop")

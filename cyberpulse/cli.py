@@ -85,6 +85,15 @@ def print_hud(engine: GameEngine) -> None:
     if engine.deck.active_daemons:
         print(f"[*] Daemons:    {len(engine.deck.active_daemons)} background listener(s) active")
     print(f"[*] Contract:   {contract_str}")
+    if contract and not contract.completed and not contract.failed and contract.expires_turn:
+        remaining = contract.expires_turn - engine.state.turns_elapsed
+        clock = "EXPIRED" if remaining <= 0 else f"{remaining} turn(s) left"
+        rush = ""
+        if contract.bonus_creds and contract.rush_turn:
+            rush = f" | RUSH +{contract.bonus_creds} by turn {contract.rush_turn}"
+        print(f"[*] Job Clock:  {clock} | {contract.risk_tier.upper()} risk{rush}")
+    if engine.state.contract_notice:
+        print(f"[!] Job Alert:  {engine.state.contract_notice}")
     if engine.state.near_miss_count > 0:
         print(f"[*] Adrenaline: [NEAR-MISS ENCOUNTERS: {engine.state.near_miss_count}]")
     story = engine.story_summary()
@@ -114,6 +123,40 @@ def print_hud(engine: GameEngine) -> None:
         if adj:
             icon = "[BREACHED]" if adj.status == NodeStatus.BREACHED else ("[DISCOVERED]" if adj.status == NodeStatus.DISCOVERED else "[LOCKED]")
             print(f"   * {adj.ip_address:<15} | {adj.hostname:<24} | {icon} (Sec: {adj.security_level})")
+    print("+==========================================================================+")
+
+
+def print_contract(engine: GameEngine) -> None:
+    contract = engine.state.active_contract
+    print("\n+==========================================================================+")
+    print("|                 >> SYNDICATE CONTRACT BRIEFING <<                        |")
+    print("+==========================================================================+")
+    if not contract:
+        print("[*] No active contract. The Syndicate has no fresh work for this grid.")
+        if engine.state.contract_notice:
+            print(f"[!] Alert:     {engine.state.contract_notice}")
+        print("+==========================================================================+")
+        return
+    contact = engine._find_contact(contract.giver)
+    giver = f"{contact.name} ({contact.handle})" if contact else "The Syndicate"
+    remaining = contract.expires_turn - engine.state.turns_elapsed if contract.expires_turn else None
+    print(f"[*] Job:       {contract.title} [{contract.risk_tier.upper()} RISK]")
+    print(f"[*] Broker:    {giver}")
+    print(f"[*] Objective: {contract.description or contract.objective_kind.upper()}")
+    print(f"[*] Target:    {contract.target_ip or contract.target_node_type}")
+    if contract.target_file:
+        print(f"[*] Payload:   {contract.target_file}")
+    print(f"[*] Stealth:   trace must stay <= {contract.max_trace_limit}% at confirmation")
+    print(f"[*] Payout:    +{contract.reward_creds} base Creds" + (f" +{contract.bonus_creds} rush bonus" if contract.bonus_creds else ""))
+    if remaining is None:
+        print("[*] Deadline:  none (legacy contract)")
+    else:
+        state = "EXPIRED" if remaining <= 0 else f"{remaining} turn(s) left"
+        print(f"[*] Deadline:  {state} (turn {contract.expires_turn})")
+        if contract.rush_turn:
+            print(f"[*] Rush:      complete by turn {contract.rush_turn} for the bonus")
+    if engine.state.contract_notice:
+        print(f"[!] Alert:     {engine.state.contract_notice}")
     print("+==========================================================================+")
 
 
@@ -366,7 +409,7 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
             print_career(save_mgr.load_career())
             continue
         if choice in ("6", "help", "how"):
-            print("Commands: status, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
+            print("Commands: status, contract, bounty, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
             print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
             print("          move, overdrive, spoof, cash_out, shop, buy, career, save, load, quit")
             continue
@@ -518,6 +561,10 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             method = parts[1]
         ok, msg = engine.counter_hunter(method=method)
         print(msg)
+        return True
+
+    if action in ("contract", "contracts", "bounty", "job"):
+        print_contract(engine)
         return True
 
     if action in ("quests", "missions", "jobs"):
@@ -801,7 +848,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("No saved game found.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, spoof, cash_out, shop, buy, career, status, save, load, quit")
+    print(f"Unknown command: '{action}'. Commands: contract, bounty, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, spoof, cash_out, shop, buy, career, status, save, load, quit")
     return True
 
 
@@ -859,10 +906,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     # Batch script execution mode
     if args.commands:
         cmds = args.commands.split(";")
+        notice_seen = engine.state.contract_notice
         for c in cmds:
             try:
                 if not run_command(c, engine, save_mgr, auto_solve=args.auto_solve):
                     break
+                if engine.state.contract_notice and engine.state.contract_notice != notice_seen:
+                    print(f"\n[!] {engine.state.contract_notice}")
+                notice_seen = engine.state.contract_notice
                 if engine.state.is_victory or engine.state.is_game_over:
                     break
             except EOFError:
@@ -884,11 +935,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         else:
             print("No saved infiltration found. Starting a new run.")
     print_hud(engine)
+    notice_seen = engine.state.contract_notice
     while not engine.state.is_game_over and not engine.state.is_victory and not engine.state.is_jacked_out:
         try:
             line = input("\ncyberpulse> ")
             if not run_command(line, engine, save_mgr, auto_solve=args.auto_solve):
                 break
+            if engine.state.contract_notice and engine.state.contract_notice != notice_seen:
+                print(f"\n[!] {engine.state.contract_notice}")
+            notice_seen = engine.state.contract_notice
         except (KeyboardInterrupt, EOFError):
             print("\n👋 Disconnected.")
             break

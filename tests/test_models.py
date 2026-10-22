@@ -109,6 +109,39 @@ class TestModels(unittest.TestCase):
         self.assertIsNotNone(restored.active_contract)
         self.assertEqual(restored.active_contract.contract_id, "c1")
 
+    def test_bounty_contract_objective_inference_and_deadline_roundtrip(self):
+        legacy = BountyContract(
+            contract_id="c-legacy",
+            title="Legacy Wipe",
+            target_node_type=NodeType.DATA_VAULT,
+            target_file="/data/ledger.csv",
+            wipe_logs_required=True,
+        )
+        self.assertEqual(legacy.objective_kind, "wipe")
+
+        contract = BountyContract(
+            contract_id="c-new",
+            title="Deadline Job",
+            target_node_type=NodeType.FIREWALL,
+            target_ip="192.168.1.10",
+            giver="mira",
+            risk_tier="black",
+            objective="breach",
+            expires_turn=30,
+            rush_turn=16,
+            bonus_creds=90,
+            description="Breach the border firewall.",
+        )
+        restored = BountyContract.from_dict(contract.to_dict())
+
+        self.assertEqual(restored.objective_kind, "breach")
+        self.assertEqual(restored.giver, "mira")
+        self.assertEqual(restored.risk_tier, "black")
+        self.assertEqual(restored.expires_turn, 30)
+        self.assertEqual(restored.rush_turn, 16)
+        self.assertEqual(restored.bonus_creds, 90)
+        self.assertEqual(restored.description, "Breach the border firewall.")
+
     def test_career_profile_roundtrip(self):
         profile = CareerProfile(alias="Phantom", banked_creds=1200, current_streak=3)
         data = profile.to_dict()

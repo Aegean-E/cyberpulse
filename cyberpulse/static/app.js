@@ -505,9 +505,20 @@ function renderHUD(data) {
     document.getElementById("contract-card").classList.remove("hidden");
     document.getElementById("contract-bounty-val").textContent = `+${contract.reward_creds} CR`;
     document.getElementById("contract-title").textContent = contract.title;
-    document.getElementById("contract-status").textContent = contract.completed
+    let contractStatus = contract.completed
       ? "STATUS: COMPLETED [FUNDS GRANTED]"
-      : `TARGET: ${contract.target_node_type} | TRACE LIMIT: ${contract.max_trace_limit}%`;
+      : `${(contract.risk_tier || "standard").toUpperCase()} | TARGET: ${contract.target_node_type} | TRACE LIMIT: ${contract.max_trace_limit}%`;
+    if (!contract.completed && contract.expires_turn) {
+      const remaining = Math.max(0, contract.expires_turn - gState.turns_elapsed);
+      contractStatus += ` | DEADLINE: ${remaining} TURN${remaining === 1 ? "" : "S"}`;
+      if (contract.bonus_creds) {
+        contractStatus += ` | RUSH +${contract.bonus_creds} BY TURN ${contract.rush_turn}`;
+      }
+    }
+    if (gState.contract_notice) {
+      contractStatus += ` | ${gState.contract_notice}`;
+    }
+    document.getElementById("contract-status").textContent = contractStatus;
   }
 
   // Check Game Over / Victory Overlays

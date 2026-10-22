@@ -72,6 +72,25 @@ class BountyContract:
     max_trace_limit: int = 75
     reward_creds: int = 150
     completed: bool = False
+    giver: str = ""
+    risk_tier: str = "standard"
+    objective: str = ""  # "", "breach", "extract", "wipe"; empty infers legacy behavior
+    expires_turn: int = 0  # 0 = no deadline for legacy contracts
+    rush_turn: int = 0     # complete at or before this turn for the rush bonus
+    bonus_creds: int = 0   # rush bonus
+    failed: bool = False
+    description: str = ""
+
+    @property
+    def objective_kind(self) -> str:
+        """Return the explicit objective, or infer it from legacy contract fields."""
+        if self.objective:
+            return self.objective
+        if self.wipe_logs_required:
+            return "wipe"
+        if self.target_file or self.target_ip:
+            return "extract"
+        return "breach"
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -527,6 +546,7 @@ class GameState:
     looted_payloads: List[str] = field(default_factory=list)
     active_contract: Optional[BountyContract] = None
     near_miss_count: int = 0
+    contract_notice: str = ""
     message_log: List[str] = field(default_factory=list)
     combo_streak: int = 0
     best_combo: int = 0

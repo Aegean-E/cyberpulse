@@ -191,6 +191,15 @@ CRAFTING_RECIPES: Dict[str, VirusCraftRecipe] = {
 }
 
 
+CONTRACT_RISK: Dict[str, Dict[str, float]] = {
+    "standard": {"reward": 1.0, "max_trace": 80, "rush": 0.20, "duration_delta": 0},
+    "priority": {"reward": 1.2, "max_trace": 70, "rush": 0.22, "duration_delta": -3},
+    "black": {"reward": 1.5, "max_trace": 60, "rush": 0.25, "duration_delta": -5},
+}
+
+CONTRACT_BASE_REWARD: Dict[str, int] = {"breach": 120, "extract": 200, "wipe": 220}
+
+
 class GameEngine:
     """Manages gameplay rules, push-your-luck risk, and victory/defeat conditions."""
 
@@ -220,6 +229,16 @@ class GameEngine:
             wipe_logs_required=True,
             max_trace_limit=70,
             reward_creds=200,
+            giver="mira",
+            risk_tier="priority",
+            objective="wipe",
+            expires_turn=24,
+            rush_turn=13,
+            bonus_creds=75,
+            description=(
+                "Steal the corporate slush-fund ledger from the Financial Ledger Vault "
+                "and sanitize its access logs before the Syndicate window closes."
+            ),
         )
 
         self.state: GameState = GameState(
@@ -921,6 +940,7 @@ class GameEngine:
         world.turns_since_event += 1
         messages: List[str] = []
         self._decay_alert(profile.alert_decay_bonus)
+        messages.extend(self._check_contract_clock())
 
         event = ambient_event_for(
             self.seed, self.state.turns_elapsed, world.alert_level, world.turns_since_event
@@ -1358,35 +1378,308 @@ class GameEngine:
 
         return True, "Requirements met."
 
-    def dispatch_next_contract(self) -> Optional[BountyContract]:
-        """Dispatch a new Syndicate Bounty Contract after previous completion (Zeigarnik Effect)."""
-        targets = [NodeType.FIREWALL, NodeType.DATA_VAULT, NodeType.ICE_DEFENSE]
-        next_target = self.rng.choice(targets)
-        contract_num = self.state.turns_elapsed + 1
-        new_contract = BountyContract(
-            contract_id=f"cnt_{contract_num:03d}",
-            title=f"Syndicate Priority Bounty: Sector {next_target}",
-            target_node_type=next_target,
-            max_trace_limit=80,
-            reward_creds=175,
+    def _contract_rng(self) -> random.Random:
+        """Dedicated contract stream so contract generation never shifts reward rolls."""
+        return world_rng(self.seed, self.state.turns_elapsed, "contract")
+
+    def _contract_giver(self, objective: str, risk: str) -> str:
+        """Pick the operative whose trust and voice fit the job."""
+        if risk == "black":
+            zero = self._find_contact("zero")
+            if zero and zero.unlock_act <= self.state.story_act:
+                return "zero"
+        if objective in ("extract", "wipe"):
+            archivist = self._find_contact("archivist")
+            if archivist and archivist.unlock_act <= self.state.story_act:
+                return "archivist"
+        return "mira"
+
+    def _contract_candidates(self, objective: str) -> List[Node]:
+        """Return hosts that can still satisfy a fresh job for this objective."""
+        core_allowed = self.state.story_act >= 4
+        nodes = [
+            node
+            for node in self.nodes.values()
+            if node.node_type != NodeType.GATEWAY
+            and (node.node_type != NodeType.CENTRAL_CORE or core_allowed)
+        ]
+        if objective == "breach":
+            return [node for node in nodes if node.status != NodeStatus.BREACHED]
+        if objective == "extract":
+            return [
+                node
+                for node in nodes
+                if any(
+                    vfile.is_target_data
+                    and vfile.value_creds > 0
+                    and vfile.path not in self.state.looted_payloads
+                    for vfile in node.filesystem
+                )
+            ]
+        if objective == "wipe":
+            return [node for node in nodes if not node.logs_cleared]
+        return []
+
+    def _choose_contract_risk(self, rng: random.Random) -> str:
+        roll = rng.random()
+        if self.state.world.alert_level >= 55 or self.state.story_act >= 3:
+            if roll < 0.18:
+                return "black"
+            if roll < 0.55:
+                return "priority"
+            return "standard"
+        return "priority" if roll < 0.35 else "standard"
+
+    def _contract_deadline(self, objective: str, node: Node, risk: str, trust: int, rng: random.Random) -> Tuple[int, int]:
+        duration = 18 + (4 if objective in ("extract", "wipe") else 0) + node.security_level * 2
+        duration += int(CONTRACT_RISK[risk]["duration_delta"])
+        duration += min(3, max(0, trust) // 2)
+        duration += rng.randint(-2, 2)
+        duration = max(8, duration)
+        expires_turn = self.state.turns_elapsed + duration
+        rush_turn = self.state.turns_elapsed + max(4, duration // 2)
+        return expires_turn, rush_turn
+
+    def _build_contract(self) -> Optional[BountyContract]:
+        """Generate a concrete, deadline-bound job from the live grid state."""
+        rng = self._contract_rng()
+        feasible = [objective for objective in ("breach", "extract", "wipe") if self._contract_candidates(objective)]
+        if not feasible:
+            return None
+
+        objective = rng.choices(
+            feasible,
+            weights=[3 if name == "breach" else 4 for name in feasible],
+            k=1,
+        )[0]
+        candidates = sorted(self._contract_candidates(objective), key=lambda node: node.node_id)
+        node = rng.choice(candidates)
+        risk = self._choose_contract_risk(rng)
+        giver = self._contract_giver(objective, risk)
+        contact = self._find_contact(giver)
+        trust = contact.trust if contact else 0
+        expires_turn, rush_turn = self._contract_deadline(objective, node, risk, trust, rng)
+
+        base_reward = CONTRACT_BASE_REWARD[objective] + node.security_level * 20
+        reward = int(round(base_reward * CONTRACT_RISK[risk]["reward"]))
+        bonus = int(round(reward * CONTRACT_RISK[risk]["rush"]))
+        max_trace = int(CONTRACT_RISK[risk]["max_trace"])
+
+        target_file = None
+        wipe_required = False
+        if objective == "extract":
+            files = sorted(
+                (
+                    vfile
+                    for vfile in node.filesystem
+                    if vfile.is_target_data
+                    and vfile.value_creds > 0
+                    and vfile.path not in self.state.looted_payloads
+                ),
+                key=lambda vfile: vfile.path,
+            )
+            target_file = rng.choice(files).path
+        elif objective == "wipe":
+            wipe_required = True
+            unlooted = sorted(
+                (
+                    vfile
+                    for vfile in node.filesystem
+                    if vfile.is_target_data
+                    and vfile.value_creds > 0
+                    and vfile.path not in self.state.looted_payloads
+                ),
+                key=lambda vfile: vfile.path,
+            )
+            if unlooted and rng.random() < 0.5:
+                target_file = rng.choice(unlooted).path
+
+        if objective == "breach":
+            title = f"Syndicate Breach Order: {node.hostname}"
+            description = f"Infiltrate {node.hostname} ({node.ip_address}) and plant the Syndicate rootkit."
+        elif objective == "extract":
+            title = f"Data Extraction: {str(target_file).split('/')[-1]}"
+            description = f"Infiltrate {node.hostname} ({node.ip_address}) and extract {target_file}."
+        else:
+            title = f"Sanitize Contract: {node.hostname}"
+            if target_file:
+                description = (
+                    f"Steal {target_file} from {node.hostname} ({node.ip_address}) and wipe its "
+                    "access logs before the Syndicate window closes."
+                )
+            else:
+                description = (
+                    f"Infiltrate {node.hostname} ({node.ip_address}) and wipe its access logs "
+                    "before the Syndicate window closes."
+                )
+
+        contract = BountyContract(
+            contract_id=f"cnt_{self.state.turns_elapsed:03d}_{rng.randint(100, 999)}",
+            title=title,
+            target_node_type=node.node_type,
+            target_ip=node.ip_address,
+            target_file=target_file,
+            wipe_logs_required=wipe_required,
+            max_trace_limit=max_trace,
+            reward_creds=reward,
+            giver=giver,
+            risk_tier=risk,
+            objective=objective,
+            expires_turn=expires_turn,
+            rush_turn=rush_turn,
+            bonus_creds=bonus,
+            description=description,
         )
+        return contract
+
+    def dispatch_next_contract(self) -> Optional[BountyContract]:
+        """Dispatch a concrete Syndicate job, or clear the board when the run is exhausted."""
+        new_contract = self._build_contract()
         self.state.active_contract = new_contract
+        if new_contract:
+            self._log_story(
+                f"NEW SYNDICATE CONTRACT: {new_contract.title} "
+                f"({new_contract.risk_tier.upper()} risk, deadline turn {new_contract.expires_turn})."
+            )
         return new_contract
 
-    def _contract_completes_on_breach(self, contract: BountyContract, node: Node) -> bool:
-        """Return True when a node breach satisfies a contract without extra objectives.
+    def _contract_targets_node(self, contract: BountyContract, node: Node) -> bool:
+        if contract.target_ip and contract.target_ip != node.ip_address:
+            return False
+        return node.node_type == contract.target_node_type
 
-        Extraction contracts that name a target file, target host, or log wipe must be
-        completed through ``download_file`` / ``wipe_logs`` instead of a bare breach.
-        """
+    def _contract_completes_on_breach(self, contract: BountyContract, node: Node) -> bool:
+        """Return True when a node breach satisfies a contract without extra objectives."""
+        if contract.completed or contract.failed:
+            return False
+        if contract.objective_kind != "breach" or not self._contract_targets_node(contract, node):
+            return False
+        return self.state.trace_percent <= contract.max_trace_limit
+
+    def _contract_download_matches(self, contract: BountyContract, node: Node, vfile: VirtualFile) -> bool:
+        """Return True when this download advances the active contract."""
         if contract.completed:
             return False
-        if contract.target_file or contract.target_ip or contract.wipe_logs_required:
+        if contract.target_ip and contract.target_ip != node.ip_address:
             return False
+        kind = contract.objective_kind
+        if kind == "extract":
+            if contract.target_file:
+                return contract.target_file == vfile.path
+            return bool(contract.target_ip) and contract.target_ip == node.ip_address
+        if kind == "wipe":
+            return bool(contract.target_file) and contract.target_file == vfile.path
+        # Legacy generic sector bounties may be cleared by extracting from a matching host.
         return (
-            node.node_type == contract.target_node_type
-            and self.state.trace_percent <= contract.max_trace_limit
+            not contract.target_file
+            and not contract.target_ip
+            and node.node_type == contract.target_node_type
         )
+
+    def _contract_wipe_ready(self, contract: BountyContract, node: Node) -> bool:
+        if contract.completed or contract.objective_kind != "wipe":
+            return False
+        if contract.target_ip and contract.target_ip != node.ip_address:
+            return False
+        return not contract.target_file or contract.target_file in self.state.looted_payloads
+
+    def _contract_payout(self, contract: BountyContract) -> Tuple[int, int, int]:
+        """Return (total, trust_bonus, rush_bonus) for a completed job."""
+        contact = self._find_contact(contract.giver)
+        trust = max(0, contact.trust) if contact else 0
+        trust_bonus = int(round(contract.reward_creds * min(0.25, 0.05 * trust)))
+        rush_bonus = (
+            contract.bonus_creds
+            if contract.rush_turn and self.state.turns_elapsed <= contract.rush_turn
+            else 0
+        )
+        return contract.reward_creds + trust_bonus + rush_bonus, trust_bonus, rush_bonus
+
+    def _finalize_contract(self, contract: BountyContract, node: Node) -> str:
+        """Pay a completed job once, reward its giver's trust, and dispatch the next job."""
+        if contract.completed or contract.failed:
+            return ""
+        total, trust_bonus, rush_bonus = self._contract_payout(contract)
+        contract.completed = True
+        self.state.contract_notice = ""
+        self.state.unbanked_creds += total
+        contact = self._find_contact(contract.giver)
+        if contact:
+            contact.trust += 1
+
+        payout_bits = [f"+{total} Creds"]
+        if trust_bonus:
+            payout_bits.append(f"trust bonus +{trust_bonus}")
+        if rush_bonus:
+            payout_bits.append(f"RUSH BONUS +{rush_bonus}")
+        message = f"🏆 SYNDICATE CONTRACT COMPLETED on {node.hostname}! {', '.join(payout_bits)}."
+        record_news(
+            self.state.world,
+            self.state.turns_elapsed,
+            "Syndicate",
+            f"Syndicate bounty cleared on {node.hostname}; payment released.",
+            tone="positive",
+        )
+        self.state.message_log.append(message)
+        self.dispatch_next_contract()
+        return message
+
+    def _fail_contract(self, contract: BountyContract) -> List[str]:
+        """Expire a job, cost its giver trust, raise heat, and post the next contract."""
+        contract.failed = True
+        contact = self._find_contact(contract.giver)
+        if contact:
+            contact.trust = max(-1, contact.trust - 1)
+        adjust_alert(self.state.world, 3)
+        message = (
+            f"⏳ CONTRACT EXPIRED: {contract.title} missed its turn {contract.expires_turn} "
+            f"deadline. {contact.name if contact else 'The Syndicate'} loses trust (-1) and the "
+            "grid alert rises (+3%)."
+        )
+        record_news(
+            self.state.world,
+            self.state.turns_elapsed,
+            "Syndicate",
+            "A contracted runner missed a deadline; the Syndicate is displeased.",
+            tone="negative",
+        )
+        self.state.active_contract = None
+        message += " New job pending on the next grid tick."
+        self.state.contract_notice = message
+        self.state.message_log.append(message)
+        return [message]
+
+    def _check_contract_clock(self) -> List[str]:
+        """Warn near a deadline, expire a missed job, and repost when the board is empty."""
+        messages: List[str] = []
+        contract = self.state.active_contract
+        if contract and not contract.completed and not contract.failed and contract.expires_turn:
+            remaining = contract.expires_turn - self.state.turns_elapsed
+            if remaining <= 0:
+                return self._fail_contract(contract)
+            if remaining in (5, 2):
+                rush = ""
+                if contract.rush_turn and self.state.turns_elapsed <= contract.rush_turn:
+                    rush = f" Rush bonus still live until turn {contract.rush_turn}."
+                warning = (
+                    f"⏳ CONTRACT CLOCK: {remaining} turn(s) left on {contract.title} "
+                    f"(deadline turn {contract.expires_turn}).{rush}"
+                )
+                self.state.contract_notice = warning
+                self.state.message_log.append(warning)
+                messages.append(warning)
+
+        if self.state.active_contract is None:
+            previous_notice = self.state.contract_notice
+            next_contract = self.dispatch_next_contract()
+            if next_contract:
+                message = f"📡 NEW SYNDICATE CONTRACT: {next_contract.title} ({next_contract.risk_tier.upper()} risk)."
+                if "CONTRACT EXPIRED" in previous_notice:
+                    message = f"{previous_notice} New job posted: {next_contract.title}."
+                self.state.contract_notice = message
+                self.state.message_log.append(message)
+                messages.append(message)
+        return messages
 
     def complete_breach(self, node_id: str) -> Tuple[bool, str]:
         """Mark node as breached, evaluate variable-ratio rewards, and check contracts."""
@@ -1448,17 +1741,19 @@ class GameEngine:
         # Syndicate Contract Check (Zeigarnik Effect)
         contract = self.state.active_contract
         if contract and self._contract_completes_on_breach(contract, node):
-            contract.completed = True
-            self.state.unbanked_creds += contract.reward_creds
-            msg += f" 🏆 CONTRACT FULFILLED! +{contract.reward_creds} Creds!"
-            record_news(
-                self.state.world,
-                self.state.turns_elapsed,
-                "Syndicate",
-                f"Syndicate bounty cleared on {node.hostname}; payment released.",
-                tone="positive",
+            msg += "\n" + self._finalize_contract(contract, node)
+        elif (
+            contract
+            and not contract.completed
+            and contract.objective_kind == "breach"
+            and self._contract_targets_node(contract, node)
+            and self.state.trace_percent > contract.max_trace_limit
+        ):
+            msg += (
+                f"\n⚠️ CONTRACT TRACE LIMIT EXCEEDED: {self.state.trace_percent}% > "
+                f"{contract.max_trace_limit}%. The breach is real but the bounty is not "
+                "confirmed; cool trace and re-breach after the grid re-secures the host."
             )
-            self.dispatch_next_contract()
 
         # Story quest progress: only a first, data-bearing breach counts; a re-secured
         # host must not be farmable for quest credit.
@@ -1934,6 +2229,7 @@ class GameEngine:
 
         # Stolen data fences at the live black-market index: a hot grid pays more.
         fence_rate = market_multiplier(self.state.world)
+        contract_before = self.state.active_contract
 
         self.add_trace(8)
         self.advance_turn()
@@ -1971,25 +2267,39 @@ class GameEngine:
                 f" Archived to local rig ({loot_path})."
             )
 
-        contract = self.state.active_contract
-        if contract and not contract.completed:
-            if contract.target_file:
-                target_matches = contract.target_file == vfile.path
-            elif contract.target_ip:
-                target_matches = contract.target_ip == node.ip_address
-            else:
-                target_matches = (
-                    node.node_type == contract.target_node_type
-                    and self.state.trace_percent <= contract.max_trace_limit
-                )
+        contract = contract_before
+        if contract and contract.failed and self._contract_download_matches(contract, node, vfile):
+            msg += (
+                "\n⏳ CONTRACT WINDOW CLOSED: the transfer finished after the deadline tick; "
+                "the old bounty was not paid."
+            )
+        elif contract and not contract.completed and not contract.failed:
+            target_matches = self._contract_download_matches(contract, node, vfile)
             if target_matches:
-                if not contract.wipe_logs_required or node.logs_cleared:
-                    contract.completed = True
-                    self.state.unbanked_creds += contract.reward_creds
-                    msg += f"\n🏆 SYNDICATE CONTRACT COMPLETED! Reward: +{contract.reward_creds} Creds!"
-                    self.dispatch_next_contract()
+                kind = contract.objective_kind
+                if kind == "wipe":
+                    if contract.target_file in self.state.looted_payloads and node.logs_cleared:
+                        if self.state.trace_percent <= contract.max_trace_limit:
+                            msg += "\n" + self._finalize_contract(contract, node)
+                        else:
+                            msg += (
+                                f"\n⚠️ CONTRACT TRACE LIMIT EXCEEDED: {self.state.trace_percent}% > "
+                                f"{contract.max_trace_limit}%. Cool trace and re-download the target "
+                                "to confirm the bounty."
+                            )
+                    elif contract.target_file in self.state.looted_payloads:
+                        msg += (
+                            "\n⚠️ BOUNTY OBJECTIVE: Target data stolen, but contract requires "
+                            f"logs to be wiped! Run: wipe_logs {node.ip_address}"
+                        )
+                elif self.state.trace_percent > contract.max_trace_limit:
+                    msg += (
+                        f"\n⚠️ CONTRACT TRACE LIMIT EXCEEDED: {self.state.trace_percent}% > "
+                        f"{contract.max_trace_limit}%. Cool trace and re-download the target "
+                        "to confirm the bounty."
+                    )
                 else:
-                    msg += f"\n⚠️ BOUNTY OBJECTIVE: Target data stolen, but contract requires logs to be wiped! Run: wipe_logs {node.ip_address}"
+                    msg += "\n" + self._finalize_contract(contract, node)
 
         for line in self._progress_quests("steal_file", vfile.path):
             msg += f"\n{line}"
@@ -2013,7 +2323,19 @@ class GameEngine:
         if node.status != NodeStatus.BREACHED:
             return False, f"Access Denied: Host {node.hostname} is not breached."
 
+        contract_before = self.state.active_contract
         if node.logs_cleared:
+            contract = contract_before
+            if contract and self._contract_wipe_ready(contract, node):
+                if contract.failed:
+                    return False, "Logs are already sanitized; the old contract window has closed."
+                if self.state.trace_percent <= contract.max_trace_limit:
+                    signoff = self._finalize_contract(contract, node)
+                    return True, f"🧹 LOGS ALREADY SANITIZED on {node.hostname}. {signoff}"
+                return False, (
+                    f"Logs on {node.hostname} are already sanitized, but contract sign-off needs "
+                    f"trace <= {contract.max_trace_limit}% (current {self.state.trace_percent}%)."
+                )
             return False, f"Logs on {node.hostname} are already sanitized."
 
         node.logs_cleared = True
@@ -2033,17 +2355,22 @@ class GameEngine:
 
         msg = f"🧹 LOGS SANITIZED: Erased intruder access timestamps on {node.hostname} ({node.ip_address}). Trace dropped by {trace_drop}% (current: {self.state.trace_percent}%)."
 
-        contract = self.state.active_contract
-        if contract and not contract.completed and contract.wipe_logs_required:
-            target_host_match = not contract.target_ip or contract.target_ip == node.ip_address
-            has_looted_target = (
-                not contract.target_file or contract.target_file in self.state.looted_payloads
+        contract = contract_before
+        wipe_ready = bool(contract and self._contract_wipe_ready(contract, node))
+        if contract and contract.failed and wipe_ready:
+            msg += (
+                "\n⏳ CONTRACT WINDOW CLOSED: the logs were sanitized after the deadline tick; "
+                "the old bounty was not paid."
             )
-            if target_host_match and has_looted_target:
-                contract.completed = True
-                self.state.unbanked_creds += contract.reward_creds
-                msg += f"\n🏆 SYNDICATE CONTRACT COMPLETED! Clean exit confirmed. +{contract.reward_creds} Creds!"
-                self.dispatch_next_contract()
+        elif wipe_ready:
+            if self.state.trace_percent <= contract.max_trace_limit:
+                msg += "\n" + self._finalize_contract(contract, node)
+            else:
+                msg += (
+                    f"\n⚠️ CONTRACT TRACE LIMIT EXCEEDED: {self.state.trace_percent}% > "
+                    f"{contract.max_trace_limit}%. Logs are sanitized; cool trace and run "
+                    f"wipe_logs {node.ip_address} again to sign off."
+                )
 
         for line in self._progress_quests("wipe_logs", node.ip_address):
             msg += f"\n{line}"

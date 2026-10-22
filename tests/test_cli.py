@@ -49,6 +49,24 @@ class TestCLI(unittest.TestCase):
         self.assertIn("External Border Gateway", out)
         self.assertIn("Neural link terminated", out)
 
+    def test_contract_briefing_and_job_clock(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "contract;status")
+
+        self.assertEqual(code, 0)
+        self.assertIn("SYNDICATE CONTRACT BRIEFING", out)
+        self.assertIn("Deadline", out)
+        self.assertIn("Rush", out)
+        self.assertIn("Job Clock", out)
+        self.assertIn("PRIORITY RISK", out)
+
+    def test_contract_expiry_is_surfaced_in_cli(self):
+        batch = ";".join(["lay_low 3"] * 9)
+        code, out = self.run_cli("--seed", "1337", "--exec", batch)
+
+        self.assertEqual(code, 0)
+        self.assertIn("CONTRACT EXPIRED", out)
+        self.assertIn("New job posted", out)
+
     def test_story_quests_contacts_and_overdrive_commands(self):
         batch_cmds = "story;quests;contacts;overdrive;status"
         code, out = self.run_cli("--seed", "1337", "--exec", batch_cmds)

@@ -195,6 +195,176 @@ class TestEngine(unittest.TestCase):
         self.assertTrue(contract.completed)
         self.assertIsNot(self.engine.state.active_contract, contract)
 
+    def test_generated_contracts_are_concrete_and_deterministic(self):
+        other = GameEngine(seed=42)
+
+        first = self.engine.dispatch_next_contract()
+        second = other.dispatch_next_contract()
+
+        self.assertIsNotNone(first)
+        self.assertIsNotNone(second)
+        self.assertEqual(first.to_dict(), second.to_dict())
+        self.assertIn(first.objective_kind, ("breach", "extract", "wipe"))
+        self.assertTrue(first.target_ip)
+        self.assertGreater(first.expires_turn, self.engine.state.turns_elapsed)
+        self.assertLess(first.rush_turn, first.expires_turn)
+        self.assertGreater(first.bonus_creds, 0)
+        self.assertIn(first.risk_tier, ("standard", "priority", "black"))
+        self.assertTrue(first.giver)
+
+    def test_contract_deadline_warns_then_expires(self):
+        contract = self.engine.state.active_contract
+        self.engine.state.turns_elapsed = contract.expires_turn - 5
+        self.engine.tick_world()
+
+        self.assertFalse(contract.failed)
+        self.assertIn("CONTRACT CLOCK", self.engine.state.contract_notice)
+        self.assertTrue(any("CONTRACT CLOCK" in message for message in self.engine.state.message_log))
+
+        self.engine.state.turns_elapsed = contract.expires_turn
+        contact = self.engine._find_contact(contract.giver)
+        trust_before = contact.trust
+        self.engine.tick_world()
+
+        self.assertTrue(contract.failed)
+        self.assertEqual(contact.trust, max(-1, trust_before - 1))
+        self.assertIsNone(self.engine.state.active_contract)
+        self.assertIn("CONTRACT EXPIRED", self.engine.state.contract_notice)
+
+        self.engine.tick_world()
+
+        self.assertIsNotNone(self.engine.state.active_contract)
+        self.assertIn("New job posted", self.engine.state.contract_notice)
+
+    def test_contract_payout_includes_trust_and_rush(self):
+        contract = self.engine.state.active_contract
+        contract.reward_creds = 100
+        contract.bonus_creds = 25
+        contract.rush_turn = 5
+        contract.expires_turn = 20
+        contact = self.engine._find_contact("mira")
+        contact.trust = 4
+        before_unbanked = self.engine.state.unbanked_creds
+
+        total, trust_bonus, rush_bonus = self.engine._contract_payout(contract)
+
+        self.assertEqual((total, trust_bonus, rush_bonus), (145, 20, 25))
+        msg = self.engine._finalize_contract(contract, self.engine.nodes["node_vault_1"])
+        self.assertTrue(contract.completed)
+        self.assertEqual(self.engine.state.unbanked_creds, before_unbanked + 145)
+        self.assertEqual(contact.trust, 5)
+        self.assertIn("RUSH BONUS", msg)
+        self.assertIn("CONTRACT COMPLETED", msg)
+
+    def test_breach_contract_requires_its_named_target(self):
+        from cyberpulse.models import BountyContract
+
+        contract = BountyContract(
+            contract_id="cnt_breach_target",
+            title="Targeted Breach",
+            target_node_type=NodeType.FIREWALL,
+            target_ip="192.168.1.10",
+            objective="breach",
+            max_trace_limit=100,
+            reward_creds=100,
+            giver="mira",
+            expires_turn=99,
+        )
+        self.engine.state.active_contract = contract
+
+        self.engine.complete_breach("node_proxy_b")
+        self.assertFalse(contract.completed)
+
+        self.engine.complete_breach("node_proxy_a")
+        self.assertTrue(contract.completed)
+        self.assertIsNot(self.engine.state.active_contract, contract)
+
+    def test_extract_contract_requires_named_file_and_stealth(self):
+        from cyberpulse.models import BountyContract
+
+        contract = BountyContract(
+            contract_id="cnt_extract_target",
+            title="Targeted Extraction",
+            target_node_type=NodeType.FIREWALL,
+            target_ip="192.168.1.10",
+            target_file="/home/admin/network_map.txt",
+            objective="extract",
+            max_trace_limit=20,
+            reward_creds=100,
+            giver="mira",
+            expires_turn=99,
+        )
+        self.engine.state.active_contract = contract
+        self.engine.complete_breach("node_proxy_a")
+
+        self.engine.download_file("192.168.1.10", "/var/log/auth.log")
+        self.assertFalse(contract.completed)
+
+        self.engine.state.trace_percent = 50
+        _, msg, _ = self.engine.download_file("192.168.1.10", "/home/admin/network_map.txt")
+        self.assertFalse(contract.completed)
+        self.assertIn("TRACE LIMIT EXCEEDED", msg)
+
+        self.engine.state.trace_percent = 0
+        self.engine.download_file("192.168.1.10", "/home/admin/network_map.txt")
+        self.assertTrue(contract.completed)
+
+    def test_contract_expiry_is_not_missed_by_download_tick(self):
+        from cyberpulse.models import BountyContract
+
+        contract = BountyContract(
+            contract_id="cnt_deadline_download",
+            title="Last Second Transfer",
+            target_node_type=NodeType.FIREWALL,
+            target_ip="192.168.1.10",
+            target_file="/home/admin/network_map.txt",
+            objective="extract",
+            max_trace_limit=100,
+            reward_creds=100,
+            giver="mira",
+            expires_turn=1,
+        )
+        self.engine.state.active_contract = contract
+        self.engine.complete_breach("node_proxy_a")
+
+        ok, msg, _ = self.engine.download_file("192.168.1.10", "/home/admin/network_map.txt")
+
+        self.assertTrue(ok)
+        self.assertTrue(contract.failed)
+        self.assertFalse(contract.completed)
+        self.assertIn("CONTRACT WINDOW CLOSED", msg)
+        self.assertIsNot(self.engine.state.active_contract, contract)
+
+    def test_wipe_contract_can_sign_off_after_cooling(self):
+        from cyberpulse.models import BountyContract
+
+        contract = BountyContract(
+            contract_id="cnt_wipe_cool",
+            title="Sanitize After Cooling",
+            target_node_type=NodeType.FIREWALL,
+            target_ip="192.168.1.10",
+            objective="wipe",
+            wipe_logs_required=True,
+            max_trace_limit=10,
+            reward_creds=100,
+            giver="mira",
+            expires_turn=99,
+        )
+        self.engine.state.active_contract = contract
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.state.trace_percent = 50
+
+        ok, msg = self.engine.wipe_logs("192.168.1.10")
+        self.assertTrue(ok)
+        self.assertFalse(contract.completed)
+        self.assertIn("TRACE LIMIT EXCEEDED", msg)
+
+        self.engine.state.trace_percent = 5
+        ok, msg = self.engine.wipe_logs("192.168.1.10")
+        self.assertTrue(ok)
+        self.assertTrue(contract.completed)
+        self.assertIn("CONTRACT COMPLETED", msg)
+
     def test_cpu_regeneration(self):
         self.engine.deck.cpu_cycles = 4
         self.engine.deck.max_cpu = 10

@@ -8,9 +8,9 @@
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `26`
 - **Total Classes**: `55`
-- **Total Top-Level Functions**: `65`
-- **Total Class Methods**: `430`
-- **Total Source Lines**: `9892`
+- **Total Top-Level Functions**: `66`
+- **Total Class Methods**: `454`
+- **Total Source Lines**: `10519`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `901` lines (`41578` bytes)
+**Size**: `956` lines (`44924` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -34,6 +34,7 @@
 - `def get_default_data_dir()`
 - `def render_trace_bar(trace_percent, width)`
 - `def print_hud(engine)`
+- `def print_contract(engine)`
 - `def print_hunters(engine)`
 - `def print_shop(shop, deck, price_multiplier)`
 - `def print_career(profile)`
@@ -57,7 +58,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `2503` lines (`115746` bytes)
+**Size**: `2830` lines (`130921` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -112,8 +113,21 @@
   - Method `.can_move_to(target_id)` - *Verify whether the player can transition to target node.*
   - Method `.move_to(target_id)` - *Move player's intrusion session to an adjacent breached node.*
   - Method `.can_hack_node(target_id)` - *Verify whether player cyberdeck meets hardware requirements to attack node.*
-  - Method `.dispatch_next_contract()` - *Dispatch a new Syndicate Bounty Contract after previous completion (Zeigarnik Effect).*
+  - Method `._contract_rng()` - *Dedicated contract stream so contract generation never shifts reward rolls.*
+  - Method `._contract_giver(objective, risk)` - *Pick the operative whose trust and voice fit the job.*
+  - Method `._contract_candidates(objective)` - *Return hosts that can still satisfy a fresh job for this objective.*
+  - Method `._choose_contract_risk(rng)`
+  - Method `._contract_deadline(objective, node, risk, trust, rng)`
+  - Method `._build_contract()` - *Generate a concrete, deadline-bound job from the live grid state.*
+  - Method `.dispatch_next_contract()` - *Dispatch a concrete Syndicate job, or clear the board when the run is exhausted.*
+  - Method `._contract_targets_node(contract, node)`
   - Method `._contract_completes_on_breach(contract, node)` - *Return True when a node breach satisfies a contract without extra objectives.*
+  - Method `._contract_download_matches(contract, node, vfile)` - *Return True when this download advances the active contract.*
+  - Method `._contract_wipe_ready(contract, node)`
+  - Method `._contract_payout(contract)` - *Return (total, trust_bonus, rush_bonus) for a completed job.*
+  - Method `._finalize_contract(contract, node)` - *Pay a completed job once, reward its giver's trust, and dispatch the next job.*
+  - Method `._fail_contract(contract)` - *Expire a job, cost its giver trust, raise heat, and post the next contract.*
+  - Method `._check_contract_clock()` - *Warn near a deadline, expire a missed job, and repost when the board is empty.*
   - Method `.complete_breach(node_id)` - *Mark node as breached, evaluate variable-ratio rewards, and check contracts.*
   - Method `.use_exploit(exploit_name, target_id)` - *Deploy an executable exploit chip loaded in cyberdeck firmware.*
   - Method `.jackout()` - *Push-Your-Luck extraction: safely bank all unbanked credits and looted payloads.*
@@ -144,7 +158,7 @@
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `564` lines (`19862` bytes)
+**Size**: `584` lines (`20631` bytes)
 
 **Classes:**
 - `class NodeType`
@@ -157,6 +171,7 @@
   - Method `.to_dict()`
   - Method `.from_dict(data)`
 - `class BountyContract` - *A syndicate-issued objective with bonus rewards upon fulfillment (Zeigarnik Effect).*
+  - Property `.objective_kind` - *Return the explicit objective, or infer it from legacy contract fields.*
   - Method `.to_dict()`
   - Method `.from_dict(data)`
 - `class CareerProfile` - *Persistent meta-progression profile tracking permanent stats and upgrades.*
@@ -410,7 +425,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `367` lines (`15522` bytes)
+**Size**: `385` lines (`16201` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -419,6 +434,8 @@
   - Method `.test_cli_help()`
   - Method `.test_main_menu_quit()`
   - Method `.test_main_menu_starts_run_then_quits()`
+  - Method `.test_contract_briefing_and_job_clock()`
+  - Method `.test_contract_expiry_is_surfaced_in_cli()`
   - Method `.test_story_quests_contacts_and_overdrive_commands()`
   - Method `.test_world_news_commands_and_hud_grid_line()`
   - Method `.test_lay_low_command_and_shift_doctrine()`
@@ -450,7 +467,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `1149` lines (`48277` bytes)
+**Size**: `1319` lines (`55007` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -471,6 +488,13 @@
   - Method `.test_brute_miner_burn_consumes_chip_without_crediting()`
   - Method `.test_ice_dampener_reduces_trace_gain()`
   - Method `.test_bounty_contract_fulfillment()`
+  - Method `.test_generated_contracts_are_concrete_and_deterministic()`
+  - Method `.test_contract_deadline_warns_then_expires()`
+  - Method `.test_contract_payout_includes_trust_and_rush()`
+  - Method `.test_breach_contract_requires_its_named_target()`
+  - Method `.test_extract_contract_requires_named_file_and_stealth()`
+  - Method `.test_contract_expiry_is_not_missed_by_download_tick()`
+  - Method `.test_wipe_contract_can_sign_off_after_cooling()`
   - Method `.test_cpu_regeneration()`
   - Method `.test_ram_capacity_check()`
   - Method `.test_use_exploit_ghost_protocol()`
@@ -590,7 +614,7 @@
 ### [`tests/test_models.py`](tests/test_models.py)
 > *Unit tests for CyberPulse domain models.*
 
-**Size**: `222` lines (`9003` bytes)
+**Size**: `255` lines (`10266` bytes)
 
 **Classes:**
 - `class TestModels`
@@ -599,6 +623,7 @@
   - Method `.test_deck_roundtrip()`
   - Method `.test_recipe_roundtrip()`
   - Method `.test_game_state_roundtrip()`
+  - Method `.test_bounty_contract_objective_inference_and_deadline_roundtrip()`
   - Method `.test_career_profile_roundtrip()`
   - Method `.test_apply_career_profile()`
   - Method `.test_firewall_and_antivirus_models()`
@@ -655,7 +680,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `619` lines (`26581` bytes)
+**Size**: `623` lines (`26804` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
