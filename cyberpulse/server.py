@@ -375,6 +375,12 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 
+            if action == "drop_offer":
+                contract_id = payload.get("contract_id") or payload.get("target") or ""
+                ok, msg = engine.drop_offer(contract_id)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
             if action == "decline_contract":
                 ok, msg = engine.decline_contract()
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})

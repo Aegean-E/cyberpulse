@@ -513,8 +513,15 @@ class TestCyberdeckServer(unittest.TestCase):
         finally:
             self._post("/api/action", {"action": "reset", "seed": 1337})
 
-    def test_accept_quest_action(self):
+    def test_accept_quest_action_respects_trust_gate(self):
         self._post("/api/action", {"action": "reset", "seed": 1337})
+        status, blocked = self._post("/api/action", {"action": "accept_quest", "quest_id": "q_side_ghost"})
+        self.assertEqual(status, 200)
+        self.assertFalse(blocked["ok"])
+        self.assertIn("trust", blocked["message"])
+
+        status, primary = self._post("/api/action", {"action": "accept_quest", "quest_id": "q_side_craft"})
+        self.assertTrue(primary["ok"])
         status, res = self._post("/api/action", {"action": "accept_quest", "quest_id": "q_side_ghost"})
         self.assertEqual(status, 200)
         self.assertTrue(res["ok"])
@@ -539,6 +546,25 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertEqual(active["contract_id"], offer_id)
         self.assertGreater(active["expires_turn"], 0)
         self.assertEqual(len(accepted["state"]["state"]["contract_offers"]), 3)
+
+    def test_drop_offer_action_spends_broker_fee(self):
+        self._post("/api/action", {"action": "reset", "seed": 1337})
+        session = self.server.RequestHandlerClass.server_session
+        with session.lock:
+            session.engine.deck.cryptocreds = 100
+        _, state = self._get("/api/state")
+        offer_id = state["state"]["contract_offers"][0]["contract_id"]
+        before = state["deck"]["cryptocreds"]
+
+        _, dropped = self._post("/api/action", {"action": "drop_offer", "contract_id": offer_id})
+
+        self.assertTrue(dropped["ok"])
+        self.assertEqual(dropped["state"]["deck"]["cryptocreds"], before - 30)
+        self.assertEqual(len(dropped["state"]["state"]["contract_offers"]), 3)
+        self.assertNotIn(
+            offer_id,
+            [offer["contract_id"] for offer in dropped["state"]["state"]["contract_offers"]],
+        )
 
     def test_accept_quest_after_jackout_is_rejected(self):
         self._post("/api/action", {"action": "reset", "seed": 1337})

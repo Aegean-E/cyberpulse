@@ -1562,7 +1562,7 @@ function openQuestsModal() {
         <span class="quest-status">${status}</span>
       </div>
       <div class="quest-desc">${quest.description}</div>
-      <div class="quest-meta">GIVER: ${quest.giver} | REWARD: ${quest.reward_creds} CR</div>
+      <div class="quest-meta">GIVER: ${quest.giver} | REWARD: ${quest.reward_creds} CR${locked && quest.lock_reason ? ` | LOCK: ${quest.lock_reason}` : ""}</div>
       ${!quest.accepted && !complete && !locked ? `<button class="hack-btn small-btn accept-quest-btn" data-quest="${quest.quest_id}">ACCEPT JOB</button>` : ""}
     `;
     const acceptBtn = card.querySelector(".accept-quest-btn");
@@ -1606,11 +1606,15 @@ function openQuestsModal() {
       </div>
       <div class="quest-desc">${offer.description || ""}</div>
       <div class="quest-meta">TARGET: ${offer.target_ip || offer.target_node_type} | WINDOW: ${offer.deadline_turns} TURNS | PAY: ${offer.reward_creds} CR (+${offer.bonus_creds} RUSH)${offerLeft === null ? "" : ` | OFFER ${Math.max(0, offerLeft)} TURNS`}</div>
-      ${active ? "" : `<button class="hack-btn small-btn accept-contract-btn" data-contract="${offer.contract_id}">ACCEPT CONTRACT</button>`}
+      ${active ? "" : `<button class="hack-btn small-btn accept-contract-btn" data-contract="${offer.contract_id}">ACCEPT CONTRACT</button><button class="hack-btn small-btn pass-offer-btn" data-contract="${offer.contract_id}">PASS (-30 CR)</button>`}
     `;
     const acceptBtn = card.querySelector(".accept-contract-btn");
     if (acceptBtn) {
       acceptBtn.addEventListener("click", () => handleAcceptContract(offer.contract_id));
+    }
+    const passBtn = card.querySelector(".pass-offer-btn");
+    if (passBtn) {
+      passBtn.addEventListener("click", () => handleDropOffer(offer.contract_id));
     }
     jobBoard.appendChild(card);
   });
@@ -1637,6 +1641,22 @@ async function handleAcceptContract(contractId) {
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || "Contract unavailable.", "warn");
+    applyStateSnapshot(res);
+  }
+}
+
+async function handleDropOffer(contractId) {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "drop_offer", contract_id: contractId });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message, "warn");
+    state.data = res.state;
+    renderHUD(res.state);
+    openQuestsModal();
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "Offer could not be dropped.", "warn");
     applyStateSnapshot(res);
   }
 }
@@ -1698,16 +1718,17 @@ function openContactsModal() {
           <div class="contact-name">${contact.name}</div>
           <div class="contact-role">${contact.handle} // ${contact.role}</div>
         </div>
-        <span class="contact-trust">TRUST ${contact.trust}</span>
+        <span class="contact-trust">TRUST ${contact.trust} // ${(contact.trust_tier || "Neutral").toUpperCase()}</span>
       </div>
       <div class="contact-tagline">${contact.tagline}</div>
       <div class="contact-dialogue">"${contact.dialogue}"</div>
+      ${contact.trust_dialogue ? `<div class="contact-dialogue">"${contact.trust_dialogue}"</div>` : ""}
       <div class="contact-favor">${contact.favor_description}</div>
       <div class="contact-actions">
         <button class="action-btn small-btn contact-action" data-mode="talk">TALK</button>
         <button class="action-btn small-btn contact-action" data-mode="job">JOB</button>
-        <button class="action-btn small-btn contact-action" data-mode="favor" ${contact.favor_used ? "disabled" : ""}>
-          ${contact.favor_used ? "FAVOR SPENT" : "CALL FAVOR"}
+        <button class="action-btn small-btn contact-action" data-mode="favor" ${contact.favor_available ? "" : "disabled"}>
+          ${contact.favor_available ? (contact.favor_used ? "INNER CIRCLE FAVOR" : "CALL FAVOR") : "FAVOR SPENT"}
         </button>
       </div>
       ${contact.pact_available ? `

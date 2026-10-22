@@ -295,6 +295,31 @@ class TestEngine(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("one grid turn", reason)
 
+    def test_drop_offer_costs_broker_fee_and_refills(self):
+        offer = self.engine.state.contract_offers[0]
+        offer_id = offer.contract_id
+        dropped_signature = (offer.objective_kind, offer.target_ip, offer.target_file)
+        before = self.engine.deck.cryptocreds
+
+        ok, msg = self.engine.drop_offer(offer_id)
+
+        self.assertTrue(ok)
+        self.assertIn("OFFER DROPPED", msg)
+        self.assertEqual(self.engine.deck.cryptocreds, before - 30)
+        live_ids = {candidate.contract_id for candidate in self.engine.state.contract_offers}
+        live_signatures = {
+            (candidate.objective_kind, candidate.target_ip, candidate.target_file)
+            for candidate in self.engine.state.contract_offers
+        }
+        self.assertNotIn(offer_id, live_ids)
+        self.assertNotIn(dropped_signature, live_signatures)
+        self.assertEqual(len(self.engine.state.contract_offers), 3)
+
+        self.engine.deck.cryptocreds = 0
+        ok, msg = self.engine.drop_offer(self.engine.state.contract_offers[0].contract_id)
+        self.assertFalse(ok)
+        self.assertIn("broker fee", msg)
+
     def test_offer_shelf_life_rotates_the_board(self):
         expired = self.engine.state.contract_offers[0]
         self.engine.state.turns_elapsed = expired.offer_expires_turn
@@ -305,6 +330,35 @@ class TestEngine(unittest.TestCase):
         self.assertNotIn(expired.contract_id, live_ids)
         self.assertGreaterEqual(len(added), 1)
         self.assertEqual(len(self.engine.state.contract_offers), 3)
+
+    def test_recon_fallback_jobs_fill_an_exhausted_grid(self):
+        for node in self.engine.nodes.values():
+            if node.node_type == NodeType.GATEWAY:
+                continue
+            node.status = NodeStatus.BREACHED
+            node.logs_cleared = True
+            for vfile in node.filesystem:
+                if vfile.is_target_data and vfile.value_creds > 0:
+                    if vfile.path not in self.engine.state.looted_payloads:
+                        self.engine.state.looted_payloads.append(vfile.path)
+
+        self.engine.state.active_contract = None
+        self.engine.state.contract_offers = []
+        added = self.engine._refresh_contract_offers()
+
+        self.assertTrue(added)
+        self.assertEqual(len(self.engine.state.contract_offers), 3)
+        self.assertTrue(all(offer.objective_kind == "recon" for offer in self.engine.state.contract_offers))
+
+        offer = self.engine.state.contract_offers[0]
+        ok, _ = self.engine.accept_contract(offer.contract_id)
+        self.assertTrue(ok)
+
+        ok, msg, _ = self.engine.probe_host(offer.target_ip)
+
+        self.assertTrue(ok)
+        self.assertTrue(offer.completed)
+        self.assertIn("CONTRACT COMPLETED", msg)
 
     def test_contract_payout_includes_trust_and_rush(self):
         contract = self.engine.state.active_contract
@@ -1197,6 +1251,38 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(self.engine.state.story_act, 5)
         self.assertTrue(self.engine._find_quest("q_core").completed)
         self.assertTrue(self.engine.state.is_victory)
+
+    def test_trust_gates_kilo_secondary_quest(self):
+        ok, msg = self.engine.accept_quest("q_side_ghost")
+        self.assertFalse(ok)
+        self.assertIn("trust 1", msg)
+
+        ok, _ = self.engine.accept_quest("q_side_craft")
+        self.assertTrue(ok)
+        ok, msg = self.engine.accept_quest("q_side_ghost")
+
+        self.assertTrue(ok)
+        self.assertTrue(self.engine._find_quest("q_side_ghost").accepted)
+
+    def test_inner_circle_unlocks_tier_dialogue_and_second_favor(self):
+        self.engine.overdrive()
+        kilo = self.engine._find_contact("kilo")
+        kilo.trust = 6
+        kilo.favor_used = True
+
+        ok, msg, report = self.engine.interact_contact("kilo", "favor")
+
+        self.assertTrue(ok)
+        self.assertIn("CPU restored", msg)
+        self.assertTrue(kilo.bonus_favor_used)
+        self.assertEqual(report["trust_tier"], "Inner Circle")
+
+        again, _, _ = self.engine.interact_contact("kilo", "favor")
+        self.assertFalse(again)
+
+        ok, dialogue, _ = self.engine.interact_contact("kilo", "talk")
+        self.assertTrue(ok)
+        self.assertIn("back door", dialogue)
 
     def test_contact_job_and_favor(self):
         self.engine.overdrive()

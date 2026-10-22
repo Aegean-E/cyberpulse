@@ -199,6 +199,42 @@ class TestStorage(unittest.TestCase):
             [offer.deadline_turns for offer in engine.state.contract_offers],
         )
 
+    def test_old_offer_save_without_contract_sequence_gets_safe_migration(self):
+        import json
+
+        engine = GameEngine(seed=42)
+        self.save_mgr.save(engine)
+        payload = json.loads(self.save_mgr.save_file.read_text(encoding="utf-8"))
+        payload["state"].pop("contract_seq", None)
+        self.save_mgr.save_file.write_text(json.dumps(payload), encoding="utf-8")
+
+        loaded = self.save_mgr.load()
+
+        self.assertIsNotNone(loaded)
+        self.assertEqual(loaded.state.contract_seq, 10000)
+        loaded.state.contract_offers = []
+        loaded._refresh_contract_offers()
+        self.assertTrue(loaded.state.contract_offers)
+        self.assertTrue(
+            all(int(offer.contract_id.rsplit("_", 1)[1]) > 10000 for offer in loaded.state.contract_offers)
+        )
+
+    def test_contract_sequence_persists_and_prevents_id_collisions(self):
+        engine = GameEngine(seed=42)
+        old_ids = {offer.contract_id for offer in engine.state.contract_offers}
+        seq_before = engine.state.contract_seq
+        self.save_mgr.save(engine)
+
+        loaded = self.save_mgr.load()
+        self.assertIsNotNone(loaded)
+        self.assertEqual(loaded.state.contract_seq, seq_before)
+        loaded.state.contract_offers = []
+        loaded._refresh_contract_offers()
+        new_ids = {offer.contract_id for offer in loaded.state.contract_offers}
+
+        self.assertTrue(new_ids)
+        self.assertFalse(old_ids & new_ids)
+
     def test_failed_replace_reports_no_save(self):
         engine = GameEngine(seed=5)
 

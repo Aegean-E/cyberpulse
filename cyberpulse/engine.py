@@ -1,7 +1,7 @@
 """Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback."""
 
 import random
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from cyberpulse.models import (
     BountyContract,
@@ -69,6 +69,7 @@ from cyberpulse.story import (
     act_title,
     dialogue_for,
     initial_contacts,
+    trust_dialogue_for,
     initial_quests,
 )
 
@@ -198,8 +199,9 @@ CONTRACT_RISK: Dict[str, Dict[str, float]] = {
 }
 
 CONTRACT_BOARD_SIZE = 3
+OFFER_DROP_FEE = 30
 
-CONTRACT_BASE_REWARD: Dict[str, int] = {"breach": 120, "extract": 200, "wipe": 220}
+CONTRACT_BASE_REWARD: Dict[str, int] = {"breach": 120, "extract": 200, "wipe": 220, "recon": 80}
 
 
 class GameEngine:
@@ -257,7 +259,6 @@ class GameEngine:
         self.pending_puzzles: Dict[str, Any] = {}
         self.run_settled: bool = False
         self._last_alert_tier: Optional[str] = alert_tier(self.state.world.alert_level)
-        self._contract_seq = 0
         self._refresh_contract_offers()
 
     def get_current_node(self) -> Node:
@@ -393,7 +394,9 @@ class GameEngine:
         if quest.quest_id in MAIN_QUEST_IDS and quest.story_act > self.state.story_act:
             return True
         giver = self._find_contact(quest.giver)
-        return bool(giver and giver.unlock_act > self.state.story_act)
+        if giver and giver.unlock_act > self.state.story_act:
+            return True
+        return bool(giver and quest.required_trust > giver.trust)
 
     def _story_gate_reason(self, node: Node) -> Optional[str]:
         """A story lock the network topology alone does not enforce."""
@@ -418,6 +421,12 @@ class GameEngine:
         if quest.accepted:
             return False, f"Quest '{quest.title}' is already active."
         if self.is_quest_locked(quest):
+            giver = self._find_contact(quest.giver)
+            if giver and quest.required_trust > giver.trust:
+                return False, (
+                    f"Quest '{quest.title}' requires {giver.name} trust {quest.required_trust} "
+                    f"(current {giver.trust}). Work with them first."
+                )
             return False, f"Quest '{quest.title}' is not available until the story advances."
 
         giver = self._find_contact(quest.giver)
@@ -493,7 +502,13 @@ class GameEngine:
             "role": contact.role,
             "faction": contact.faction,
             "trust": contact.trust,
+            "trust_tier": contact.trust_tier,
             "favor_used": contact.favor_used,
+            "bonus_favor_used": contact.bonus_favor_used,
+            "favor_available": (
+                not contact.favor_used
+                or (contact.trust >= 6 and not contact.bonus_favor_used)
+            ),
             "choice": self.state.story_choice,
             "pact_available": (
                 contact.contact_id == "zero"
@@ -505,6 +520,9 @@ class GameEngine:
 
         if mode_key in ("talk", "chat", ""):
             line = dialogue_for(contact.contact_id, self.state.story_act, self.state.story_choice)
+            tier_line = trust_dialogue_for(contact.contact_id, contact.trust_tier)
+            if tier_line:
+                line = f"{line}\n{tier_line}"
             self.state.message_log.append(line)
             report["dialogue"] = line
             return True, line, report
@@ -555,17 +573,27 @@ class GameEngine:
             return False, f"{contact.name} has no new work for you right now.", report
 
         if mode_key in ("favor", "help"):
-            if contact.favor_used:
+            can_use = (
+                not contact.favor_used
+                or (contact.trust >= 6 and not contact.bonus_favor_used)
+            )
+            if not can_use:
                 return False, f"{contact.name} has already spent their favor this run.", report
             ok, message = self._apply_contact_favor(contact)
             if not ok:
                 return False, message, report
-            contact.favor_used = True
+            if contact.favor_used:
+                contact.bonus_favor_used = True
+            else:
+                contact.favor_used = True
             contact.trust += 1
             self._log_story(f"FAVOR: {contact.name} — {message}")
             self.state.message_log.append(message)
-            report["favor_used"] = True
+            report["favor_used"] = contact.favor_used
+            report["bonus_favor_used"] = contact.bonus_favor_used
+            report["favor_available"] = contact.trust >= 6 and not contact.bonus_favor_used
             report["trust"] = contact.trust
+            report["trust_tier"] = contact.trust_tier
             return True, message, report
 
         return False, f"Unknown interaction '{mode}'. Use talk, job, or favor.", report
@@ -668,7 +696,9 @@ class GameEngine:
                     "contact_id": contact.contact_id,
                     "name": contact.name,
                     "trust": contact.trust,
+                    "trust_tier": contact.trust_tier,
                     "favor_used": contact.favor_used,
+                    "bonus_favor_used": contact.bonus_favor_used,
                 }
                 for contact in self.state.contacts
                 if contact.unlock_act <= self.state.story_act
@@ -682,6 +712,12 @@ class GameEngine:
         for quest in self.state.quests:
             data = quest.to_dict()
             data["locked"] = self.is_quest_locked(quest)
+            if data["locked"]:
+                giver = self._find_contact(quest.giver)
+                if giver and quest.required_trust > giver.trust:
+                    data["lock_reason"] = f"Requires {giver.name} trust {quest.required_trust}"
+                else:
+                    data["lock_reason"] = "Advance the story"
             quests.append(data)
         return quests
 
@@ -691,6 +727,12 @@ class GameEngine:
             data = contact.to_dict()
             data["locked"] = contact.unlock_act > self.state.story_act
             data["dialogue"] = dialogue_for(contact.contact_id, self.state.story_act, self.state.story_choice)
+            data["trust_tier"] = contact.trust_tier
+            data["trust_dialogue"] = trust_dialogue_for(contact.contact_id, contact.trust_tier)
+            data["favor_available"] = (
+                not contact.favor_used
+                or (contact.trust >= 6 and not contact.bonus_favor_used)
+            )
             data["favor_description"] = FAVOR_DESCRIPTIONS.get(contact.contact_id, "")
             data["pact_available"] = (
                 contact.contact_id == "zero"
@@ -1386,8 +1428,8 @@ class GameEngine:
 
     def _contract_rng(self) -> random.Random:
         """Dedicated contract stream so contract generation never shifts reward rolls."""
-        self._contract_seq += 1
-        return world_rng(self.seed, self.state.turns_elapsed, f"contract:{self._contract_seq}")
+        self.state.contract_seq += 1
+        return world_rng(self.seed, self.state.turns_elapsed, f"contract:{self.state.contract_seq}")
 
     def _contract_giver(self, objective: str, risk: str) -> str:
         """Pick the operative whose trust and voice fit the job."""
@@ -1425,6 +1467,12 @@ class GameEngine:
             ]
         if objective == "wipe":
             return [node for node in nodes if not node.logs_cleared]
+        if objective == "recon":
+            return [
+                node
+                for node in nodes
+                if node.status in (NodeStatus.DISCOVERED, NodeStatus.BREACHED)
+            ]
         return []
 
     def _choose_contract_risk(self, rng: random.Random) -> str:
@@ -1438,7 +1486,8 @@ class GameEngine:
         return "priority" if roll < 0.35 else "standard"
 
     def _contract_deadline(self, objective: str, node: Node, risk: str, trust: int, rng: random.Random) -> Tuple[int, int]:
-        duration = 18 + (4 if objective in ("extract", "wipe") else 0) + node.security_level * 2
+        duration = 18 + (4 if objective in ("extract", "wipe") else (-4 if objective == "recon" else 0))
+        duration += node.security_level * 2
         duration += int(CONTRACT_RISK[risk]["duration_delta"])
         duration += min(3, max(0, trust) // 2)
         duration += rng.randint(-2, 2)
@@ -1457,7 +1506,9 @@ class GameEngine:
     def _offer_signature(self, contract: BountyContract) -> Tuple[str, str, str]:
         return (contract.objective_kind, contract.target_ip or "", contract.target_file or "")
 
-    def _refresh_contract_offers(self) -> List[BountyContract]:
+    def _refresh_contract_offers(
+        self, exclude_signatures: Optional[Set[Tuple[str, str, str]]] = None
+    ) -> List[BountyContract]:
         """Expire stale board entries and fill the board with distinct concrete jobs."""
         now = self.state.turns_elapsed
         self.state.contract_offers = [
@@ -1466,6 +1517,8 @@ class GameEngine:
             if not offer.offer_expires_turn or offer.offer_expires_turn > now
         ]
         signatures = {self._offer_signature(offer) for offer in self.state.contract_offers}
+        if exclude_signatures:
+            signatures.update(exclude_signatures)
         active = self.state.active_contract
         if active and not active.completed and not active.failed:
             signatures.add(self._offer_signature(active))
@@ -1489,6 +1542,8 @@ class GameEngine:
         """Generate a concrete, deadline-bound job from the live grid state."""
         rng = self._contract_rng()
         feasible = [objective for objective in ("breach", "extract", "wipe") if self._contract_candidates(objective)]
+        if not feasible and self._contract_candidates("recon"):
+            feasible = ["recon"]
         if not feasible:
             return None
 
@@ -1546,6 +1601,11 @@ class GameEngine:
         elif objective == "extract":
             title = f"Data Extraction: {str(target_file).split('/')[-1]}"
             description = f"Infiltrate {node.hostname} ({node.ip_address}) and extract {target_file}."
+        elif objective == "recon":
+            title = f"Recon Sweep: {node.hostname}"
+            description = (
+                f"Probe {node.hostname} ({node.ip_address}) and confirm its listening services for the Syndicate."
+            )
         else:
             title = f"Sanitize Contract: {node.hostname}"
             if target_file:
@@ -1560,7 +1620,7 @@ class GameEngine:
                 )
 
         contract = BountyContract(
-            contract_id=f"cnt_{self.state.turns_elapsed:03d}_{rng.randint(100, 999)}",
+            contract_id=f"cnt_{self.state.turns_elapsed:03d}_{self.state.contract_seq:04d}",
             title=title,
             target_node_type=node.node_type,
             target_ip=node.ip_address,
@@ -1630,6 +1690,32 @@ class GameEngine:
         self.state.message_log.append(self.state.contract_notice)
         return True, self.state.contract_notice
 
+    def drop_offer(self, contract_id: str) -> Tuple[bool, str]:
+        """Pay a broker fee to remove one posted offer and refill the board."""
+        if self.state.is_game_over or self.state.is_jacked_out or self.state.is_victory:
+            return False, "Cannot drop an offer: the run has already ended."
+        offer = next(
+            (candidate for candidate in self.state.contract_offers if candidate.contract_id == contract_id),
+            None,
+        )
+        if offer is None:
+            self._refresh_contract_offers()
+            return False, f"No posted contract offer with id '{contract_id}'."
+        if self.deck.cryptocreds < OFFER_DROP_FEE:
+            return False, (
+                f"Dropping an offer needs a {OFFER_DROP_FEE} CR broker fee "
+                f"(you have {self.deck.cryptocreds} CR)."
+            )
+        self.deck.cryptocreds -= OFFER_DROP_FEE
+        self.state.contract_offers.remove(offer)
+        self._refresh_contract_offers({self._offer_signature(offer)})
+        message = (
+            f"OFFER DROPPED: {offer.title}. Broker fee -{OFFER_DROP_FEE} CR; the board is refreshed."
+        )
+        self.state.contract_notice = message
+        self.state.message_log.append(message)
+        return True, message
+
     def decline_contract(self) -> Tuple[bool, str]:
         """Walk away from the active job: lose giver trust, keep the board stocked."""
         if self.state.is_game_over or self.state.is_jacked_out or self.state.is_victory:
@@ -1684,6 +1770,9 @@ class GameEngine:
             and not contract.target_ip
             and node.node_type == contract.target_node_type
         )
+
+    def _contract_recon_matches(self, contract: BountyContract, node: Node) -> bool:
+        return contract.objective_kind == "recon" and self._contract_targets_node(contract, node)
 
     def _contract_wipe_ready(self, contract: BountyContract, node: Node) -> bool:
         if contract.completed or contract.objective_kind != "wipe":
@@ -2136,6 +2225,7 @@ class GameEngine:
         if node.status == NodeStatus.LOCKED:
             node.status = NodeStatus.DISCOVERED
 
+        contract_before = self.state.active_contract
         self.add_trace(4)
         self.regenerate_cpu(1)
         self.advance_turn()
@@ -2173,6 +2263,21 @@ class GameEngine:
         )
         if self.state.is_game_over:
             summary += "\n[!] The grid burned your deck while the scan was returning."
+        elif contract_before and self._contract_recon_matches(contract_before, node):
+            if contract_before.failed:
+                summary += (
+                    "\n⏳ CONTRACT WINDOW CLOSED: the probe returned after the deadline tick; "
+                    "the old bounty was not paid."
+                )
+            elif not contract_before.completed:
+                if self.state.trace_percent <= contract_before.max_trace_limit:
+                    summary += "\n" + self._finalize_contract(contract_before, node)
+                else:
+                    summary += (
+                        f"\n⚠️ CONTRACT TRACE LIMIT EXCEEDED: {self.state.trace_percent}% > "
+                        f"{contract_before.max_trace_limit}%. Cool trace and probe again to confirm "
+                        "the recon bounty."
+                    )
         self.state.message_log.append(f"Probed {node.ip_address} ({node.hostname}). Found {len(node.ports)} open port(s).")
         return True, summary, report
 

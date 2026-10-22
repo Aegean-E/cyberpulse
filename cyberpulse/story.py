@@ -106,6 +106,7 @@ def initial_quests() -> List[Quest]:
             story_act=1,
             story_chapter=1,
             accepted=False,
+            required_trust=1,
         ),
         Quest(
             quest_id="q_side_wipe",
@@ -263,3 +264,19 @@ COMBO_EPILOGUES: Dict[int, str] = {
     5: "Five clean breaches in a row. The grid starts calling you a ghost.",
     8: "The Black ICE logs your combo as an anomaly and stops trying to model you.",
 }
+
+
+TRUST_DIALOGUE: Dict[Tuple[str, str], str] = {
+    ("mira", "Trusted"): "Mira: 'You deliver. That puts you on the short list for better terms.'",
+    ("mira", "Inner Circle"): "Mira: 'My inner circle is small. Do not make me regret adding you.'",
+    ("kilo", "Trusted"): "Kilo: 'I saved you a cooling cell. You can owe me a story later.'",
+    ("kilo", "Inner Circle"): "Kilo: 'My back door is your back door, choom. Just do not burn it.'",
+    ("archivist", "Trusted"): "The Archivist: 'Your name is in a clean file. Keep it that way.'",
+    ("archivist", "Inner Circle"): "The Archivist: 'I keep what you need before you ask. That is the point of trust.'",
+    ("zero", "Trusted"): "Agent Zero: 'You are still alive. That is a start.'",
+    ("zero", "Inner Circle"): "Agent Zero: 'When the grid falls, I want you beside me.'",
+}
+
+
+def trust_dialogue_for(contact_id: str, tier: str) -> str:
+    return TRUST_DIALOGUE.get((contact_id, tier), "")

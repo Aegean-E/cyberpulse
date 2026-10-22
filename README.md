@@ -1,6 +1,6 @@
 # cyberpulse
 
-CyberPulse is a retro-cyberpunk terminal hacking simulation game designed around empirical behavioral psychology, featuring procedural puzzle nodes, ICE defenses, push-your-luck extraction mechanics, variable-ratio reward schedules, near-miss striatal feedback, persistent career progression, a five-act story campaign, an operative relationship system, a dynamic quest board, combo/overdrive risk-reward mechanics, and a living-grid world simulation with an in-game clock, corporate alert, generated news, ambient events, host re-securing, a drifting black market, tactical shift dynamics, a lay-low downtime action, and a deadline-bound Syndicate contract market.
+CyberPulse is a retro-cyberpunk terminal hacking simulation game designed around empirical behavioral psychology, featuring procedural puzzle nodes, ICE defenses, push-your-luck extraction mechanics, variable-ratio reward schedules, near-miss striatal feedback, persistent career progression, a five-act story campaign, an operative relationship system, a dynamic quest board, combo/overdrive risk-reward mechanics, and a living-grid world simulation with an in-game clock, corporate alert, generated news, ambient events, host re-securing, a drifting black market, tactical shifts, lay-low downtime, and a deadline-bound Syndicate contract market.
 
 ## ⚡ 30-Second Cold-Start Quick Reference
 
@@ -88,7 +88,7 @@ CyberPulse's mechanics are grounded in cognitive neuroscience and behavioral gam
 5. **Autonomy & Competence Loop (Ryan & Deci Self-Determination Theory - PENS)**:
    - Tactical agency through branching network topologies, upgrade pathways, and cyberdeck customization in the Black Market vendor.
 6. **Deadline Pressure & Goal Gradient (Kivetz et al.)**:
-   - Each Syndicate job carries a visible turn deadline and a rush bonus, so `lay_low`, detours, and loud play trade against a finite reward window. Givers remember results: completed work raises trust and payout, while a missed deadline costs trust and raises alert.
+   - Each job carries a visible deadline and rush bonus, so `lay_low`, detours, and loud play spend a finite reward window. Completed work raises giver trust and payout; a missed deadline costs both and raises alert.
 6. **Combo Streaks & Voluntary Risk (Sensation Seeking / Flow Channel)**:
    - Consecutive successful breaches build a reward multiplier (up to +50%). `overdrive` lets the player voluntarily burn CPU and trace to prime the next combo, tightening the flow channel between boredom and lockout. Any detected failure (burned puzzle, flagged social lure, hunter clash, antivirus quarantine) breaks the streak, so the multiplier is a real stake rather than a ratchet. A burned puzzle also seals its host's ICE for two turns, so failure costs tempo instead of granting a free retry. Best combo is recorded in the career dossier, and combo milestones appear in the run epilogue.
 7. **Narrative Transportation & Character Attachment**:
@@ -157,9 +157,9 @@ python -m cyberpulse.cli --seed 42069
 | `hunter` / `radar` | Display active NetWatch Hunter threat assessment, location, distance, and scent | Counter-surveillance & proximity telemetry |
 | `counter [method]` | Deploy tactical countermeasures against hunter (`logic_bomb`, `ghost_protocol`, `cpu_burst`) | Active counter-defense & hunter neutralization |
 | `story` | Show the current act, story log, and briefing | Narrative orientation & campaign immersion |
-| `contract` / `bounty` | Open the Syndicate job board: active job plus posted offers; `accept_job <id>` takes one, `decline_contract` passes | Job choice, clock & risk/reward |
+| `contract` / `bounty` | Open the job board: active job plus offers; `accept_job <id>` takes one, `drop_offer <id>` passes one for 30 CR, `decline_contract` abandons the active job | Job choice, clock & risk/reward |
 | `quests` / `missions` | Open the mission board with progress, rewards, and available jobs | Goal clarity & Zeigarnik completion pressure |
-| `contacts` / `crew` | List operative channels, trust, dialogue, and favors | Relationship tracking & social capital |
+| `contacts` / `crew` | List channels, trust tiers, tier dialogue, and favors; Inner Circle unlocks a second favor | Relationship tracking & social capital |
 | `contact <handle> [talk\|job\|favor\|ally\|defy]` | Talk to an operative, accept their job, spend a one-time favor, or make Agent Zero's Act III alliance choice | Character interaction & story branching |
 | `accept <quest_id>` | Accept an available side quest from the mission board | Player-authored goals & autonomy |
 | `cash_out` / `jackout` | Disconnect and bank all unbanked credits; trace 50%+ adds an ICE surge, and 85%+ can burn the run at the extraction point | Loss aversion & push-your-luck extraction |
@@ -181,7 +181,7 @@ python -m cyberpulse.cli --seed 42069
 7. **Exfiltrate High-Value Data**: Traverse directories with `ls`, inspect files with `cat`, and extract proprietary databases with `steal /data/corporate_slush_fund.csv`. Stolen data archives straight into your local rig at `/loot/`!
 8. **Sanitize & Cash Out**: Scrub audit records with `wipe_logs` to shed ICE trace, then extract via `cash_out` before trace reaches 85% — the Black ICE extraction surge can burn the run at the jack. Banking early locks in bounty and grows your career dossier!
 9. **Live With the Grid**: Watch `world` and `news` between jobs. A hot alert invites NetWatch patrol trace, black-market markups, and sysadmins re-securing the hosts you left behind (with any daemons inside), while a quiet grid cools down and discounts gear.
-10. **Choose and Beat the Job Clock**: `contract` shows the offer board; `accept_job <id>` picks the target, risk, trace limit, deadline, and rush bonus. Early completion pays the bonus and raises trust; a missed deadline costs trust, raises alert, and refreshes the board.
+10. **Choose and Beat the Job Clock**: `contract` shows the offer board; `accept_job <id>` starts the clock. Early completion pays the rush bonus and raises trust; a missed deadline costs trust, raises alert, and refreshes the board.
 
 ## 🛡️ Architecture & Guarantees
 
@@ -197,7 +197,7 @@ python -m cyberpulse.cli --seed 42069
 - **Same-Origin Web Cyberdeck**: The REST API sends no wildcard CORS grant and serializes state mutations, keeping the local game session private to its own page.
 - **Dynamic Resource Loop**: Turn-based CPU cooling (+1/turn) and hardware RAM constraints (`security_level * 16` MB).
 - **Living Grid Simulation**: Every turn advances a 15-minute in-game clock, drifts the black-market index (0.80x-1.35x, applied to shop prices and to the fence payout of stolen data), and cools or sustains the corporate alert level from your current trace.
-- **Living Syndicate Contract Market**: The board holds three rotating offers, each with a specific host/objective (`breach`, `extract`, `wipe`), standard/priority/black risk, risk-scaled payout and trace limit, a hard deadline on acceptance, and a rush window. Giver trust improves payout/deadline; missed deadlines cost trust and raise alert.
+- **Living Syndicate Contract Market**: Three rotating offers name a host/objective (`breach`, `extract`, `wipe`) with standard/priority/black risk, scaled pay and trace limits, an acceptance deadline, and a rush window. Exhausted grids post repeatable recon sweeps. Giver trust improves terms; missed deadlines cost trust and raise alert.
 - **Reactive Corporate Response**: Alert 50%+ enables NetWatch patrol trace and sysadmin re-securing of breached hosts (12-turn cooldown, one host per turn, never your current host or the Nexus core); re-secured hosts restore their defenses and quarantine embedded daemons.
 - **Corporate Posture Escalation**: The grid reports a named posture (GREEN/AMBER/RED/BLACK) in the CLI and Web ticker. Each breached host keeps the corporation mobilized, slowing alert decay by up to 3 per turn across a wide footprint, and every posture change is announced on the news wire in both directions - so a loud run visibly escalates the city against you, and a quiet one lets it stand down.
 - **Anti-Farm Breach Ledger**: A re-secured host pays no second reward, combo, or quest credit, so grid healing cannot be farmed for infinite credits.

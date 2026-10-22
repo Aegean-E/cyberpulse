@@ -433,6 +433,7 @@ class Quest:
     story_chapter: int = 1
     accepted: bool = False
     completed: bool = False
+    required_trust: int = 0
 
     @property
     def ready(self) -> bool:
@@ -458,8 +459,17 @@ class ContactProfile:
     unlock_act: int = 1
     trust: int = 0
     favor_used: bool = False
+    bonus_favor_used: bool = False
     quest_id: str = ""
     secondary_quest_id: str = ""
+
+    @property
+    def trust_tier(self) -> str:
+        if self.trust >= 6:
+            return "Inner Circle"
+        if self.trust >= 3:
+            return "Trusted"
+        return "Neutral"
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -549,6 +559,7 @@ class GameState:
     active_contract: Optional[BountyContract] = None
     contract_offers: List[BountyContract] = field(default_factory=list)
     contract_decline_until_turn: int = 0
+    contract_seq: int = 0
     near_miss_count: int = 0
     contract_notice: str = ""
     message_log: List[str] = field(default_factory=list)
@@ -580,6 +591,8 @@ class GameState:
                 BountyContract.from_dict(offer) if isinstance(offer, dict) else offer
                 for offer in offers
             ]
+        if "contract_seq" not in data_clean and offers:
+            data_clean["contract_seq"] = 10000
         quests = data_clean.get("quests")
         if isinstance(quests, list):
             data_clean["quests"] = [Quest.from_dict(q) if isinstance(q, dict) else q for q in quests]

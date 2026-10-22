@@ -365,6 +365,8 @@ def print_quests(engine: GameEngine) -> None:
         giver_name = giver.name if giver else quest.giver
         print(f"   * {quest.quest_id:<16} {status:<12} {quest.title} (+{quest.reward_creds} CR)")
         print(f"     {quest.description} // Contact: {giver_name}")
+        if engine.is_quest_locked(quest) and giver and quest.required_trust > giver.trust:
+            print(f"     Requires trust {quest.required_trust} with {giver.name} (current {giver.trust}).")
     print("--------------------------------------------------------------------------")
     print("Accept with: accept <quest_id>. Talk to contacts with: contact <handle> job")
     print("+==========================================================================+")
@@ -378,10 +380,19 @@ def print_contacts(engine: GameEngine) -> None:
         if contact["locked"]:
             print(f"   * {contact['handle']:<16} [SIGNAL LOCKED] {contact['name']}")
             continue
-        favor = "SPENT" if contact["favor_used"] else "READY"
-        print(f"   * {contact['handle']:<16} {contact['name']:<16} Trust: {contact['trust']} | Favor: {favor}")
+        if not contact["favor_used"]:
+            favor = "READY"
+        elif contact["trust"] >= 6 and not contact["bonus_favor_used"]:
+            favor = "INNER CIRCLE FAVOR READY"
+        elif contact["bonus_favor_used"]:
+            favor = "BOTH SPENT"
+        else:
+            favor = "SPENT"
+        print(f"   * {contact['handle']:<16} {contact['name']:<16} Trust: {contact['trust']} [{contact['trust_tier']}] | Favor: {favor}")
         print(f"     {contact['role']} // {contact['faction']} // {contact['tagline']}")
         print(f"     \"{contact['dialogue']}\"")
+        if contact.get("trust_dialogue"):
+            print(f"     \"{contact['trust_dialogue']}\"")
     print("--------------------------------------------------------------------------")
     print("Talk: contact <handle> talk | Job: contact <handle> job | Favor: contact <handle> favor")
     print("+==========================================================================+")
@@ -421,7 +432,7 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
             print_career(save_mgr.load_career())
             continue
         if choice in ("6", "help", "how"):
-            print("Commands: status, contract, bounty, accept_job, decline_contract, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
+            print("Commands: status, contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
             print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
             print("          move, overdrive, spoof, cash_out, shop, buy, career, save, load, quit")
             continue
@@ -584,6 +595,14 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("Usage: accept_job <contract_id>  (run `contracts` to list posted offers)")
             return True
         ok, msg = engine.accept_contract(parts[1])
+        print(msg)
+        return True
+
+    if action in ("drop_offer", "pass_offer"):
+        if len(parts) < 2:
+            print("Usage: drop_offer <contract_id>  (costs a 30 CR broker fee)")
+            return True
+        ok, msg = engine.drop_offer(parts[1])
         print(msg)
         return True
 
@@ -873,7 +892,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("No saved game found.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, spoof, cash_out, shop, buy, career, status, save, load, quit")
+    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, spoof, cash_out, shop, buy, career, status, save, load, quit")
     return True
 
 
