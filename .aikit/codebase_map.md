@@ -9,8 +9,8 @@
 - **Total Python Modules**: `26`
 - **Total Classes**: `55`
 - **Total Top-Level Functions**: `65`
-- **Total Class Methods**: `428`
-- **Total Source Lines**: `9868`
+- **Total Class Methods**: `430`
+- **Total Source Lines**: `9892`
 
 ---
 
@@ -57,7 +57,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `2502` lines (`115678` bytes)
+**Size**: `2503` lines (`115746` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -352,7 +352,7 @@
 ### [`cyberpulse/world.py`](cyberpulse/world.py)
 > *Living-grid world simulation: in-game clock, corporate alert, news, and grid response.*
 
-**Size**: `555` lines (`18733` bytes)
+**Size**: `558` lines (`18934` bytes)
 
 **Classes:**
 - `class ShiftProfile` - *Tactical posture of the grid during one in-game shift.*
@@ -450,7 +450,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `1139` lines (`47899` bytes)
+**Size**: `1149` lines (`48277` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -510,6 +510,7 @@
   - Method `.test_failed_puzzle_seals_host_and_escalates_failure_cost()`
   - Method `.test_critical_trace_warning_is_not_counted_as_a_near_miss()`
   - Method `.test_near_miss_grants_bonus_attempt_only_once_per_puzzle()`
+  - Method `.test_failure_message_reports_dampened_trace_cost()`
   - Method `.test_stacked_puzzle_failures_add_escalating_trace()`
   - Method `.test_resecure_clears_host_lockdown()`
   - Method `.test_settle_career_banks_victory_loot_once()`
@@ -748,7 +749,7 @@
 ### [`tests/test_world.py`](tests/test_world.py)
 > *Unit tests for the living-grid world simulation module.*
 
-**Size**: `489` lines (`20650` bytes)
+**Size**: `499` lines (`21082` bytes)
 
 **Classes:**
 - `class TestWorldClock`
@@ -798,6 +799,7 @@
   - Method `.test_deploy_hunter_threshold()`
   - Method `.test_deploy_hunter_threshold_follows_the_shift()`
   - Method `.test_step_hunter_moves_and_intercepts()`
+  - Method `.test_intercepted_status_clears_when_hunter_leaves_player_host()`
   - Method `.test_step_hunter_confused()`
   - Method `.test_neutralize_hunter()`
 

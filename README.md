@@ -77,7 +77,7 @@ CyberPulse's mechanics are grounded in cognitive neuroscience and behavioral gam
    - Node breach rewards utilize randomized reward schedules (70% standard yield, 20% high-yield 2.5x jackpot, 10% rare hardware chip).
    - Unpredictable payoff magnitude induces striatal dopamine bursts, maximizing engagement compared to fixed rewards.
 2. **Near-Miss Effect & Striatal Dopamine Response (Clark et al., 2009)**:
-   - Narrow failures (frequency within 1 Hz, keyword within 1 letter, first buffer block aligned) trigger explicit near-miss sensory feedback.
+   - Narrow failures (frequency inside the harmonic band, keyword within 1 letter, first buffer block aligned) trigger explicit near-miss sensory feedback.
    - The first near miss on each puzzle becomes a **NEAR-MISS SURGE**: one bonus tuning/keyword attempt, or one free buffer retry. Later near misses are flavor only, so the comeback is real but cannot be farmed.
    - Neuroimaging proves near-misses activate the same reward pathways (nucleus accumbens and anterior insula) as wins, driving re-engagement and persistent play.
 3. **Push-Your-Luck & Loss Aversion (Kahneman & Tversky Prospect Theory)**:

@@ -730,6 +730,16 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(puzzle.attempts_left, 2)
         self.assertEqual(self.engine.state.near_miss_count, 2)
 
+    def test_failure_message_reports_dampened_trace_cost(self):
+        engine = GameEngine(seed=42)
+        engine.deck.ice_dampener_level = 3
+
+        _, msg = engine.register_puzzle_failure("node_proxy_a", "burned")
+
+        # trace_rate 10 at 60% mitigation -> 4 actual trace.
+        self.assertIn("trace +4%", msg)
+        self.assertEqual(engine.state.trace_percent, 4)
+
     def test_stacked_puzzle_failures_add_escalating_trace(self):
         self.engine.state.turns_elapsed = 1
         self.engine.register_puzzle_failure("node_proxy_a", "first burn")

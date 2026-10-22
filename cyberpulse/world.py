@@ -469,6 +469,9 @@ def step_hunter(
         return {"action": "idle", "hunter": hunter}
 
     prev_node = hunter.current_node_id
+    # A hunter only reports INTERCEPTED while it is actually on the player's host.
+    if hunter.status == "intercepted" and hunter.current_node_id != player_node_id:
+        hunter.status = "hunting"
     if hunter.confused_turns > 0:
         hunter.confused_turns -= 1
         curr = nodes.get(hunter.current_node_id)

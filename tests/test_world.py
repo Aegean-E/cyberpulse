@@ -471,6 +471,16 @@ class TestNetWatchHunterSimulation(unittest.TestCase):
         self.assertEqual(hunter.current_node_id, "n1")
         self.assertEqual(hunter.status, "intercepted")
 
+    def test_intercepted_status_clears_when_hunter_leaves_player_host(self):
+        rng = world_rng(42, 1, "test")
+        hunter = NetWatchHunter("h1", current_node_id="n1", status="intercepted")
+
+        res = step_hunter(hunter, self.nodes, player_node_id="n3", rng=rng)
+
+        self.assertEqual(res["action"], "moved")
+        self.assertEqual(hunter.current_node_id, "n2")
+        self.assertEqual(hunter.status, "hunting")
+
     def test_step_hunter_confused(self):
         rng = world_rng(42, 1, "test")
         hunter = NetWatchHunter("h1", current_node_id="n2", status="hunting", confused_turns=2)

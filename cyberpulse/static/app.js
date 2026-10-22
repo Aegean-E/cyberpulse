@@ -526,6 +526,13 @@ function renderHUD(data) {
   }
 }
 
+function applyStateSnapshot(res) {
+  if (!res || !res.state) return false;
+  state.data = res.state;
+  renderHUD(res.state);
+  return true;
+}
+
 function updateExploitChips(exploits) {
   const container = document.getElementById("exploit-chips-container");
   container.innerHTML = "";
@@ -629,6 +636,7 @@ async function handleJackout() {
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || "Cannot jack out here.", "warn");
+    applyStateSnapshot(res);
   }
 }
 
@@ -656,6 +664,7 @@ async function handleUseExploit(name) {
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || "Exploit execution failed.", "warn");
+    applyStateSnapshot(res);
   }
 }
 
@@ -711,7 +720,10 @@ function updateTargetCard(nodeId) {
   const deck = state.data.deck;
   const curr = state.data.current_node;
 
-  document.getElementById("target-badge").textContent = node.status;
+  const lockedDown = (node.lockdown_until_turn || -1) > (state.data.state.turns_elapsed || 0);
+  document.getElementById("target-badge").textContent = lockedDown
+    ? `${node.status} · LOCKDOWN`
+    : node.status;
   document.getElementById("target-name").textContent = node.name;
   document.getElementById("target-ip").textContent = node.ip_address || "127.0.0.1";
   document.getElementById("target-hostname").textContent = node.hostname || "localhost";
@@ -780,7 +792,10 @@ function updateTargetCard(nodeId) {
   const isBreached = node.status === "BREACHED";
 
   btnProbe.disabled = node.status === "LOCKED" && !isAdjacent;
-  btnHack.disabled = isBreached || !isAdjacent;
+  btnHack.disabled = isBreached || !isAdjacent || lockedDown;
+  btnHack.title = lockedDown
+    ? `Host ICE is rotating until turn ${node.lockdown_until_turn}. Lay low or target another host.`
+    : "Initiate intrusion.";
   btnMove.disabled = !isBreached || curr.node_id === nodeId;
   if (btnPhish) btnPhish.disabled = isBreached || (node.status === "LOCKED" && !isAdjacent);
   btnKeylogger.disabled = !isBreached;
@@ -1204,6 +1219,7 @@ async function handleStealFile(nodeId, path) {
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || "Failed to steal file.", "warn");
+    applyStateSnapshot(res);
   }
 }
 
@@ -1219,6 +1235,7 @@ async function handleWipeLogs() {
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || "Failed to wipe logs.", "warn");
+    applyStateSnapshot(res);
   }
 }
 
@@ -1432,7 +1449,6 @@ async function handleInjectBuffer() {
     if (res.near_miss_bonus) {
       state.data = res.state;
       renderHUD(res.state);
-      updateTargetCard(state.selectedNodeId);
       return;
     }
     closePuzzleBay();
@@ -1993,6 +2009,7 @@ function openBypassModal(port) {
       } else if (res) {
         sfx.failure();
         addTerminalLog(res.message || "Firewall bypass failed.", "warn");
+        applyStateSnapshot(res);
       }
     });
     grid.appendChild(card);
@@ -2022,6 +2039,7 @@ async function handleEvadeAv() {
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || "AV evasion failed.", "warn");
+    applyStateSnapshot(res);
   }
 }
 

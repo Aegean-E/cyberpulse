@@ -733,6 +733,7 @@ class GameEngine:
             self.MAX_FAILURE_TRACE,
             node.trace_rate + self.FAILURE_TRACE_STACK * (node.failed_attempts - 1),
         )
+        effective_penalty = self.mitigated_trace(penalty)
         self.add_trace(penalty)
         node.lockdown_until_turn = self.state.turns_elapsed + self.LOCKDOWN_TURNS
         if node.antivirus and node.antivirus.enabled and not node.antivirus.evaded:
@@ -742,7 +743,7 @@ class GameEngine:
 
         msg = (
             f"🔒 HOST LOCKDOWN: {node.hostname} burned your intrusion script "
-            f"(attempt {node.failed_attempts}, trace +{penalty}% -> {self.state.trace_percent}%). "
+            f"(attempt {node.failed_attempts}, trace +{effective_penalty}% -> {self.state.trace_percent}%). "
             f"Its ICE is recalibrating until turn {node.lockdown_until_turn}."
         )
         self.state.message_log.append(msg)
