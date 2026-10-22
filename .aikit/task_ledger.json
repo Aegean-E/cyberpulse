@@ -3,27 +3,18 @@
   "active_task": {
     "task_id": "task-cyberpulse-heat-v2-verify",
     "last_phase": "phase 4",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1792649330.3942661,
     "impact_assessment": {
       "why": "Close the verification follow-up with a passed gate shield.",
       "benefits": "The heat-v2 mechanics and their Web presentation are consistent under review.",
       "risks": "contract: docs/bookkeeping only; dependency: none",
       "mitigation": "aikit check cyberpulse."
-    }
+    },
+    "completed_at": 1792649363.146168
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-shift-downtime-v1",
-      "phase": "phase 4",
-      "phase_num": 4,
-      "description": "[milestone 5/5] ADR-017, README, codebase map refresh, 4/4 Phase 4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792522718.7257433,
-      "timestamp_str": "2026-10-20 21:58:38"
-    },
     {
       "task_id": "task-cyberpulse-shift-downtime-v1",
       "phase": "completed",
@@ -270,6 +261,15 @@
         "risks": "contract: docs/bookkeeping only; dependency: none",
         "mitigation": "aikit check cyberpulse."
       }
+    },
+    {
+      "task_id": "task-cyberpulse-heat-v2-verify",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-heat-v2-verify' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792649363.14617,
+      "timestamp_str": "2026-10-22 09:09:23"
     }
   ]
 }
