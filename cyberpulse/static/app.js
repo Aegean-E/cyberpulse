@@ -1606,7 +1606,7 @@ function openQuestsModal() {
       </div>
       <div class="quest-desc">${offer.description || ""}</div>
       <div class="quest-meta">TARGET: ${offer.target_ip || offer.target_node_type} | WINDOW: ${offer.deadline_turns} TURNS | PAY: ${offer.reward_creds} CR (+${offer.bonus_creds} RUSH)${offerLeft === null ? "" : ` | OFFER ${Math.max(0, offerLeft)} TURNS`}</div>
-      ${active ? "" : `<button class="hack-btn small-btn accept-contract-btn" data-contract="${offer.contract_id}">ACCEPT CONTRACT</button><button class="hack-btn small-btn pass-offer-btn" data-contract="${offer.contract_id}">PASS (-30 CR)</button>`}
+      ${active ? "" : `<button class="hack-btn small-btn accept-contract-btn" data-contract="${offer.contract_id}">ACCEPT CONTRACT</button><button class="hack-btn small-btn pass-offer-btn" data-contract="${offer.contract_id}">PASS (30 CR / 1 TURN)</button>`}
     `;
     const acceptBtn = card.querySelector(".accept-contract-btn");
     if (acceptBtn) {

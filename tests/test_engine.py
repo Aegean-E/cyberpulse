@@ -316,9 +316,21 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(len(self.engine.state.contract_offers), 3)
 
         self.engine.deck.cryptocreds = 0
-        ok, msg = self.engine.drop_offer(self.engine.state.contract_offers[0].contract_id)
-        self.assertFalse(ok)
-        self.assertIn("broker fee", msg)
+        broke_offer = self.engine.state.contract_offers[0]
+        ok, msg = self.engine.drop_offer(broke_offer.contract_id)
+
+        self.assertTrue(ok)
+        self.assertIn("waives the fee", msg)
+        self.assertEqual(self.engine.deck.cryptocreds, 0)
+        self.assertEqual(self.engine.state.contract_decline_until_turn, 1)
+
+        blocked, blocked_msg = self.engine.drop_offer(self.engine.state.contract_offers[0].contract_id)
+        self.assertFalse(blocked)
+        self.assertIn("reposting", blocked_msg)
+
+        self.engine.state.turns_elapsed = 1
+        later, _ = self.engine.drop_offer(self.engine.state.contract_offers[0].contract_id)
+        self.assertTrue(later)
 
     def test_offer_shelf_life_rotates_the_board(self):
         expired = self.engine.state.contract_offers[0]

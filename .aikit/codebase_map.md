@@ -10,7 +10,7 @@
 - **Total Classes**: `55`
 - **Total Top-Level Functions**: `67`
 - **Total Class Methods**: `476`
-- **Total Source Lines**: `11107`
+- **Total Source Lines**: `11119`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1000` lines (`47328` bytes)
+**Size**: `1000` lines (`47349` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -58,7 +58,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3050` lines (`141770` bytes)
+**Size**: `3050` lines (`141853` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -124,7 +124,7 @@
   - Method `._build_contract()` - *Generate a concrete, deadline-bound job from the live grid state.*
   - Method `.dispatch_next_contract()` - *Dispatch and immediately accept a concrete job (legacy/test helper).*
   - Method `.accept_contract(contract_id)` - *Accept a posted offer and start its deadline clock.*
-  - Method `.drop_offer(contract_id)` - *Pay a broker fee to remove one posted offer and refill the board.*
+  - Method `.drop_offer(contract_id)` - *Remove one posted offer: pay the broker fee, or take a one-turn cooldown if broke.*
   - Method `.decline_contract()` - *Walk away from the active job: lose giver trust, keep the board stocked.*
   - Method `._contract_targets_node(contract, node)`
   - Method `._contract_completes_on_breach(contract, node)` - *Return True when a node breach satisfies a contract without extra objectives.*
@@ -477,7 +477,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `1475` lines (`61839` bytes)
+**Size**: `1487` lines (`62365` bytes)
 
 **Classes:**
 - `class TestEngine`

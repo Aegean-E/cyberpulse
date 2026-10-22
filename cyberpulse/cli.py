@@ -600,7 +600,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
 
     if action in ("drop_offer", "pass_offer"):
         if len(parts) < 2:
-            print("Usage: drop_offer <contract_id>  (costs a 30 CR broker fee)")
+            print("Usage: drop_offer <contract_id>  (30 CR, or a one-turn broker cooldown if broke)")
             return True
         ok, msg = engine.drop_offer(parts[1])
         print(msg)

@@ -1682,16 +1682,16 @@ class GameEngine:
         self.state.contract_offers.remove(offer)
         self.state.active_contract = self._activate_contract(offer)
         self.state.contract_decline_until_turn = 0
-        self.state.contract_notice = (
+        message = (
             f"JOB ACCEPTED: {offer.title} — deadline turn {offer.expires_turn} "
             f"(rush by turn {offer.rush_turn})."
         )
         self._refresh_contract_offers()
-        self.state.message_log.append(self.state.contract_notice)
-        return True, self.state.contract_notice
+        self.state.message_log.append(message)
+        return True, message
 
     def drop_offer(self, contract_id: str) -> Tuple[bool, str]:
-        """Pay a broker fee to remove one posted offer and refill the board."""
+        """Remove one posted offer: pay the broker fee, or take a one-turn cooldown if broke."""
         if self.state.is_game_over or self.state.is_jacked_out or self.state.is_victory:
             return False, "Cannot drop an offer: the run has already ended."
         offer = next(
@@ -1701,18 +1701,19 @@ class GameEngine:
         if offer is None:
             self._refresh_contract_offers()
             return False, f"No posted contract offer with id '{contract_id}'."
-        if self.deck.cryptocreds < OFFER_DROP_FEE:
-            return False, (
-                f"Dropping an offer needs a {OFFER_DROP_FEE} CR broker fee "
-                f"(you have {self.deck.cryptocreds} CR)."
-            )
-        self.deck.cryptocreds -= OFFER_DROP_FEE
+        if self.deck.cryptocreds >= OFFER_DROP_FEE:
+            self.deck.cryptocreds -= OFFER_DROP_FEE
+            broker_note = f"Broker fee -{OFFER_DROP_FEE} CR."
+        else:
+            if self.state.turns_elapsed < self.state.contract_decline_until_turn:
+                return False, "The broker is still reposting terms; wait one grid turn."
+            self.state.contract_decline_until_turn = self.state.turns_elapsed + 1
+            broker_note = "Broker waives the fee; terms repost next turn."
         self.state.contract_offers.remove(offer)
         self._refresh_contract_offers({self._offer_signature(offer)})
         message = (
-            f"OFFER DROPPED: {offer.title}. Broker fee -{OFFER_DROP_FEE} CR; the board is refreshed."
+            f"OFFER DROPPED: {offer.title}. {broker_note} The board is refreshed."
         )
-        self.state.contract_notice = message
         self.state.message_log.append(message)
         return True, message
 
@@ -1734,7 +1735,6 @@ class GameEngine:
             f"CONTRACT DECLINED: {contract.title}. "
             f"{contact.name if contact else 'The Syndicate'} trust -1; the board is refreshed."
         )
-        self.state.contract_notice = message
         self.state.message_log.append(message)
         return True, message
 
