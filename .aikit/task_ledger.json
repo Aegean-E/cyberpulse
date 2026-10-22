@@ -1,94 +1,20 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-livgrid-v1",
-    "last_phase": "in_progress",
+    "task_id": "task-cyberpulse-heat-v2",
+    "last_phase": "phase 4",
     "active_phase": 5,
     "status": "completed",
-    "updated_at": 1792621413.6480787,
-    "completed_at": 1792621461.4207184
+    "updated_at": 1792648459.7286894,
+    "impact_assessment": {
+      "why": "Close the task with living documentation and a passed gate shield.",
+      "benefits": "The new risk loop is discoverable in-game and in the README, and the change is recorded for future balance work.",
+      "risks": "contract: docs only; dependency: none; state: ledger/map bookkeeping",
+      "mitigation": "aikit check cyberpulse and full unittest discover."
+    },
+    "completed_at": 1792648497.0517745
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-netwatch-hunters-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-netwatch-hunters-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792440327.1138098,
-      "timestamp_str": "2026-10-19 23:05:27"
-    },
-    {
-      "task_id": "task-cyberpulse-start-launcher-v1",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/3] Plan: Add zero-friction start launcher files (start.py, start.bat, start.sh), CLI forwarding, tests, README update",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792440475.9594982,
-      "timestamp_str": "2026-10-19 23:07:55",
-      "impact_assessment": {
-        "why": "Users need a single one-click or single-command entry point to launch CyberPulse without remembering module syntax or flags.",
-        "benefits": "Delivers zero-friction instant onboarding: double-clicking start.bat or running python start.py launches CyberPulse immediately.",
-        "risks": "contract: none; dependency: none (stdlib only); concurrency: none; state: none",
-        "mitigation": "Standalone stdlib-only launcher, argument forwarding tests in test_cli.py, hygiene and secret scans via aikit check cyberpulse."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-start-launcher-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 2/3] Implement start.py, start.bat, start.sh with default --web launcher and argument forwarding, add unit tests in tests/test_cli.py",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792440714.7592018,
-      "timestamp_str": "2026-10-19 23:11:54"
-    },
-    {
-      "task_id": "task-cyberpulse-start-launcher-v1",
-      "phase": "phase 4",
-      "phase_num": 4,
-      "description": "[milestone 3/3] Verification: start launcher files, tests, README tree and quick-start; 205/205 tests green; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792440718.465029,
-      "timestamp_str": "2026-10-19 23:11:58"
-    },
-    {
-      "task_id": "task-cyberpulse-start-launcher-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-start-launcher-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792440739.5879354,
-      "timestamp_str": "2026-10-19 23:12:19"
-    },
-    {
-      "task_id": "task-cyberpulse-shift-downtime-v1",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/5] Plan: Shift Dynamics & Downtime - tactical shift profiles, shift-aware market/re-secure/hunter thresholds, lay_low/wait downtime action, CLI/Web surfaces, tests, ADR-017",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792511498.0580556,
-      "timestamp_str": "2026-10-20 18:51:38",
-      "impact_assessment": {
-        "why": "The living-grid clock and shift names are cosmetic: the same patrol, re-secure, and market behavior runs at 03:00 and 15:00, so time pressure cannot be played around. Players also lack a deliberate downtime action to recover CPU and pass a dangerous shift without spending trace.",
-        "benefits": "Each shift gets a legible tactical identity (quiet but costly nights, fast morning audits, hair-trigger afternoons, lagging evening handovers), and lay_low turns the clock into a resource: recover CPU and wait out the grid at the risk of patrols, hunters, and ambient events. Both CLI and Web expose the shift effect and downtime action.",
-        "risks": "contract: additive world_summary keys and optional keyword params on drift_market/plan_resecures/deploy_hunter; engine gains lay_low; no persisted schema change; dependency: none (stdlib only); concurrency: server serializes the action under the existing session lock; state: shift derives from world.minute, so existing saves need no migration and Morning defaults preserve current tests",
-        "mitigation": "Frozen ShiftProfile with explicit boundaries, optional defaults preserving callers, 1-3 turn cap and terminal-state guards on lay_low, failing-first unit/integration/API tests, aikit check after each milestone, and ADR-017 documenting the modifiers."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-shift-downtime-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[milestone 1/5] Shift core: ShiftProfile + boundaries, shift_effect_text, shift-aware market drift bias, re-secure chance delta, hunter deployment threshold, world_summary shift telemetry; 7 new unit tests; test 212/212, aikit check 4/4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792511577.126535,
-      "timestamp_str": "2026-10-20 18:52:57"
-    },
     {
       "task_id": "task-cyberpulse-shift-downtime-v1",
       "phase": "phase 3",
@@ -222,6 +148,111 @@
       "status": "completed",
       "timestamp": 1792621461.4207199,
       "timestamp_str": "2026-10-22 01:24:21"
+    },
+    {
+      "task_id": "task-cyberpulse-heat-v2",
+      "phase": "phase 2",
+      "phase_num": 2,
+      "description": "[1/6] Plan: host-lockdown failure consequence, near-miss bonus attempts, extraction-surge push-your-luck, deterministic save/puzzle persistence, terminal-state safety, docs+ADR",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792624330.7710836,
+      "timestamp_str": "2026-10-22 02:12:10",
+      "impact_assessment": {
+        "why": "Mechanics audit: (a) a burned hacking puzzle can be retried immediately and for free, so failure has no cost and puzzles are an infinite free-roll; (b) near-miss feedback is cosmetic (and add_trace inflates the near-miss counter), so the strongest addictivity cue carries no mechanical meaning; (c) jackout is guaranteed from any breached node, so the push-your-luck loop has no late-extraction risk and trace above 60 only pressures the player into a guaranteed bank; (d) save/load reseeds the RNG to seed+turns, rerolling reward rolls, and pending puzzle attempts are not persisted, enabling deterministic save-scumming; (e) several actions award rewards or report success after their own world tick has already triggered lockout.",
+        "benefits": "Failure becomes a tactical cost that makes downtime and other hosts matter; near misses convert into a capped, memorable extra attempt; extraction at high trace becomes a real final gamble that rewards disciplined banking; save/load becomes trustworthy and non-exploitable; action outcomes stop contradicting the terminal state. Together these tighten the addiction loop around risk, recovery, and loss aversion.",
+        "risks": "contract: Node and savegame gain additive fields only; API puzzle solve response may gain near_miss_bonus/lockdown fields; existing tests expecting RNG reseeding change behavior; dependency: none (stdlib only); concurrency: server already serializes under a session RLock; state: Node.lockdown_until_turn/failed_attempts and persisted rng/puzzles need backward-compatible defaults and atomic-save integration",
+        "mitigation": "Additive dataclass defaults, explicit old-save fallback, failing-first unit/integration/API tests, centralized failure handler shared by CLI and Web, full unittest discover plus aikit check after every milestone, and ADR-019 documenting each balance change with quantitative bands."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-heat-v2",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[2/6] Failure consequence + near-miss payoff: Node.failed_attempts/lockdown_until_turn, register_puzzle_failure centralizes escalating trace (+4 per stack, cap 30), EDR alert, combo break, 2-turn host ICE lockdown shared by CLI/Web; first near miss per puzzle grants one bonus attempt/retry via resolve_puzzle_near_miss, Web buffer bay keeps the puzzle open on a bonus; 246 tests green; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792647645.2540824,
+      "timestamp_str": "2026-10-22 08:40:45",
+      "impact_assessment": {
+        "why": "The core risk loop was one-sided: burned puzzles were free retries and near misses were cosmetic.",
+        "benefits": "Detected failures now cost tempo, trace, and combo; near misses convert into a capped comeback that reinforces the re-engagement cue without making puzzles trivial.",
+        "risks": "contract: additive Node fields only; old saves default to unlocked hosts; API adds near_miss_bonus; dependency: none",
+        "mitigation": "Failing-first unit/API tests, centralized handler used by both surfaces, full discover after each milestone."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-heat-v2",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[3/6] Extraction surge: jackout now applies Black ICE surge bands (+5 at 50%, +10 at 70%, +15 at 85%), dampener-mitigated, with a deterministic lethal projection; failure burns unbanked loot; extraction_risk preview in CLI HUD and Web state/trace gauge, LETHAL marker; 250 tests green; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792647816.316858,
+      "timestamp_str": "2026-10-22 08:43:36",
+      "impact_assessment": {
+        "why": "Jackout was a guaranteed bank from any breached node, so high trace only forced an early exit instead of creating a final gamble.",
+        "benefits": "Late extraction becomes a legible risk decision, disciplined banking is rewarded, and ICE dampeners gain a new defensive role.",
+        "risks": "contract: additive get_full_state extraction_risk and HUD text; jackout may now fail at 85%+ trace; dependency: none; state: no persisted field",
+        "mitigation": "Dampener-aware mitigation mirrors add_trace, risk preview matches execution, and tests cover all bands, survivable surge, and lethal failure."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-heat-v2",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[4/6] Deterministic save integrity: JSON-safe RNG state persistence with legacy fallback; pending puzzle to_dict/from_dict serialization preserving attempts and near-miss state; replaced the reseed-on-load test with continuation plus legacy-fallback tests; 257 tests green; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792648314.9797573,
+      "timestamp_str": "2026-10-22 08:51:54",
+      "impact_assessment": {
+        "why": "Save/load rerolled the reward RNG and reset puzzle attempts, enabling save-scumming and contradicting the deterministic-state claim.",
+        "benefits": "Reloading is now trustworthy and non-exploitable; in-progress puzzle tension survives save and quit.",
+        "risks": "contract: additive save fields; old saves fall back to legacy reseed; state: savegame grows by a 625-int RNG tuple plus one payload per active puzzle",
+        "mitigation": "see above"
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-heat-v2",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[5/6] Terminal-state safety + metric/stacking fixes: post-tick aborts for download, wipe_logs, social, bypass, evade; trace-before-credit for brute_miner/data_siphon; terminal notes on scan/move/probe; 80%+ trace warnings no longer counted as near misses; intercepted hunters block further deployments; 257 tests green; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792648384.2807074,
+      "timestamp_str": "2026-10-22 08:53:04",
+      "impact_assessment": {
+        "why": "Actions could pay out or mutate defenses after their own grid tick had already burned the deck, and an intercepted hunter did not prevent a second simultaneous clamp.",
+        "benefits": "Every action result now agrees with the terminal state, the near-miss metric is honest, and late-game hunter pressure cannot stack into an unavoidable one-tick death.",
+        "risks": "contract: behavior only, no schema change; dependency: none; state: none",
+        "mitigation": "Failing-first engine tests for download/bypass/social/brute burn, hunter no-stack test, full discover."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-heat-v2",
+      "phase": "phase 4",
+      "phase_num": 4,
+      "description": "[6/6] Docs, ADR and verification: README mechanics/commands/architecture updated, ADR-019 recorded, codebase map regenerated, 257 tests green, 4/4 Phase 4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792648459.7286894,
+      "timestamp_str": "2026-10-22 08:54:19",
+      "impact_assessment": {
+        "why": "Close the task with living documentation and a passed gate shield.",
+        "benefits": "The new risk loop is discoverable in-game and in the README, and the change is recorded for future balance work.",
+        "risks": "contract: docs only; dependency: none; state: ledger/map bookkeeping",
+        "mitigation": "aikit check cyberpulse and full unittest discover."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-heat-v2",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-heat-v2' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792648497.0517757,
+      "timestamp_str": "2026-10-22 08:54:57"
     }
   ]
 }
