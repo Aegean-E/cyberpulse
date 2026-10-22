@@ -1,103 +1,20 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-contracts-v1",
+    "task_id": "task-cyberpulse-offer-board-v1",
     "last_phase": "phase 4",
     "active_phase": 5,
     "status": "completed",
-    "updated_at": 1792651365.191347,
+    "updated_at": 1792666223.6237557,
     "impact_assessment": {
-      "why": "Close with living documentation and a passed gate shield.",
-      "benefits": "The job loop is discoverable and its balance rationale recorded.",
+      "why": "Close the job-board refinement with verified behavior and living docs.",
+      "benefits": "Choice loop is tested, persisted and documented.",
       "risks": "contract: docs/bookkeeping only",
       "mitigation": "aikit check cyberpulse."
     },
-    "completed_at": 1792651380.1584105
+    "completed_at": 1792666249.6122882
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-livgrid-v1",
-      "phase": "in_progress",
-      "phase_num": 5,
-      "description": "[7/7] Docs and closure: lay-low ghost cooling, README mechanics/architecture updates, ADR-018 recorded; full suite 238 green; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792621413.6480787,
-      "timestamp_str": "2026-10-22 01:23:33"
-    },
-    {
-      "task_id": "task-cyberpulse-livgrid-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-livgrid-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792621461.4207199,
-      "timestamp_str": "2026-10-22 01:24:21"
-    },
-    {
-      "task_id": "task-cyberpulse-heat-v2",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/6] Plan: host-lockdown failure consequence, near-miss bonus attempts, extraction-surge push-your-luck, deterministic save/puzzle persistence, terminal-state safety, docs+ADR",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792624330.7710836,
-      "timestamp_str": "2026-10-22 02:12:10",
-      "impact_assessment": {
-        "why": "Mechanics audit: (a) a burned hacking puzzle can be retried immediately and for free, so failure has no cost and puzzles are an infinite free-roll; (b) near-miss feedback is cosmetic (and add_trace inflates the near-miss counter), so the strongest addictivity cue carries no mechanical meaning; (c) jackout is guaranteed from any breached node, so the push-your-luck loop has no late-extraction risk and trace above 60 only pressures the player into a guaranteed bank; (d) save/load reseeds the RNG to seed+turns, rerolling reward rolls, and pending puzzle attempts are not persisted, enabling deterministic save-scumming; (e) several actions award rewards or report success after their own world tick has already triggered lockout.",
-        "benefits": "Failure becomes a tactical cost that makes downtime and other hosts matter; near misses convert into a capped, memorable extra attempt; extraction at high trace becomes a real final gamble that rewards disciplined banking; save/load becomes trustworthy and non-exploitable; action outcomes stop contradicting the terminal state. Together these tighten the addiction loop around risk, recovery, and loss aversion.",
-        "risks": "contract: Node and savegame gain additive fields only; API puzzle solve response may gain near_miss_bonus/lockdown fields; existing tests expecting RNG reseeding change behavior; dependency: none (stdlib only); concurrency: server already serializes under a session RLock; state: Node.lockdown_until_turn/failed_attempts and persisted rng/puzzles need backward-compatible defaults and atomic-save integration",
-        "mitigation": "Additive dataclass defaults, explicit old-save fallback, failing-first unit/integration/API tests, centralized failure handler shared by CLI and Web, full unittest discover plus aikit check after every milestone, and ADR-019 documenting each balance change with quantitative bands."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-heat-v2",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[2/6] Failure consequence + near-miss payoff: Node.failed_attempts/lockdown_until_turn, register_puzzle_failure centralizes escalating trace (+4 per stack, cap 30), EDR alert, combo break, 2-turn host ICE lockdown shared by CLI/Web; first near miss per puzzle grants one bonus attempt/retry via resolve_puzzle_near_miss, Web buffer bay keeps the puzzle open on a bonus; 246 tests green; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792647645.2540824,
-      "timestamp_str": "2026-10-22 08:40:45",
-      "impact_assessment": {
-        "why": "The core risk loop was one-sided: burned puzzles were free retries and near misses were cosmetic.",
-        "benefits": "Detected failures now cost tempo, trace, and combo; near misses convert into a capped comeback that reinforces the re-engagement cue without making puzzles trivial.",
-        "risks": "contract: additive Node fields only; old saves default to unlocked hosts; API adds near_miss_bonus; dependency: none",
-        "mitigation": "Failing-first unit/API tests, centralized handler used by both surfaces, full discover after each milestone."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-heat-v2",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[3/6] Extraction surge: jackout now applies Black ICE surge bands (+5 at 50%, +10 at 70%, +15 at 85%), dampener-mitigated, with a deterministic lethal projection; failure burns unbanked loot; extraction_risk preview in CLI HUD and Web state/trace gauge, LETHAL marker; 250 tests green; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792647816.316858,
-      "timestamp_str": "2026-10-22 08:43:36",
-      "impact_assessment": {
-        "why": "Jackout was a guaranteed bank from any breached node, so high trace only forced an early exit instead of creating a final gamble.",
-        "benefits": "Late extraction becomes a legible risk decision, disciplined banking is rewarded, and ICE dampeners gain a new defensive role.",
-        "risks": "contract: additive get_full_state extraction_risk and HUD text; jackout may now fail at 85%+ trace; dependency: none; state: no persisted field",
-        "mitigation": "Dampener-aware mitigation mirrors add_trace, risk preview matches execution, and tests cover all bands, survivable surge, and lethal failure."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-heat-v2",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[4/6] Deterministic save integrity: JSON-safe RNG state persistence with legacy fallback; pending puzzle to_dict/from_dict serialization preserving attempts and near-miss state; replaced the reseed-on-load test with continuation plus legacy-fallback tests; 257 tests green; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792648314.9797573,
-      "timestamp_str": "2026-10-22 08:51:54",
-      "impact_assessment": {
-        "why": "Save/load rerolled the reward RNG and reset puzzle attempts, enabling save-scumming and contradicting the deterministic-state claim.",
-        "benefits": "Reloading is now trustworthy and non-exploitable; in-progress puzzle tension survives save and quit.",
-        "risks": "contract: additive save fields; old saves fall back to legacy reseed; state: savegame grows by a 625-int RNG tuple plus one payload per active puzzle",
-        "mitigation": "see above"
-      }
-    },
     {
       "task_id": "task-cyberpulse-heat-v2",
       "phase": "phase 3",
@@ -300,6 +217,95 @@
       "status": "completed",
       "timestamp": 1792651380.1584115,
       "timestamp_str": "2026-10-22 09:43:00"
+    },
+    {
+      "task_id": "task-cyberpulse-offer-board-v1",
+      "phase": "phase 2",
+      "phase_num": 2,
+      "description": "[1/5] Plan: Syndicate job board - three rotating offers, accept/decline choice, offer shelf life, deadline start on acceptance, CLI/Web/API surfaces, tests, ADR-021",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792657966.2531755,
+      "timestamp_str": "2026-10-22 11:32:46",
+      "impact_assessment": {
+        "why": "The contract market still auto-assigns a single job, so risk tiers and givers are not a player choice. An offer board adds autonomy, makes risk/reward selection legible, and gives declining a real broker-relationship cost.",
+        "benefits": "Players choose risk tier, objective, target, and giver; offers rotate on the clock; active jobs still have a hard deadline; trust remains the payout/deadline currency.",
+        "risks": "contract: GameState.contract_offers additive; BountyContract gains offer/accept fields; completing or expiring a job now leaves active_contract None until acceptance; existing tests that assume auto-dispatch need updating; dependency: none; concurrency: server mutations stay under the session lock; state: offers persist and must default for old saves",
+        "mitigation": "Backward-compatible defaults, a single offer generator reused by initial/refresh paths, explicit lifecycle tests, CLI/API tests, full discover after each milestone, and ADR-021."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-offer-board-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[2/5] Offer model and rotation: GameState.contract_offers, offer_expires_turn/deadline_turns, deferred deadline-on-acceptance, three distinct offers with risk-scaled shelf life, board refresh on init/load/tick; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792666197.8202465,
+      "timestamp_str": "2026-10-22 13:49:57",
+      "impact_assessment": {
+        "why": "Give the player a real choice of job and keep the board fresh.",
+        "benefits": "Three visible offers, distinct targets, no silent deadlines.",
+        "risks": "contract: additive fields; state: offers persisted",
+        "mitigation": "Model/storage/board tests and full suite."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-offer-board-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[3/5] Accept/decline lifecycle: active-job guard, accept starts stored deadline, one-turn broker cooldown after decline, trust penalty without alert, completion opens the board, expiry defers repost; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792666206.6336937,
+      "timestamp_str": "2026-10-22 13:50:06",
+      "impact_assessment": {
+        "why": "Make the board a decision with costs, not a free reroll.",
+        "benefits": "Deliberate job selection, anti-fishing cooldown, clear trust stakes.",
+        "risks": "contract: active contract may be empty until accepted",
+        "mitigation": "Lifecycle tests and server API tests."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-offer-board-v1",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[4/5] Board surfaces: CLI contract board with offer IDs/accept/decline, HUD open-board count, Web mission-modal active card with DECLINE and offer cards with ACCEPT, server accept_contract/decline_contract actions, help text; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792666213.4464653,
+      "timestamp_str": "2026-10-22 13:50:13",
+      "impact_assessment": {
+        "why": "Expose job choice in both clients.",
+        "benefits": "Players can see and act on the board without guessing.",
+        "risks": "contract: additive API actions and UI",
+        "mitigation": "CLI/server tests and node syntax check."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-offer-board-v1",
+      "phase": "phase 4",
+      "phase_num": 4,
+      "description": "[5/5] Verification and docs: 276 tests green, storage round-trip for offers, CLI/server lifecycle coverage, README board/choice copy, ADR-021, codebase map regenerated, 4/4 gates; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792666223.6237557,
+      "timestamp_str": "2026-10-22 13:50:23",
+      "impact_assessment": {
+        "why": "Close the job-board refinement with verified behavior and living docs.",
+        "benefits": "Choice loop is tested, persisted and documented.",
+        "risks": "contract: docs/bookkeeping only",
+        "mitigation": "aikit check cyberpulse."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-offer-board-v1",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-offer-board-v1' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792666249.6122892,
+      "timestamp_str": "2026-10-22 13:50:49"
     }
   ]
 }
