@@ -11,6 +11,26 @@ from typing import Any, Dict, Optional
 
 from cyberpulse.engine import GameEngine
 from cyberpulse.models import CareerProfile, CyberDeck, GameState, Node
+from cyberpulse.puzzles import puzzle_from_dict
+
+
+def encode_rng_state(state: Any) -> Dict[str, Any]:
+    """Convert a random.Random state tuple into a JSON-safe payload."""
+    version, internal, gauss_next = state
+    return {
+        "version": int(version),
+        "internal": [int(value) for value in internal],
+        "gauss_next": gauss_next,
+    }
+
+
+def decode_rng_state(payload: Dict[str, Any]) -> Any:
+    """Restore a random.Random state tuple from a persisted payload."""
+    return (
+        int(payload["version"]),
+        tuple(int(value) for value in payload["internal"]),
+        payload.get("gauss_next"),
+    )
 
 
 class SaveManager:
@@ -81,6 +101,12 @@ class SaveManager:
             "deck": engine.deck.to_dict(),
             "state": engine.state.to_dict(),
             "nodes": {nid: n.to_dict() for nid, n in engine.nodes.items()},
+            "rng_state": encode_rng_state(engine.rng.getstate()),
+            "puzzles": {
+                nid: puzzle.to_dict()
+                for nid, puzzle in engine.pending_puzzles.items()
+                if hasattr(puzzle, "to_dict")
+            },
         }
         return self._write_atomic(self.save_file, data)
 
@@ -96,7 +122,23 @@ class SaveManager:
             engine.state = GameState.from_dict(data["state"])
             engine.nodes = {nid: Node.from_dict(ndata) for nid, ndata in data["nodes"].items()}
             engine.ensure_story_state()
-            engine.rng = random.Random(engine.seed + engine.state.turns_elapsed)
+            rng_state = data.get("rng_state")
+            if isinstance(rng_state, dict):
+                try:
+                    engine.rng.setstate(decode_rng_state(rng_state))
+                except (KeyError, TypeError, ValueError):
+                    engine.rng = random.Random(engine.seed + engine.state.turns_elapsed)
+            else:
+                engine.rng = random.Random(engine.seed + engine.state.turns_elapsed)
+
+            puzzles = data.get("puzzles")
+            if isinstance(puzzles, dict):
+                for nid, payload in puzzles.items():
+                    if not isinstance(payload, dict):
+                        continue
+                    puzzle = puzzle_from_dict(payload)
+                    if puzzle is not None:
+                        engine.pending_puzzles[nid] = puzzle
             return engine
         except (KeyError, TypeError):
             return None

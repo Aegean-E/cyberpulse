@@ -8,9 +8,9 @@
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `26`
 - **Total Classes**: `55`
-- **Total Top-Level Functions**: `62`
-- **Total Class Methods**: `394`
-- **Total Source Lines**: `9244`
+- **Total Top-Level Functions**: `65`
+- **Total Class Methods**: `428`
+- **Total Source Lines**: `9868`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `887` lines (`41032` bytes)
+**Size**: `901` lines (`41578` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -57,7 +57,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `2314` lines (`106911` bytes)
+**Size**: `2502` lines (`115678` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -86,6 +86,12 @@
   - Method `.list_contacts()`
   - Method `.get_or_create_puzzle(node_id)` - *Return the pending hacking puzzle for a node, creating it only once.*
   - Method `.clear_pending_puzzle(node_id)` - *Discard a solved or exhausted puzzle so the node cannot replay its attempts.*
+  - Method `._lockdown_reason(node)` - *Return a denial when a host's ICE is still rotating after a burned intrusion.*
+  - Method `.register_puzzle_failure(node_id, reason)` - *Apply the cost of a burned intrusion script: trace, combo loss, and a host lockdown.*
+  - Method `.resolve_puzzle_near_miss(puzzle)` - *Record a near miss and convert the first one per puzzle into a bonus attempt.*
+  - Method `.mitigated_trace(raw_amount)` - *Return the trace actually added after passive ICE dampener mitigation.*
+  - Method `.extraction_surge()` - *Black ICE surge applied while pulling the jack, before the link is cut.*
+  - Method `.extraction_risk()` - *Preview the extraction surge and whether it would burn an active run.*
   - Method `.add_trace(raw_amount)` - *Increase system trace, mitigated by ICE dampeners. 100% triggers lockout & loss of loot.*
   - Method `.regenerate_cpu(amount)` - *Cool down cyberdeck processing units and recover CPU cycles.*
   - Method `.advance_turn()` - *Advance the run clock one turn: daemons harvest, then the living grid reacts.*
@@ -138,7 +144,7 @@
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `562` lines (`19688` bytes)
+**Size**: `564` lines (`19862` bytes)
 
 **Classes:**
 - `class NodeType`
@@ -225,21 +231,33 @@
 ### [`cyberpulse/puzzles.py`](cyberpulse/puzzles.py)
 > *Interactive and deterministic cyberpunk hacking mini-game puzzles with near-miss feedback.*
 
-**Size**: `101` lines (`4398` bytes)
+**Size**: `198` lines (`7998` bytes)
 
 **Classes:**
 - `class FrequencyPuzzle` - *Tuning resonance frequency puzzle with near-miss feedback mechanics.*
   - Method `.__init__(target_freq, tolerance)`
+  - Method `.claim_near_miss_bonus()` - *Convert the first near miss into one extra tuning attempt.*
+  - Method `.to_dict()`
+  - Method `.from_dict(data)`
   - Method `.generate(seed)`
   - Method `.tune(guess)` - *Test a frequency guess with near-miss detection.*
 - `class BufferPuzzle` - *Memory buffer sequence matching puzzle with partial alignment detection.*
   - Method `.__init__(matrix, target_seq)`
+  - Method `.claim_near_miss_bonus()` - *Convert the first near miss into one free retry before the host locks down.*
+  - Method `.to_dict()`
+  - Method `.from_dict(data)`
   - Method `.generate(seed)`
   - Method `.verify_sequence(player_seq)` - *Verify whether player's sequence matches with near-miss feedback.*
 - `class HashCrackPuzzle` - *Cryptographic password / hash cracking cipher puzzle with single-letter near miss.*
   - Method `.__init__(target_word, word_list)`
+  - Method `.claim_near_miss_bonus()` - *Convert the first character-level near miss into one extra keyword attempt.*
+  - Method `.to_dict()`
+  - Method `.from_dict(data)`
   - Method `.generate(seed)`
   - Method `.guess(candidate)` - *Evaluate a guess and return matching character count with near-miss detection.*
+
+**Functions:**
+- `def puzzle_from_dict(data)` - *Restore a persisted puzzle payload, or None when the type is unknown.*
 
 ---
 
@@ -256,7 +274,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `646` lines (`28939` bytes)
+**Size**: `661` lines (`29765` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -299,7 +317,7 @@
 ### [`cyberpulse/storage.py`](cyberpulse/storage.py)
 > *Crash-resilient savegame and career profile storage engine for CyberPulse.*
 
-**Size**: `122` lines (`4803` bytes)
+**Size**: `164` lines (`6425` bytes)
 
 **Classes:**
 - `class SaveManager` - *Manages atomic saving and loading of game states and career profiles.*
@@ -311,6 +329,10 @@
   - Method `.delete_save()` - *Remove savegame and its shadow backup after completed or failed run.*
   - Method `.save_career(profile)` - *Atomically persist career meta-progression profile.*
   - Method `.load_career()` - *Load persistent career profile with backup recovery or return fresh profile.*
+
+**Functions:**
+- `def encode_rng_state(state)` - *Convert a random.Random state tuple into a JSON-safe payload.*
+- `def decode_rng_state(payload)` - *Restore a random.Random state tuple from a persisted payload.*
 
 ---
 
@@ -330,7 +352,7 @@
 ### [`cyberpulse/world.py`](cyberpulse/world.py)
 > *Living-grid world simulation: in-game clock, corporate alert, news, and grid response.*
 
-**Size**: `553` lines (`18655` bytes)
+**Size**: `555` lines (`18733` bytes)
 
 **Classes:**
 - `class ShiftProfile` - *Tactical posture of the grid during one in-game shift.*
@@ -428,7 +450,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `963` lines (`40830` bytes)
+**Size**: `1139` lines (`47899` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -439,6 +461,14 @@
   - Method `.test_breach_and_move()`
   - Method `.test_trace_lockout_burns_unbanked_loot()`
   - Method `.test_jackout_safely_banks_loot()`
+  - Method `.test_jackout_previews_black_ice_surge_bands()`
+  - Method `.test_ice_dampener_can_make_hot_extraction_survivable()`
+  - Method `.test_jackout_applies_survivable_surge_and_banks()`
+  - Method `.test_jackout_above_85_percent_can_burn_the_run()`
+  - Method `.test_download_after_grid_lockout_does_not_pay()`
+  - Method `.test_bypass_after_grid_lockout_leaves_rule_blocked()`
+  - Method `.test_social_after_grid_lockout_leaves_security_intact()`
+  - Method `.test_brute_miner_burn_consumes_chip_without_crediting()`
   - Method `.test_ice_dampener_reduces_trace_gain()`
   - Method `.test_bounty_contract_fulfillment()`
   - Method `.test_cpu_regeneration()`
@@ -477,6 +507,11 @@
   - Method `.test_wipe_logs_is_idempotent()`
   - Method `.test_probe_advances_daemon_tick()`
   - Method `.test_pending_puzzle_keeps_attempts_between_calls()`
+  - Method `.test_failed_puzzle_seals_host_and_escalates_failure_cost()`
+  - Method `.test_critical_trace_warning_is_not_counted_as_a_near_miss()`
+  - Method `.test_near_miss_grants_bonus_attempt_only_once_per_puzzle()`
+  - Method `.test_stacked_puzzle_failures_add_escalating_trace()`
+  - Method `.test_resecure_clears_host_lockdown()`
   - Method `.test_settle_career_banks_victory_loot_once()`
   - Method `.test_exploit_lockout_does_not_claim_root_access()`
   - Method `.test_float_seed_is_coerced()`
@@ -588,13 +623,16 @@
 ### [`tests/test_puzzles.py`](tests/test_puzzles.py)
 > *Unit tests for CyberPulse hacking mini-game puzzles.*
 
-**Size**: `57` lines (`1790` bytes)
+**Size**: `88` lines (`3152` bytes)
 
 **Classes:**
 - `class TestPuzzles`
   - Method `.test_frequency_puzzle_tuning()`
   - Method `.test_frequency_exhaustion()`
   - Method `.test_buffer_puzzle_verification()`
+  - Method `.test_frequency_near_miss_grants_one_bonus_attempt()`
+  - Method `.test_buffer_near_miss_grants_one_retry()`
+  - Method `.test_hash_near_miss_grants_one_bonus_attempt()`
   - Method `.test_hash_crack_puzzle()`
 
 ---
@@ -616,7 +654,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `600` lines (`25641` bytes)
+**Size**: `619` lines (`26581` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -645,6 +683,7 @@
   - Method `.test_reset_accepts_float_seed()`
   - Method `.test_reset_rejects_invalid_seed()`
   - Method `.test_puzzle_retry_keeps_remaining_attempts()`
+  - Method `.test_buffer_near_miss_grants_one_web_retry_then_locks_host()`
   - Method `.test_victory_settles_career_once()`
   - Method `.test_game_over_settles_failed_run_once()`
   - Method `.test_craft_persists_banked_spend()`
@@ -684,7 +723,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `169` lines (`6086` bytes)
+**Size**: `201` lines (`7292` bytes)
 
 **Classes:**
 - `class TestStorage`
@@ -699,7 +738,9 @@
   - Method `.test_load_corrupted_save_with_backup_recovery()`
   - Method `.test_load_corrupted_career_with_backup_recovery()`
   - Method `.test_delete_save()`
-  - Method `.test_rng_reseeding_on_load()`
+  - Method `.test_rng_state_is_preserved_across_save_and_load()`
+  - Method `.test_old_save_without_rng_state_keeps_legacy_reseed()`
+  - Method `.test_save_preserves_pending_puzzle_attempts()`
   - Method `.test_failed_replace_reports_no_save()`
 
 ---
@@ -707,7 +748,7 @@
 ### [`tests/test_world.py`](tests/test_world.py)
 > *Unit tests for the living-grid world simulation module.*
 
-**Size**: `483` lines (`20374` bytes)
+**Size**: `489` lines (`20650` bytes)
 
 **Classes:**
 - `class TestWorldClock`

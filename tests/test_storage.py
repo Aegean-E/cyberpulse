@@ -138,17 +138,49 @@ class TestStorage(unittest.TestCase):
         self.save_mgr.delete_save()
         self.assertFalse(self.save_mgr.save_file.exists())
 
-    def test_rng_reseeding_on_load(self):
+    def test_rng_state_is_preserved_across_save_and_load(self):
         engine = GameEngine(seed=123)
         engine.state.turns_elapsed = 15
         self.save_mgr.save(engine)
 
+        # The next roll must continue the live sequence, not restart from seed + turn.
+        expected_roll = engine.rng.random()
         loaded = self.save_mgr.load()
+
         self.assertIsNotNone(loaded)
-        # Expected roll corresponds to Random(123 + 15)
-        import random
-        expected_roll = random.Random(123 + 15).random()
         self.assertEqual(loaded.rng.random(), expected_roll)
+
+    def test_old_save_without_rng_state_keeps_legacy_reseed(self):
+        import json
+        import random
+
+        engine = GameEngine(seed=123)
+        engine.state.turns_elapsed = 15
+        self.save_mgr.save(engine)
+        payload = json.loads(self.save_mgr.save_file.read_text(encoding="utf-8"))
+        payload.pop("rng_state", None)
+        self.save_mgr.save_file.write_text(json.dumps(payload), encoding="utf-8")
+
+        loaded = self.save_mgr.load()
+
+        self.assertIsNotNone(loaded)
+        self.assertEqual(loaded.rng.random(), random.Random(123 + 15).random())
+
+    def test_save_preserves_pending_puzzle_attempts(self):
+        engine = GameEngine(seed=42)
+        ok, _, puzzle, _ = engine.get_or_create_puzzle("node_proxy_a")
+        self.assertTrue(ok)
+        puzzle.tune(0.0)
+        self.assertEqual(puzzle.attempts_left, 2)
+        self.save_mgr.save(engine)
+
+        loaded = self.save_mgr.load()
+
+        self.assertIsNotNone(loaded)
+        restored = loaded.pending_puzzles.get("node_proxy_a")
+        self.assertIsNotNone(restored)
+        self.assertEqual(restored.attempts_left, 2)
+        self.assertEqual(restored.target_freq, puzzle.target_freq)
 
     def test_failed_replace_reports_no_save(self):
         engine = GameEngine(seed=5)

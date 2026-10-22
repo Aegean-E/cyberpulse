@@ -250,6 +250,8 @@ class Node:
     employees: List[EmployeeProfile] = field(default_factory=list)
     breached_turn: int = -1      # turn the host was breached; -1 = never
     reward_claimed: bool = False  # fresh data already looted, so re-breaches pay nothing
+    failed_attempts: int = 0      # burned intrusion scripts on this host
+    lockdown_until_turn: int = -1  # host ICE refuses new puzzle/service intrusions until this turn
 
     def to_dict(self) -> Dict[str, Any]:
         res = asdict(self)

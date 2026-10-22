@@ -372,6 +372,8 @@ def apply_resecure(node: Node) -> str:
     for port in node.ports:
         port.breached = False
     node.logs_cleared = False
+    node.failed_attempts = 0
+    node.lockdown_until_turn = -1
     if node.firewall:
         node.firewall.tampered = False
         for rule in node.firewall.rules:
@@ -422,7 +424,7 @@ def deploy_hunter(world: WorldState, nodes: Dict[str, Node], tick: int) -> Optio
     if world.alert_level < threshold:
         return None
     for h in world.hunters:
-        if h.status in ("hunting", "confused"):
+        if h.status in ("hunting", "confused", "intercepted"):
             return None
 
     spawn_id = ""

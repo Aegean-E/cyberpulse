@@ -54,6 +54,7 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertEqual(data["current_node"]["node_id"], "node_gateway")
         self.assertIn("deck", data)
         self.assertIn("career", data)
+        self.assertIn("lethal", data["extraction_risk"])
 
     def test_get_shop(self):
         status, data = self._get("/api/shop")
@@ -373,6 +374,24 @@ class TestCyberdeckServer(unittest.TestCase):
 
         self.assertEqual(status, 200)
         self.assertEqual(second["attempts_left"], 2)
+
+    def test_buffer_near_miss_grants_one_web_retry_then_locks_host(self):
+        self._post("/api/action", {"action": "reset", "seed": 1337})
+        _, puzzle = self._get("/api/puzzle?node_id=node_proxy_b")
+        target_seq = puzzle["target_seq"]
+        near_seq = [target_seq[0], "ZZ"]
+
+        _, first = self._post("/api/puzzle/solve", {"guess": near_seq})
+        self.assertFalse(first["solved"])
+        self.assertTrue(first["near_miss"])
+        self.assertTrue(first["near_miss_bonus"])
+        self.assertIn("NEAR-MISS SURGE", first["message"])
+
+        _, second = self._post("/api/puzzle/solve", {"guess": near_seq})
+        self.assertFalse(second["solved"])
+        self.assertFalse(second["near_miss_bonus"])
+        self.assertIn("HOST LOCKDOWN", second["message"])
+        self.assertGreater(second["state"]["nodes"]["node_proxy_b"]["lockdown_until_turn"], 0)
 
     def test_victory_settles_career_once(self):
         data_dir = Path(tempfile.mkdtemp())

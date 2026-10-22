@@ -75,6 +75,7 @@ class CyberdeckSession:
             "seed": self.engine.seed,
             "state": self.engine.state.to_dict(),
             "deck": self.engine.deck.to_dict(),
+            "extraction_risk": self.engine.extraction_risk(),
             "current_node": curr.to_dict(),
             "nodes": {nid: n.to_dict() for nid, n in self.engine.nodes.items()},
             "career": career.to_dict(),
@@ -539,6 +540,7 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
             guess = payload.get("guess")
             solved = False
             near_miss = False
+            near_miss_bonus = False
             message = ""
             exhausted = False
 
@@ -550,12 +552,16 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                     return
                 solved, message = p.tune(val)
                 near_miss = p.near_miss
-                if near_miss:
-                    engine.state.near_miss_count += 1
+                bonus_message = engine.resolve_puzzle_near_miss(p)
+                if bonus_message:
+                    near_miss_bonus = True
+                    message = f"{message}\n{bonus_message}"
                 exhausted = not solved and p.attempts_left <= 0
                 if exhausted:
-                    engine.add_trace(node.trace_rate)
-                    engine.break_combo(f"intrusion script burned out on {node.hostname}")
+                    _, lockdown_message = engine.register_puzzle_failure(
+                        node_id, f"intrusion script burned out on {node.hostname}"
+                    )
+                    message = f"{message}\n{lockdown_message}"
 
             elif isinstance(p, BufferPuzzle):
                 if not isinstance(guess, list):
@@ -563,22 +569,30 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                     return
                 solved, message = p.verify_sequence(guess)
                 near_miss = p.near_miss
-                if near_miss:
-                    engine.state.near_miss_count += 1
-                if not solved:
-                    engine.add_trace(node.trace_rate)
-                    engine.break_combo(f"buffer injection corrupted on {node.hostname}")
+                bonus_message = engine.resolve_puzzle_near_miss(p)
+                if bonus_message:
+                    near_miss_bonus = True
+                    message = f"{message}\n{bonus_message}"
+                if not solved and not bonus_message:
+                    _, lockdown_message = engine.register_puzzle_failure(
+                        node_id, f"buffer injection corrupted on {node.hostname}"
+                    )
+                    message = f"{message}\n{lockdown_message}"
                     exhausted = True
 
             elif isinstance(p, HashCrackPuzzle):
                 solved, message = p.guess(str(guess))
                 near_miss = p.near_miss
-                if near_miss:
-                    engine.state.near_miss_count += 1
+                bonus_message = engine.resolve_puzzle_near_miss(p)
+                if bonus_message:
+                    near_miss_bonus = True
+                    message = f"{message}\n{bonus_message}"
                 exhausted = not solved and p.attempts_left <= 0
                 if exhausted:
-                    engine.add_trace(node.trace_rate)
-                    engine.break_combo(f"hash crack locked out on {node.hostname}")
+                    _, lockdown_message = engine.register_puzzle_failure(
+                        node_id, f"hash crack locked out on {node.hostname}"
+                    )
+                    message = f"{message}\n{lockdown_message}"
 
             if solved:
                 engine.clear_pending_puzzle(node_id)
@@ -595,6 +609,7 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 "ok": True,
                 "solved": solved,
                 "near_miss": near_miss,
+                "near_miss_bonus": near_miss_bonus,
                 "message": message,
                 "attempts_left": attempts_left,
                 "state": self.server_session.get_full_state(),

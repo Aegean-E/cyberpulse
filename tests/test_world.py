@@ -435,6 +435,12 @@ class TestNetWatchHunterSimulation(unittest.TestCase):
         self.assertIsNone(dup)
         self.assertEqual(len(world.hunters), 1)
 
+        # An intercepted hunter still holds the sector: do not stack a second clamp.
+        world.hunters[0].status = "intercepted"
+        clamped = deploy_hunter(world, self.nodes, tick=8)
+        self.assertIsNone(clamped)
+        self.assertEqual(len(world.hunters), 1)
+
     def test_deploy_hunter_threshold_follows_the_shift(self):
         night = WorldState(alert_level=65, minute=2 * 60)
         self.assertIsNone(deploy_hunter(night, self.nodes, tick=1))

@@ -196,6 +196,11 @@ class GameEngine:
 
     MAX_LAY_LOW_TURNS = 3
     LAY_LOW_TRACE_COOLING = 2
+    LOCKDOWN_TURNS = 2
+    FAILURE_TRACE_STACK = 4
+    MAX_FAILURE_TRACE = 30
+    # Black ICE surge when pulling the jack: a hot connection is a final gamble.
+    EXTRACTION_SURGE_BANDS = ((85, 15), (70, 10), (50, 5))
 
     def __init__(self, seed: int = 1337, career_profile: Optional[CareerProfile] = None):
         self.seed = int(seed)
@@ -700,14 +705,101 @@ class GameEngine:
         """Discard a solved or exhausted puzzle so the node cannot replay its attempts."""
         self.pending_puzzles.pop(node_id, None)
 
-    def add_trace(self, raw_amount: int) -> None:
-        """Increase system trace, mitigated by ICE dampeners. 100% triggers lockout & loss of loot."""
-        # Passive ICE dampener mitigation (20% reduction per dampener level)
+    def _lockdown_reason(self, node: Node) -> Optional[str]:
+        """Return a denial when a host's ICE is still rotating after a burned intrusion."""
+        remaining = int(node.lockdown_until_turn) - self.state.turns_elapsed
+        if remaining <= 0:
+            return None
+        turns = "turn" if remaining == 1 else "turns"
+        return (
+            f"🔒 HOST LOCKDOWN: {node.hostname} ({node.ip_address}) is rotating its ICE for "
+            f"{remaining} more {turns}. Use lay_low/wait, probe another host, or return at turn "
+            f"{node.lockdown_until_turn}."
+        )
+
+    def register_puzzle_failure(self, node_id: str, reason: str) -> Tuple[bool, str]:
+        """Apply the cost of a burned intrusion script: trace, combo loss, and a host lockdown.
+
+        A failed puzzle is a detected intrusion, not a free retry. Each stacked failure on the
+        same host adds trace, raises its EDR alert, and seals the host for a short recalibration
+        window so the player must spend turns (or pick another target) before trying again.
+        """
+        node = self.nodes.get(node_id)
+        if node is None:
+            return False, f"Invalid node '{node_id}'."
+
+        node.failed_attempts += 1
+        penalty = min(
+            self.MAX_FAILURE_TRACE,
+            node.trace_rate + self.FAILURE_TRACE_STACK * (node.failed_attempts - 1),
+        )
+        self.add_trace(penalty)
+        node.lockdown_until_turn = self.state.turns_elapsed + self.LOCKDOWN_TURNS
+        if node.antivirus and node.antivirus.enabled and not node.antivirus.evaded:
+            node.antivirus.alert_level = min(100, node.antivirus.alert_level + 10)
+        self.break_combo(reason)
+        self.clear_pending_puzzle(node_id)
+
+        msg = (
+            f"🔒 HOST LOCKDOWN: {node.hostname} burned your intrusion script "
+            f"(attempt {node.failed_attempts}, trace +{penalty}% -> {self.state.trace_percent}%). "
+            f"Its ICE is recalibrating until turn {node.lockdown_until_turn}."
+        )
+        self.state.message_log.append(msg)
+        return True, msg
+
+    def resolve_puzzle_near_miss(self, puzzle: Any) -> str:
+        """Record a near miss and convert the first one per puzzle into a bonus attempt.
+
+        Near misses are the strongest re-engagement cue in the reward loop; making the first
+        one per puzzle mechanically real (an extra tuning attempt or one buffer retry) turns
+        the cue into a small, capped win instead of pure flavor. Later near misses still
+        count for telemetry but grant nothing, so a puzzle cannot be stalled forever.
+        """
+        if not getattr(puzzle, "near_miss", False):
+            return ""
+        self.state.near_miss_count += 1
+        claim = getattr(puzzle, "claim_near_miss_bonus", None)
+        if not callable(claim) or not claim():
+            return ""
+        msg = (
+            "⚡ NEAR-MISS SURGE: the near-lock echo stabilizes the intrusion script — "
+            "one bonus attempt granted."
+        )
+        self.state.message_log.append(msg)
+        return msg
+
+    def mitigated_trace(self, raw_amount: int) -> int:
+        """Return the trace actually added after passive ICE dampener mitigation."""
+        raw = max(0, int(raw_amount))
+        if raw == 0:
+            return 0
         if self.deck.ice_dampener_level > 0:
             reduction = min(0.60, 0.20 * self.deck.ice_dampener_level)
-            amount = max(1, int(raw_amount * (1.0 - reduction)))
-        else:
-            amount = raw_amount
+            return max(1, int(raw * (1.0 - reduction)))
+        return raw
+
+    def extraction_surge(self) -> int:
+        """Black ICE surge applied while pulling the jack, before the link is cut."""
+        trace = self.state.trace_percent
+        for threshold, surge in self.EXTRACTION_SURGE_BANDS:
+            if trace >= threshold:
+                return surge
+        return 0
+
+    def extraction_risk(self) -> Dict[str, Any]:
+        """Preview the extraction surge and whether it would burn an active run."""
+        surge = self.mitigated_trace(self.extraction_surge())
+        projected = min(100, self.state.trace_percent + surge)
+        return {
+            "surge": surge,
+            "projected_trace": projected,
+            "lethal": projected >= 100,
+        }
+
+    def add_trace(self, raw_amount: int) -> None:
+        """Increase system trace, mitigated by ICE dampeners. 100% triggers lockout & loss of loot."""
+        amount = self.mitigated_trace(raw_amount)
 
         before = self.state.trace_percent
         self.state.trace_percent = min(100, self.state.trace_percent + amount)
@@ -729,10 +821,11 @@ class GameEngine:
                 tone="alert",
             )
 
-        # High-arousal near-miss tension feedback (Clark et al.)
+        # High-arousal danger feedback; near misses are counted only by the puzzle layer.
         if 80 <= self.state.trace_percent < 100:
-            self.state.near_miss_count += 1
-            self.state.message_log.append(f"⚠️ CRITICAL TRACE WARNING: {self.state.trace_percent}%! Black ICE locks tightening!")
+            self.state.message_log.append(
+                f"⚠️ CRITICAL TRACE WARNING: {self.state.trace_percent}%! Black ICE locks tightening!"
+            )
 
         if self.state.trace_percent >= 100:
             self.state.is_game_over = True
@@ -1189,7 +1282,10 @@ class GameEngine:
         self.add_trace(5)
         self.regenerate_cpu(1)
         self.advance_turn()
-        return True, f"Scanned {len(revealed)} adjacent network nodes. Recovered 1 CPU cycle.", revealed
+        msg = f"Scanned {len(revealed)} adjacent network nodes. Recovered 1 CPU cycle."
+        if self.state.is_game_over:
+            msg += " The grid burned your deck during the sweep."
+        return True, msg, revealed
 
     def can_move_to(self, target_id: str) -> Tuple[bool, str]:
         """Verify whether the player can transition to target node."""
@@ -1224,6 +1320,8 @@ class GameEngine:
         self.advance_turn()
         node = self.get_current_node()
         msg = f"⚡ Transferred terminal session to '{node.name}'. Recovered 1 CPU cycle."
+        if self.state.is_game_over:
+            msg += " The grid burned your deck on arrival."
         self.state.message_log.append(msg)
         return True, msg
 
@@ -1244,6 +1342,10 @@ class GameEngine:
         gate = self._story_gate_reason(node)
         if gate:
             return False, gate
+
+        lockdown = self._lockdown_reason(node)
+        if lockdown:
+            return False, lockdown
 
         curr = self.get_current_node()
         if target_id not in curr.connected_ids and target_id != curr.node_id:
@@ -1433,9 +1535,13 @@ class GameEngine:
             if curr.status != NodeStatus.BREACHED:
                 return False, "Brute miner can only be executed on a securely breached node."
             mined = 150
-            self.state.unbanked_creds += mined
-            self.add_trace(15)
             self.deck.exploits.remove(name)
+            self.add_trace(15)
+            if self.state.is_game_over:
+                fail_msg = "💀 BRUTE MINER DETONATED: Black ICE burned the deck before the mined payload could settle."
+                self.state.message_log.append(fail_msg)
+                return False, fail_msg
+            self.state.unbanked_creds += mined
             msg = f"⛏️ BRUTE MINER EXECUTED! Mined +{mined} unbanked CryptoCreds (Trace +15% -> {self.state.trace_percent}%)."
             self.state.message_log.append(msg)
             return True, msg
@@ -1456,9 +1562,13 @@ class GameEngine:
             if node.status != NodeStatus.BREACHED:
                 return False, f"Data siphon requires host {node.hostname} to be securely breached."
             siphoned = 150
-            self.state.unbanked_creds += siphoned
             self.deck.exploits.remove(name)
             self.add_trace(10)
+            if self.state.is_game_over:
+                fail_msg = f"💀 DATA SIPHON DETONATED: Black ICE burned the deck before the siphon from {node.hostname} could settle."
+                self.state.message_log.append(fail_msg)
+                return False, fail_msg
+            self.state.unbanked_creds += siphoned
             msg = f"⚡ DATA SIPHON EXECUTED! Drained +{siphoned} unbanked Creds from {node.hostname} (Trace +10% -> {self.state.trace_percent}%)."
             self.state.message_log.append(msg)
             return True, msg
@@ -1510,6 +1620,28 @@ class GameEngine:
 
         banked = self.state.unbanked_creds
         payload_count = len(self.state.looted_payloads)
+        raw_surge = self.extraction_surge()
+        surge = self.mitigated_trace(raw_surge)
+        trace_before = self.state.trace_percent
+        if raw_surge:
+            # The ICE closes on the connection as it drops. A hot extraction can still kill.
+            self.add_trace(raw_surge)
+            if self.state.is_game_over:
+                record_news(
+                    self.state.world,
+                    self.state.turns_elapsed,
+                    "NetWatch",
+                    "Black ICE caught a netrunner at the extraction point; the deck burned.",
+                    tone="negative",
+                )
+                fail_msg = (
+                    f"💀 EXTRACTION FAILED: Black ICE surged +{surge}% as you pulled the jack "
+                    f"(trace {trace_before}% -> 100%). The link burned and {banked} unbanked "
+                    "Creds were lost."
+                )
+                self.state.message_log.append(fail_msg)
+                return False, fail_msg
+
         self.deck.cryptocreds += banked
         self.state.unbanked_creds = 0
         self.state.is_jacked_out = True
@@ -1523,6 +1655,11 @@ class GameEngine:
         )
 
         msg = f"🚪 SAFE EXTRACTION! Banked {banked} CryptoCreds and secured {payload_count} data payloads."
+        if surge:
+            msg += (
+                f" Black ICE surged +{surge}% at the extraction point "
+                f"(trace {trace_before}% -> {self.state.trace_percent}%), but the link held."
+            )
         for line in self._progress_quests("finish_run", "jackout"):
             msg += f"\n{line}"
         self.state.message_log.append(msg)
@@ -1623,6 +1760,8 @@ class GameEngine:
             f"PORT     STATE SERVICE     VERSION                     STATUS\n"
             + "\n".join(port_lines)
         )
+        if self.state.is_game_over:
+            summary += "\n[!] The grid burned your deck while the scan was returning."
         self.state.message_log.append(f"Probed {node.ip_address} ({node.hostname}). Found {len(node.ports)} open port(s).")
         return True, summary, report
 
@@ -1644,6 +1783,10 @@ class GameEngine:
         gate = self._story_gate_reason(node)
         if gate:
             return False, gate
+
+        lockdown = self._lockdown_reason(node)
+        if lockdown:
+            return False, lockdown
 
         curr = self.get_current_node()
         if node.node_id not in curr.connected_ids and node.node_id != curr.node_id:
@@ -1793,6 +1936,15 @@ class GameEngine:
 
         self.add_trace(8)
         self.advance_turn()
+        if self.state.is_game_over:
+            fail_msg = (
+                f"💀 EXFILTRATION ABORTED: the grid burned your deck while pulling '{vfile.path}'. "
+                "No payout was secured."
+            )
+            self.state.message_log.append(fail_msg)
+            return False, fail_msg, None
+        if self.state.is_jacked_out or self.state.is_victory:
+            return False, "Exfiltration aborted: the run has already ended.", None
 
         already_looted = vfile.path in self.state.looted_payloads
         if not already_looted:
@@ -1868,6 +2020,15 @@ class GameEngine:
         self.state.trace_percent = max(0, self.state.trace_percent - 20)
         self.scramble_hunter_radar(turns=2)
         self.advance_turn()
+        if self.state.is_game_over:
+            fail_msg = (
+                f"💀 LOG WIPE ABORTED: the grid burned your deck on {node.hostname} before the "
+                "sanitization completed. No contract credit was awarded."
+            )
+            self.state.message_log.append(fail_msg)
+            return False, fail_msg
+        if self.state.is_jacked_out or self.state.is_victory:
+            return False, "Log wipe aborted: the run has already ended."
 
         msg = f"🧹 LOGS SANITIZED: Erased intruder access timestamps on {node.hostname} ({node.ip_address}). Trace dropped by {trace_drop}% (current: {self.state.trace_percent}%)."
 
@@ -2044,6 +2205,15 @@ class GameEngine:
         self.deck.cpu_cycles -= 1
         self.add_trace(6)
         self.advance_turn()
+        if self.state.is_game_over:
+            fail_msg = (
+                f"💀 SOCIAL ENGINEERING ABORTED: the grid burned your deck while the lure was "
+                f"in flight to {node.hostname}."
+            )
+            self.state.message_log.append(fail_msg)
+            return False, fail_msg, {}
+        if self.state.is_jacked_out or self.state.is_victory:
+            return False, "Social engineering aborted: the run has already ended.", {}
 
         # Calculate success probability based on vector vs employee security awareness
         awareness = emp.awareness_level
@@ -2199,6 +2369,15 @@ class GameEngine:
         self.deck.cpu_cycles -= spec["cpu"]
         self.add_trace(spec["trace"])
         self.advance_turn()
+        if self.state.is_game_over:
+            fail_msg = (
+                f"💀 FIREWALL BYPASS ABORTED: the grid burned your deck while injecting "
+                f"{spec['name']} into {node.hostname}."
+            )
+            self.state.message_log.append(fail_msg)
+            return False, fail_msg
+        if self.state.is_jacked_out or self.state.is_victory:
+            return False, "Firewall bypass aborted: the run has already ended."
 
         rule.bypassed = True
         rule.bypass_method = method_key
@@ -2261,6 +2440,15 @@ class GameEngine:
         self.deck.cpu_cycles -= spec["cpu"]
         self.add_trace(spec["trace"])
         self.advance_turn()
+        if self.state.is_game_over:
+            fail_msg = (
+                f"💀 EDR EVASION ABORTED: the grid burned your deck while deploying "
+                f"{spec['name']} against {node.hostname}."
+            )
+            self.state.message_log.append(fail_msg)
+            return False, fail_msg
+        if self.state.is_jacked_out or self.state.is_victory:
+            return False, "EDR evasion aborted: the run has already ended."
 
         node.antivirus.evaded = True
         node.antivirus.alert_level = max(0, node.antivirus.alert_level - 35)

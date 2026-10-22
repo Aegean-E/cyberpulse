@@ -12,6 +12,33 @@ class FrequencyPuzzle:
         self.tolerance = tolerance
         self.attempts_left = 3
         self.near_miss: bool = False
+        self.near_miss_awarded: bool = False
+
+    def claim_near_miss_bonus(self) -> bool:
+        """Convert the first near miss into one extra tuning attempt."""
+        if not self.near_miss or self.near_miss_awarded:
+            return False
+        self.near_miss_awarded = True
+        self.attempts_left += 1
+        return True
+
+    def to_dict(self) -> dict:
+        return {
+            "type": "frequency",
+            "target_freq": self.target_freq,
+            "tolerance": self.tolerance,
+            "attempts_left": self.attempts_left,
+            "near_miss": self.near_miss,
+            "near_miss_awarded": self.near_miss_awarded,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "FrequencyPuzzle":
+        puzzle = cls(target_freq=float(data["target_freq"]), tolerance=float(data["tolerance"]))
+        puzzle.attempts_left = int(data.get("attempts_left", puzzle.attempts_left))
+        puzzle.near_miss = bool(data.get("near_miss", False))
+        puzzle.near_miss_awarded = bool(data.get("near_miss_awarded", False))
+        return puzzle
 
     @classmethod
     def generate(cls, seed: int) -> "FrequencyPuzzle":
@@ -43,6 +70,30 @@ class BufferPuzzle:
         self.matrix = matrix
         self.target_seq = target_seq
         self.near_miss: bool = False
+        self.near_miss_awarded: bool = False
+
+    def claim_near_miss_bonus(self) -> bool:
+        """Convert the first near miss into one free retry before the host locks down."""
+        if not self.near_miss or self.near_miss_awarded:
+            return False
+        self.near_miss_awarded = True
+        return True
+
+    def to_dict(self) -> dict:
+        return {
+            "type": "buffer",
+            "matrix": [list(row) for row in self.matrix],
+            "target_seq": list(self.target_seq),
+            "near_miss": self.near_miss,
+            "near_miss_awarded": self.near_miss_awarded,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "BufferPuzzle":
+        puzzle = cls(matrix=data["matrix"], target_seq=list(data["target_seq"]))
+        puzzle.near_miss = bool(data.get("near_miss", False))
+        puzzle.near_miss_awarded = bool(data.get("near_miss_awarded", False))
+        return puzzle
 
     @classmethod
     def generate(cls, seed: int) -> "BufferPuzzle":
@@ -74,6 +125,33 @@ class HashCrackPuzzle:
         self.word_list = [w.upper() for w in word_list]
         self.attempts_left = 4
         self.near_miss: bool = False
+        self.near_miss_awarded: bool = False
+
+    def claim_near_miss_bonus(self) -> bool:
+        """Convert the first character-level near miss into one extra keyword attempt."""
+        if not self.near_miss or self.near_miss_awarded:
+            return False
+        self.near_miss_awarded = True
+        self.attempts_left += 1
+        return True
+
+    def to_dict(self) -> dict:
+        return {
+            "type": "hash",
+            "target_word": self.target_word,
+            "word_list": list(self.word_list),
+            "attempts_left": self.attempts_left,
+            "near_miss": self.near_miss,
+            "near_miss_awarded": self.near_miss_awarded,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "HashCrackPuzzle":
+        puzzle = cls(target_word=data["target_word"], word_list=list(data["word_list"]))
+        puzzle.attempts_left = int(data.get("attempts_left", puzzle.attempts_left))
+        puzzle.near_miss = bool(data.get("near_miss", False))
+        puzzle.near_miss_awarded = bool(data.get("near_miss_awarded", False))
+        return puzzle
 
     @classmethod
     def generate(cls, seed: int) -> "HashCrackPuzzle":
@@ -99,3 +177,22 @@ class HashCrackPuzzle:
             return False, f"🔒 TERMINAL LOCKED! Correct hash key was '{self.target_word}'."
 
         return False, f"⚠️  ACCESS DENIED: {matches}/{len(self.target_word)} correct letters.{near_miss_text} Attempts left: {self.attempts_left}."
+
+
+PUZZLE_TYPES = {
+    "frequency": FrequencyPuzzle,
+    "buffer": BufferPuzzle,
+    "hash": HashCrackPuzzle,
+}
+
+
+def puzzle_from_dict(data: dict) -> Optional[object]:
+    """Restore a persisted puzzle payload, or None when the type is unknown."""
+    puzzle_type = str(data.get("type", "")).lower()
+    factory = PUZZLE_TYPES.get(puzzle_type)
+    if factory is None:
+        return None
+    try:
+        return factory.from_dict(data)
+    except (KeyError, TypeError, ValueError):
+        return None

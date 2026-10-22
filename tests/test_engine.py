@@ -58,6 +58,109 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(self.engine.deck.cryptocreds, initial_creds + unbanked)
         self.assertEqual(self.engine.state.unbanked_creds, 0)
 
+    def test_jackout_previews_black_ice_surge_bands(self):
+        self.engine.state.trace_percent = 49
+        self.assertEqual(self.engine.extraction_risk()["surge"], 0)
+
+        self.engine.state.trace_percent = 50
+        self.assertEqual(self.engine.extraction_risk()["surge"], 5)
+
+        self.engine.state.trace_percent = 70
+        self.assertEqual(self.engine.extraction_risk()["surge"], 10)
+
+        self.engine.state.trace_percent = 85
+        risk = self.engine.extraction_risk()
+        self.assertEqual(risk["surge"], 15)
+        self.assertTrue(risk["lethal"])
+        self.assertEqual(risk["projected_trace"], 100)
+
+    def test_ice_dampener_can_make_hot_extraction_survivable(self):
+        self.engine.state.trace_percent = 88
+        self.engine.deck.ice_dampener_level = 3
+
+        risk = self.engine.extraction_risk()
+
+        self.assertEqual(risk["surge"], 6)
+        self.assertFalse(risk["lethal"])
+        self.assertEqual(risk["projected_trace"], 94)
+
+    def test_jackout_applies_survivable_surge_and_banks(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.state.trace_percent = 60
+        unbanked = self.engine.state.unbanked_creds
+        initial_creds = self.engine.deck.cryptocreds
+
+        ok, msg = self.engine.jackout()
+
+        self.assertTrue(ok)
+        self.assertIn("Black ICE surged +5%", msg)
+        self.assertEqual(self.engine.state.trace_percent, 65)
+        self.assertEqual(self.engine.deck.cryptocreds, initial_creds + unbanked)
+        self.assertTrue(self.engine.state.is_jacked_out)
+
+    def test_jackout_above_85_percent_can_burn_the_run(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.state.trace_percent = 85
+        unbanked = self.engine.state.unbanked_creds
+        self.assertGreater(unbanked, 0)
+
+        ok, msg = self.engine.jackout()
+
+        self.assertFalse(ok)
+        self.assertIn("EXTRACTION FAILED", msg)
+        self.assertTrue(self.engine.state.is_game_over)
+        self.assertFalse(self.engine.state.is_jacked_out)
+        self.assertEqual(self.engine.state.unbanked_creds, 0)
+        self.assertEqual(self.engine.state.trace_percent, 100)
+
+    def test_download_after_grid_lockout_does_not_pay(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.state.trace_percent = 95
+
+        ok, msg, _ = self.engine.download_file("192.168.1.10", "/home/admin/network_map.txt")
+
+        self.assertFalse(ok)
+        self.assertIn("EXFILTRATION ABORTED", msg)
+        self.assertTrue(self.engine.state.is_game_over)
+        self.assertEqual(self.engine.state.unbanked_creds, 0)
+        self.assertNotIn("/home/admin/network_map.txt", self.engine.state.looted_payloads)
+
+    def test_bypass_after_grid_lockout_leaves_rule_blocked(self):
+        self.engine.state.trace_percent = 95
+        rule = self.engine.nodes["node_proxy_b"].firewall.rules[0]
+
+        ok, msg = self.engine.bypass_firewall("192.168.1.20", rule.port, "knock")
+
+        self.assertFalse(ok)
+        self.assertIn("BYPASS ABORTED", msg)
+        self.assertTrue(self.engine.state.is_game_over)
+        self.assertFalse(rule.bypassed)
+
+    def test_social_after_grid_lockout_leaves_security_intact(self):
+        node = self.engine.nodes["node_proxy_a"]
+        before = node.security_level
+        self.engine.state.trace_percent = 95
+
+        ok, msg, report = self.engine.social_engineer("192.168.1.10", "pretext")
+
+        self.assertFalse(ok)
+        self.assertIn("ABORTED", msg)
+        self.assertEqual(report, {})
+        self.assertEqual(node.security_level, before)
+        self.assertTrue(self.engine.state.is_game_over)
+
+    def test_brute_miner_burn_consumes_chip_without_crediting(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.deck.exploits.append("brute_miner")
+        self.engine.state.trace_percent = 95
+
+        ok, msg = self.engine.use_exploit("brute_miner")
+
+        self.assertFalse(ok)
+        self.assertIn("BRUTE MINER DETONATED", msg)
+        self.assertNotIn("brute_miner", self.engine.deck.exploits)
+        self.assertEqual(self.engine.state.unbanked_creds, 0)
+
     def test_ice_dampener_reduces_trace_gain(self):
         engine_normal = GameEngine(seed=10)
         engine_normal.add_trace(20)
@@ -576,6 +679,79 @@ class TestEngine(unittest.TestCase):
         self.engine.clear_pending_puzzle("node_proxy_a")
         _, _, new_puzzle, _ = self.engine.get_or_create_puzzle("node_proxy_a")
         self.assertIsNot(puzzle, new_puzzle)
+
+    def test_failed_puzzle_seals_host_and_escalates_failure_cost(self):
+        node = self.engine.nodes["node_proxy_a"]
+        self.engine.state.turns_elapsed = 10
+        self.engine.state.combo_streak = 4
+        self.engine.state.best_combo = 4
+
+        handled, msg = self.engine.register_puzzle_failure("node_proxy_a", "intrusion script burned out")
+
+        self.assertTrue(handled)
+        self.assertEqual(node.failed_attempts, 1)
+        self.assertEqual(node.lockdown_until_turn, 12)
+        self.assertEqual(self.engine.state.trace_percent, node.trace_rate)
+        self.assertEqual(self.engine.state.combo_streak, 0)
+        self.assertEqual(self.engine.state.best_combo, 4)
+        self.assertIn("HOST LOCKDOWN", msg)
+        self.assertGreater(node.antivirus.alert_level, 0)
+
+        can_hack, reason = self.engine.can_hack_node("node_proxy_a")
+        self.assertFalse(can_hack)
+        self.assertIn("LOCKDOWN", reason)
+
+        self.engine.state.turns_elapsed = 12
+        can_hack, _ = self.engine.can_hack_node("node_proxy_a")
+        self.assertTrue(can_hack)
+
+    def test_critical_trace_warning_is_not_counted_as_a_near_miss(self):
+        self.engine.add_trace(85)
+
+        self.assertEqual(self.engine.state.near_miss_count, 0)
+        self.assertTrue(any("CRITICAL TRACE WARNING" in m for m in self.engine.state.message_log))
+
+    def test_near_miss_grants_bonus_attempt_only_once_per_puzzle(self):
+        from cyberpulse.puzzles import FrequencyPuzzle
+
+        puzzle = FrequencyPuzzle(target_freq=50.0, tolerance=0.8)
+        puzzle.tune(51.9)
+
+        bonus = self.engine.resolve_puzzle_near_miss(puzzle)
+
+        self.assertIn("NEAR-MISS SURGE", bonus)
+        self.assertEqual(puzzle.attempts_left, 3)
+        self.assertEqual(self.engine.state.near_miss_count, 1)
+
+        puzzle.tune(48.1)
+        second = self.engine.resolve_puzzle_near_miss(puzzle)
+
+        self.assertEqual(second, "")
+        self.assertEqual(puzzle.attempts_left, 2)
+        self.assertEqual(self.engine.state.near_miss_count, 2)
+
+    def test_stacked_puzzle_failures_add_escalating_trace(self):
+        self.engine.state.turns_elapsed = 1
+        self.engine.register_puzzle_failure("node_proxy_a", "first burn")
+        first_trace = self.engine.state.trace_percent
+
+        self.engine.state.turns_elapsed = 100
+        self.engine.register_puzzle_failure("node_proxy_a", "second burn")
+
+        self.assertEqual(self.engine.nodes["node_proxy_a"].failed_attempts, 2)
+        self.assertGreater(self.engine.state.trace_percent - first_trace, first_trace)
+
+    def test_resecure_clears_host_lockdown(self):
+        from cyberpulse.world import apply_resecure
+
+        node = self.engine.nodes["node_proxy_a"]
+        node.failed_attempts = 3
+        node.lockdown_until_turn = 99
+
+        apply_resecure(node)
+
+        self.assertEqual(node.failed_attempts, 0)
+        self.assertEqual(node.lockdown_until_turn, -1)
 
     def test_settle_career_banks_victory_loot_once(self):
         from cyberpulse.models import CareerProfile

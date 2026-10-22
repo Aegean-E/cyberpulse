@@ -74,6 +74,10 @@ def print_hud(engine: GameEngine) -> None:
     print(f"[*] Location:   {curr.name} | {curr.hostname} ({curr.ip_address}) [{curr.node_id}]")
     print(f"[*] Local Rig:  {engine.deck.local_hostname} ({engine.deck.local_ip}) [{engine.deck.model_name}]")
     print(f"[*] Trace:      {trace_bar} | Turns: {engine.state.turns_elapsed}")
+    risk = engine.extraction_risk()
+    if risk["surge"]:
+        lethal = " ⚠ LETHAL EXTRACTION" if risk["lethal"] else ""
+        print(f"[*] Jackout ICE: +{risk['surge']}% surge (projected trace {risk['projected_trace']}%){lethal}")
     print(f"[*] Deck:       CPU: {engine.deck.cpu_cycles}/{engine.deck.max_cpu} | RAM: {engine.deck.ram_mb}MB | Creds: {engine.deck.cryptocreds}{unbanked_str}")
     print(f"[*] Upgrades:   ICE Dampener: Lvl {engine.deck.ice_dampener_level} | Overclock: Lvl {engine.deck.overclock_level}")
     exploits_str = ', '.join(engine.deck.exploits) if engine.deck.exploits else "None"
@@ -400,33 +404,41 @@ def execute_hack_puzzle(engine: GameEngine, target_id: str, auto_solve: bool = F
                 continue
             ok, msg = puzzle.tune(guess)
             print(msg)
-            if puzzle.near_miss:
-                engine.state.near_miss_count += 1
+            bonus_msg = engine.resolve_puzzle_near_miss(puzzle)
+            if bonus_msg:
+                print(bonus_msg)
             if ok:
                 engine.clear_pending_puzzle(target_id)
                 engine.complete_breach(target_id)
                 return True
-        engine.clear_pending_puzzle(target_id)
-        engine.add_trace(node.trace_rate)
-        engine.break_combo(f"intrusion script burned out on {node.hostname}")
+        _, lockdown_msg = engine.register_puzzle_failure(
+            target_id, f"intrusion script burned out on {node.hostname}"
+        )
+        print(lockdown_msg)
         return False
 
     elif p_type == "buffer" and isinstance(puzzle, BufferPuzzle):
         print("💾 BUFFER OVERFLOW PROTOCOL: Inject target hex sequence:")
         print(f"   Target: {puzzle.target_seq}")
-        seq_str = input("Enter hex codes separated by space: ").strip().upper()
-        player_seq = seq_str.split()
-        ok, msg = puzzle.verify_sequence(player_seq)
-        print(msg)
-        if puzzle.near_miss:
-            engine.state.near_miss_count += 1
-        engine.clear_pending_puzzle(target_id)
-        if ok:
-            engine.complete_breach(target_id)
-            return True
-        engine.add_trace(node.trace_rate)
-        engine.break_combo(f"buffer injection corrupted on {node.hostname}")
-        return False
+        while True:
+            seq_str = input("Enter hex codes separated by space: ").strip().upper()
+            player_seq = seq_str.split()
+            ok, msg = puzzle.verify_sequence(player_seq)
+            print(msg)
+            bonus_msg = engine.resolve_puzzle_near_miss(puzzle)
+            if bonus_msg:
+                print(bonus_msg)
+            if ok:
+                engine.clear_pending_puzzle(target_id)
+                engine.complete_breach(target_id)
+                return True
+            if bonus_msg:
+                continue
+            _, lockdown_msg = engine.register_puzzle_failure(
+                target_id, f"buffer injection corrupted on {node.hostname}"
+            )
+            print(lockdown_msg)
+            return False
 
     elif p_type == "hash" and isinstance(puzzle, HashCrackPuzzle):
         print(f"🔑 HASH CRACK PROTOCOL: Potential keys: {', '.join(puzzle.word_list)}")
@@ -434,15 +446,17 @@ def execute_hack_puzzle(engine: GameEngine, target_id: str, auto_solve: bool = F
             guess = input(f"Guess keyword [{puzzle.attempts_left} tries left]: ").strip()
             ok, msg = puzzle.guess(guess)
             print(msg)
-            if puzzle.near_miss:
-                engine.state.near_miss_count += 1
+            bonus_msg = engine.resolve_puzzle_near_miss(puzzle)
+            if bonus_msg:
+                print(bonus_msg)
             if ok:
                 engine.clear_pending_puzzle(target_id)
                 engine.complete_breach(target_id)
                 return True
-        engine.clear_pending_puzzle(target_id)
-        engine.add_trace(node.trace_rate)
-        engine.break_combo(f"hash crack locked out on {node.hostname}")
+        _, lockdown_msg = engine.register_puzzle_failure(
+            target_id, f"hash crack locked out on {node.hostname}"
+        )
+        print(lockdown_msg)
         return False
 
     engine.clear_pending_puzzle(target_id)

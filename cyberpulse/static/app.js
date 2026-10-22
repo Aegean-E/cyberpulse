@@ -461,7 +461,16 @@ function renderHUD(data) {
   // Trace Danger Meter
   const trace = gState.trace_percent;
   document.getElementById("fill-trace").style.width = `${trace}%`;
-  document.getElementById("val-trace").textContent = `${trace}%`;
+  const extRisk = data.extraction_risk || { surge: 0, lethal: false, projected_trace: trace };
+  const traceEl = document.getElementById("val-trace");
+  traceEl.textContent = extRisk.surge
+    ? `${trace}% · JACK +${extRisk.surge}%`
+    : `${trace}%`;
+  traceEl.title = extRisk.lethal
+    ? `LETHAL: pulling the jack now projects ${extRisk.projected_trace}% trace and will burn the deck.`
+    : extRisk.surge
+      ? `Extraction surge +${extRisk.surge}% (projected ${extRisk.projected_trace}%).`
+      : "Extraction surge safe.";
 
   if (trace >= 80 && trace < 100) {
     sfx.alarm();
@@ -1420,6 +1429,12 @@ async function handleInjectBuffer() {
     addTerminalLog(res.message, "warn");
     state.bufferInput = [];
     renderBufferPlayerSequence();
+    if (res.near_miss_bonus) {
+      state.data = res.state;
+      renderHUD(res.state);
+      updateTargetCard(state.selectedNodeId);
+      return;
+    }
     closePuzzleBay();
     refreshFullState();
   }

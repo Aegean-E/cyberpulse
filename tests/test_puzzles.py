@@ -40,6 +40,37 @@ class TestPuzzles(unittest.TestCase):
         self.assertTrue(ok)
         self.assertIn("EXPLOIT EXECUTED", msg)
 
+    def test_frequency_near_miss_grants_one_bonus_attempt(self):
+        puzzle = FrequencyPuzzle(target_freq=50.0, tolerance=0.8)
+        ok, _ = puzzle.tune(51.9)
+        self.assertFalse(ok)
+        self.assertTrue(puzzle.near_miss)
+        self.assertEqual(puzzle.attempts_left, 2)
+
+        self.assertTrue(puzzle.claim_near_miss_bonus())
+        self.assertEqual(puzzle.attempts_left, 3)
+        self.assertFalse(puzzle.claim_near_miss_bonus())
+        self.assertEqual(puzzle.attempts_left, 3)
+
+    def test_buffer_near_miss_grants_one_retry(self):
+        puzzle = BufferPuzzle(matrix=[["1C", "FF"], ["7A", "BD"]], target_seq=["1C", "7A"])
+        ok, _ = puzzle.verify_sequence(["1C", "BD"])
+        self.assertFalse(ok)
+        self.assertTrue(puzzle.near_miss)
+        self.assertTrue(puzzle.claim_near_miss_bonus())
+        self.assertFalse(puzzle.claim_near_miss_bonus())
+
+    def test_hash_near_miss_grants_one_bonus_attempt(self):
+        puzzle = HashCrackPuzzle(target_word="CYBER", word_list=["CYBER", "GHOST", "PULSE"])
+        ok, _ = puzzle.guess("CYBEZ")
+        self.assertFalse(ok)
+        self.assertTrue(puzzle.near_miss)
+        self.assertEqual(puzzle.attempts_left, 3)
+
+        self.assertTrue(puzzle.claim_near_miss_bonus())
+        self.assertEqual(puzzle.attempts_left, 4)
+        self.assertFalse(puzzle.claim_near_miss_bonus())
+
     def test_hash_crack_puzzle(self):
         puzzle = HashCrackPuzzle(target_word="CYBER", word_list=["CYBER", "GHOST", "PULSE"])
         # Partial match
