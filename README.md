@@ -34,6 +34,7 @@ cyberpulse/
 ├── .gitignore                <- transient AIKit state excluded
 ├── LICENSE                   <- AGPLv3 Open Source License
 ├── README.md
+├── COMMERCIAL.md
 ├── pyproject.toml            <- build and package configuration
 ├── start.bat                 <- Windows one-click launcher
 ├── start.py                  <- universal launcher (defaults to --web)
@@ -201,9 +202,9 @@ python -m cyberpulse.cli --seed 42069
 - **Living Grid Simulation**: Every turn advances a 15-minute in-game clock, drifts the black-market index (0.80x-1.35x, applied to shop prices and to the fence payout of stolen data), and cools or sustains the corporate alert level from your current trace.
 - **Living Syndicate Contract Market**: Three rotating offers name a host/objective (`breach`, `extract`, `wipe`) with standard/priority/black risk, scaled pay and trace limits, an acceptance deadline, and a rush window. Exhausted grids post repeatable recon sweeps. Giver trust improves terms; missed deadlines cost trust and raise alert.
 - **Reactive Corporate Response**: Alert 50%+ enables NetWatch patrol trace and sysadmin re-securing of breached hosts (12-turn cooldown, one host per turn, never your current host or the Nexus core); re-secured hosts restore their defenses and quarantine embedded daemons.
-- **Corporate Posture Escalation**: The grid reports a named posture (GREEN/AMBER/RED/BLACK) in the CLI and Web ticker. Each breached host keeps the corporation mobilized, slowing alert decay by up to 3 per turn across a wide footprint, and every posture change is announced on the news wire in both directions - so a loud run visibly escalates the city against you, and a quiet one lets it stand down.
+- **Corporate Posture Escalation**: The grid reports named postures (GREEN/AMBER/RED/BLACK). Breached hosts slow alert decay by up to 3/turn, and posture transitions post news bulletins reflecting city escalation.
 - **Anti-Farm Breach Ledger**: A re-secured host pays no second reward, combo, or quest credit, so grid healing cannot be farmed for infinite credits.
-- **Deterministic World Events**: Ambient events, headlines, and re-secure rolls use a dedicated per-tick RNG stream seeded from `(seed, tick, stream)`, so the reward RNG sequence and every seeded gameplay outcome stay reproducible.
+- **Deterministic World Events**: Ambient events, headlines, and re-secure rolls use a per-tick RNG stream from `(seed, tick, stream)` for reproducible gameplay outcomes.
 - **Backward-Compatible World State**: Old saves without a world clock load with a fresh Day 1 world; the new fields are additive and atomic with the existing savegame.
 - **NetWatch Active Hunters & Pursuit Simulation**: Alert 60%+ mobilizes autonomous ICE hunters that track player location across network graph hops, trigger connection clashes on interception (+15% trace, -2 CPU), quarantine unmonitored daemons, and react to scent scrambling (`spoof`/`wipe_logs`) and countermeasures (`logic_bomb`/`ghost_protocol`). Only one hunter can hold the sector at a time; an intercepted hunter still counts as active, preventing a second clamp from stacking onto the first.
 - **Tactical Shift Dynamics & Downtime**: The four in-game shifts (Late Night, Morning, Afternoon, Evening) apply distinct modifiers to alert decay, re-secure chance, market bias, hunter deployment thresholds, and social-engineering odds (staff answer lures differently at 03:00 than at 09:00), so the clock carries real tactical weight. `lay_low`/`wait` trades 1-3 turns of grid movement (with its patrol, hunter, and ambient risk) for CPU recovery, exposed in both the CLI and the Web Cyberdeck shift chip.
