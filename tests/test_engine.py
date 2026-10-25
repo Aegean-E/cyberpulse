@@ -1480,6 +1480,223 @@ class TestEngine(unittest.TestCase):
         self.assertTrue(contract.completed)
 
 
+class TestDeckStanceProxyAndQuickhack(unittest.TestCase):
+    """Tactical depth added by operating stances, proxy tunnels, and quickhacks."""
+
+    def setUp(self):
+        self.engine = GameEngine(seed=42)
+
+    def test_stance_changes_trace_math_and_rejects_unknown(self):
+        self.assertEqual(self.engine.deck.operating_stance, "balanced")
+        self.assertEqual(self.engine.mitigated_trace(20), 20)
+
+        ok, msg = self.engine.set_stance("stealth")
+        self.assertTrue(ok)
+        self.assertIn("STEALTH", msg)
+        self.assertEqual(self.engine.mitigated_trace(20), 13)
+
+        ok, _ = self.engine.set_stance("overclock")
+        self.assertTrue(ok)
+        self.assertEqual(self.engine.mitigated_trace(20), 25)
+
+        ok, msg = self.engine.set_stance("nonsense")
+        self.assertFalse(ok)
+        self.assertIn("Unknown operating stance", msg)
+
+    def test_overclock_stance_accelerates_cpu_regen(self):
+        baseline = GameEngine(seed=42)
+        baseline.deck.cpu_cycles = 0
+        baseline.advance_turn()
+        baseline.advance_turn()
+        self.assertEqual(baseline.deck.cpu_cycles, 0)
+
+        self.engine.set_stance("overclock")
+        self.engine.deck.cpu_cycles = 0
+        self.engine.advance_turn()
+        self.engine.advance_turn()
+        self.assertEqual(self.engine.deck.cpu_cycles, 1)
+
+    def test_proxy_hop_requires_breach_and_costs_cpu(self):
+        cpu_before = self.engine.deck.cpu_cycles
+        ok, msg = self.engine.add_proxy_hop("node_proxy_a")
+        self.assertFalse(ok)
+        self.assertIn("not breached", msg)
+        self.assertEqual(self.engine.deck.cpu_cycles, cpu_before)
+
+        self.engine.complete_breach("node_proxy_a")
+        ok, msg = self.engine.add_proxy_hop("node_proxy_a")
+        self.assertTrue(ok)
+        self.assertEqual(self.engine.deck.proxy_chain, ["node_proxy_a"])
+        self.assertEqual(self.engine.deck.cpu_cycles, cpu_before - 1)
+
+        ok, msg = self.engine.add_proxy_hop("node_proxy_a")
+        self.assertFalse(ok)
+        self.assertIn("already in the proxy chain", msg)
+
+    def test_proxy_chain_dampens_trace_and_sever_dumps_trace(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.add_proxy_hop("node_proxy_a")
+        self.assertEqual(self.engine.mitigated_trace(20), 17)
+
+        self.engine.complete_breach("node_proxy_b")
+        self.engine.add_proxy_hop("node_proxy_b")
+        self.assertEqual(self.engine.mitigated_trace(20), 14)
+
+        self.engine.state.trace_percent = 40
+        ok, msg = self.engine.sever_proxy("node_proxy_a")
+        self.assertTrue(ok)
+        self.assertEqual(self.engine.state.trace_percent, 25)
+        self.assertEqual(self.engine.deck.proxy_chain, ["node_proxy_b"])
+
+    def test_a_resecured_or_stale_proxy_stops_dampening(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.add_proxy_hop("node_proxy_a")
+        self.engine.nodes["node_proxy_a"].status = NodeStatus.DISCOVERED
+        self.assertEqual(self.engine.mitigated_trace(20), 20)
+
+    def test_quickhack_breaches_low_tier_adjacent_host_at_a_cost(self):
+        cpu_before = self.engine.deck.cpu_cycles
+        ok, msg = self.engine.quickhack("node_proxy_a")
+        self.assertTrue(ok)
+        self.assertIn("QUICKHACK LANDED", msg)
+        self.assertEqual(self.engine.nodes["node_proxy_a"].status, NodeStatus.BREACHED)
+        self.assertEqual(self.engine.deck.cpu_cycles, cpu_before - 3)
+        self.assertGreater(self.engine.state.trace_percent, 0)
+        self.assertGreater(self.engine.state.turns_elapsed, 0)
+        self.assertGreater(self.engine.state.unbanked_creds, 0)
+
+    def test_quickhack_rejects_hardened_and_distant_hosts(self):
+        ok, msg = self.engine.quickhack("node_vault_2")
+        self.assertFalse(ok)
+        self.assertIn("not adjacent", msg)
+
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.move_to("node_proxy_a")
+        ok, msg = self.engine.quickhack("node_ice_perimeter")
+        self.assertFalse(ok)
+        self.assertIn("QUICKHACK REJECTED", msg)
+        self.assertNotEqual(self.engine.nodes["node_ice_perimeter"].status, NodeStatus.BREACHED)
+
+    def test_quickhack_needs_cpu(self):
+        self.engine.deck.cpu_cycles = 1
+        ok, msg = self.engine.quickhack("node_proxy_a")
+        self.assertFalse(ok)
+        self.assertIn("Insufficient CPU", msg)
+
+    def test_analysis_stance_harvests_intel_on_fresh_breach(self):
+        self.engine.set_stance("analysis")
+        self.engine.complete_breach("node_proxy_a")
+        self.assertGreaterEqual(self.engine.deck.threat_intel_count, 1)
+
+    def test_intel_reveal_maps_a_distant_host_without_trace(self):
+        self.engine.deck.threat_intel_count = 1
+        self.engine.state.trace_percent = 0
+        turns_before = self.engine.state.turns_elapsed
+        cpu_before = self.engine.deck.cpu_cycles
+        ok, msg = self.engine.spend_threat_intel("reveal", "node_vault_1")
+        self.assertTrue(ok)
+        self.assertIn("INTEL REVEAL", msg)
+        self.assertEqual(self.engine.deck.threat_intel_count, 0)
+        self.assertEqual(self.engine.state.trace_percent, 0)
+        self.assertEqual(self.engine.state.turns_elapsed, turns_before)
+        self.assertEqual(self.engine.deck.cpu_cycles, cpu_before)
+        self.assertTrue(self.engine.nodes["node_vault_1"].ports)
+        self.assertNotEqual(self.engine.nodes["node_vault_1"].status, NodeStatus.LOCKED)
+
+    def test_intel_reveal_rejects_breached_host_without_spending(self):
+        self.engine.deck.threat_intel_count = 1
+        ok, msg = self.engine.spend_threat_intel("reveal", "node_gateway")
+        self.assertFalse(ok)
+        self.assertIn("already breached", msg)
+        self.assertEqual(self.engine.deck.threat_intel_count, 1)
+
+    def test_intel_forge_loads_zero_day_chip(self):
+        self.engine.deck.threat_intel_count = 2
+        ok, msg = self.engine.spend_threat_intel("forge")
+        self.assertTrue(ok)
+        self.assertIn("INTEL FORGED", msg)
+        self.assertIn("zero_day_forge", self.engine.deck.exploits)
+        self.assertEqual(self.engine.deck.threat_intel_count, 0)
+
+        ok, msg = self.engine.spend_threat_intel("forge")
+        self.assertFalse(ok)
+        self.assertIn("already loaded", msg)
+
+    def test_intel_reveal_rejects_unknown_mode_and_empty_pool(self):
+        ok, msg = self.engine.spend_threat_intel("scry", "node_proxy_a")
+        self.assertFalse(ok)
+        self.assertIn("Unknown intel action", msg)
+
+        ok, msg = self.engine.spend_threat_intel("reveal", "node_proxy_a")
+        self.assertFalse(ok)
+        self.assertIn("INSUFFICIENT THREAT INTEL", msg)
+
+    def test_zero_day_forge_breaches_adjacent_host_once(self):
+        self.engine.deck.threat_intel_count = 2
+        self.engine.spend_threat_intel("forge")
+        ok, msg = self.engine.use_exploit("zero_day_forge", "node_proxy_a")
+        self.assertTrue(ok)
+        self.assertIn("FORGED ZERO-DAY", msg)
+        self.assertEqual(self.engine.nodes["node_proxy_a"].status, NodeStatus.BREACHED)
+        self.assertNotIn("zero_day_forge", self.engine.deck.exploits)
+
+    def test_zero_day_forge_rejects_distant_target(self):
+        self.engine.deck.threat_intel_count = 2
+        self.engine.spend_threat_intel("forge")
+        ok, msg = self.engine.use_exploit("zero_day_forge", "node_vault_2")
+        self.assertFalse(ok)
+        self.assertIn("not in direct subnet range", msg)
+        self.assertIn("zero_day_forge", self.engine.deck.exploits)
+
+    def test_port_scan_chip_maps_adjacent_host_without_trace_or_turn(self):
+        trace_before = self.engine.state.trace_percent
+        turns_before = self.engine.state.turns_elapsed
+        ok, msg = self.engine.use_exploit("port_scan", "node_proxy_a")
+        self.assertTrue(ok)
+        self.assertIn("PORT SCAN CHIP BURNED", msg)
+        self.assertNotIn("port_scan", self.engine.deck.exploits)
+        self.assertEqual(self.engine.state.trace_percent, trace_before)
+        self.assertEqual(self.engine.state.turns_elapsed, turns_before)
+
+    def test_buffer_overflow_chip_breaches_at_a_trace_cost(self):
+        ok, msg = self.engine.use_exploit("buffer_overflow", "node_proxy_a")
+        self.assertTrue(ok)
+        self.assertIn("BUFFER OVERFLOW CHIP BURNED", msg)
+        self.assertEqual(self.engine.nodes["node_proxy_a"].status, NodeStatus.BREACHED)
+        self.assertNotIn("buffer_overflow", self.engine.deck.exploits)
+        self.assertGreater(self.engine.state.trace_percent, 0)
+
+    def test_spoof_ip_chip_sheds_trace_and_refuses_when_clean(self):
+        ok, msg = self.engine.use_exploit("spoof_ip")
+        self.assertFalse(ok)
+        self.assertIn("Trace is already at 0%", msg)
+        self.assertIn("spoof_ip", self.engine.deck.exploits)
+
+        self.engine.state.trace_percent = 50
+        ok, msg = self.engine.use_exploit("spoof_ip")
+        self.assertTrue(ok)
+        self.assertIn("SPOOF_IP CHIP BURNED", msg)
+        self.assertEqual(self.engine.state.trace_percent, 20)
+        self.assertNotIn("spoof_ip", self.engine.deck.exploits)
+
+    def test_probe_and_intel_reveal_record_probed_nodes(self):
+        self.assertEqual(self.engine.state.probed_nodes, [])
+        self.engine.probe_host("node_proxy_a")
+        self.assertIn("node_proxy_a", self.engine.state.probed_nodes)
+
+        self.engine.deck.threat_intel_count = 1
+        self.engine.spend_threat_intel("reveal", "node_vault_1")
+        self.assertIn("node_vault_1", self.engine.state.probed_nodes)
+
+        # Repeated knowledge must not duplicate entries.
+        self.engine.probe_host("node_proxy_a")
+        self.assertEqual(self.engine.state.probed_nodes.count("node_proxy_a"), 1)
+
+    def test_port_scan_chip_records_probed_node(self):
+        self.engine.use_exploit("port_scan", "node_proxy_a")
+        self.assertIn("node_proxy_a", self.engine.state.probed_nodes)
+
+
 if __name__ == "__main__":
     unittest.main()
 

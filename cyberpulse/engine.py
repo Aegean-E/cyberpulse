@@ -20,6 +20,7 @@ from cyberpulse.models import (
     Node,
     NodeStatus,
     NodeType,
+    OperatingStance,
     PortService,
     Quest,
     SecurityAwarenessLevel,
@@ -263,6 +264,11 @@ class GameEngine:
 
     def get_current_node(self) -> Node:
         return self.nodes[self.state.current_node_id]
+
+    def _mark_probed(self, node_id: str) -> None:
+        """Record that the runner has mapped a host's services (survives save/load)."""
+        if node_id not in self.state.probed_nodes:
+            self.state.probed_nodes.append(node_id)
 
     def _find_quest(self, quest_id: Optional[str]) -> Optional[Quest]:
         if not quest_id:
@@ -687,6 +693,12 @@ class GameEngine:
             "outcome_title": outcome_title,
             "epilogue": epilogue,
             "best_combo": self.state.best_combo,
+            "turns_elapsed": self.state.turns_elapsed,
+            "nodes_breached": sum(
+                1 for node in self.nodes.values() if node.status == NodeStatus.BREACHED
+            ),
+            "unbanked_credits_lost": 0 if outcome != "lockout" else self.state.unbanked_creds,
+            "trace_percent": self.state.trace_percent,
             "quests_completed": [quest.title for quest in completed],
             "quests_completed_count": len(completed),
             "quests_total": len(self.state.quests),
@@ -838,12 +850,30 @@ class GameEngine:
         return msg
 
     def mitigated_trace(self, raw_amount: int) -> int:
-        """Return the trace actually added after passive ICE dampener mitigation."""
+        """Return the trace actually added after passive ICE dampener, stance, and proxy mitigation."""
         raw = max(0, int(raw_amount))
         if raw == 0:
             return 0
+        reduction = 0.0
         if self.deck.ice_dampener_level > 0:
-            reduction = min(0.60, 0.20 * self.deck.ice_dampener_level)
+            reduction += min(0.60, 0.20 * self.deck.ice_dampener_level)
+
+        stance = getattr(self.deck, "operating_stance", OperatingStance.BALANCED)
+        if stance == OperatingStance.STEALTH:
+            reduction += 0.35
+        elif stance == OperatingStance.OVERCLOCK:
+            raw = int(raw * 1.25)
+
+        active_proxies = [
+            node_id
+            for node_id in getattr(self.deck, "proxy_chain", [])
+            if node_id in self.nodes and self.nodes[node_id].status == NodeStatus.BREACHED
+        ]
+        if active_proxies:
+            reduction += min(0.45, 0.15 * len(active_proxies))
+
+        if reduction > 0:
+            reduction = min(0.85, reduction)
             return max(1, int(raw * (1.0 - reduction)))
         return raw
 
@@ -923,6 +953,9 @@ class GameEngine:
         self.state.turns_elapsed += 1
         messages = self.tick_daemons()
         messages.extend(self.tick_world())
+        if getattr(self.deck, "operating_stance", OperatingStance.BALANCED) == OperatingStance.OVERCLOCK:
+            if self.state.turns_elapsed % 2 == 0:
+                self.regenerate_cpu(1)
         return messages
 
     def lay_low(self, turns: int = 1) -> Tuple[bool, str]:
@@ -1020,6 +1053,9 @@ class GameEngine:
         ):
             node = self.nodes[node_id]
             message = apply_resecure(node)
+            if node_id in self.deck.proxy_chain:
+                self.deck.proxy_chain.remove(node_id)
+                message += " Proxy tunnel collapsed."
             recalled = self._recall_daemons(node_id)
             if recalled:
                 message += f" {recalled} background daemon(s) quarantined."
@@ -1925,6 +1961,19 @@ class GameEngine:
             reward_desc = "No fresh data: the host was re-secured and its vaults wiped."
 
         msg = f"💥 Infiltration successful! '{node.name}' breached. {reward_desc}"
+        stance = getattr(self.deck, "operating_stance", OperatingStance.BALANCED)
+        if fresh_data and stance == OperatingStance.OVERCLOCK:
+            overclock_bonus = max(1, int(creds_awarded * 0.25))
+            self.state.unbanked_creds += overclock_bonus
+            msg += f" ⚡ OVERCLOCK HARVEST: +{overclock_bonus} bonus Creds!"
+        elif fresh_data and stance == OperatingStance.ANALYSIS:
+            gained = 1 + (1 if self.rng.random() < 0.35 else 0)
+            self.deck.threat_intel_count += gained
+            msg += (
+                f" 🔍 THREAT INTEL: {gained} fragment(s) recovered "
+                f"(Total: {self.deck.threat_intel_count})."
+            )
+
         if combo_bonus:
             msg += f" 🔥 COMBO x{self.state.combo_streak}: +{combo_bonus} bonus Creds!"
 
@@ -2028,6 +2077,101 @@ class GameEngine:
                 return False, breach_msg
             self.deck.exploits.remove(name)
             msg = f"💣 LOGIC BOMB DETONATED! Destroyed ICE defenses on '{target.name}'. {breach_msg}"
+            return True, msg
+
+        if name == "port_scan":
+            target = self.find_node(target_id or self.state.current_node_id)
+            if not target:
+                return False, f"Target '{target_id}' not found."
+            curr = self.get_current_node()
+            if target.node_id not in curr.connected_ids and target.node_id != curr.node_id:
+                return False, f"Target '{target.hostname}' is not in direct subnet range."
+            if target.status == NodeStatus.LOCKED:
+                target.status = NodeStatus.DISCOVERED
+            self._mark_probed(target.node_id)
+            self.deck.exploits.remove(name)
+            services = ", ".join(f"{p.port}/{p.service}" for p in target.ports) or "none"
+            msg = (
+                f"PORT SCAN CHIP BURNED: mapped {target.hostname} ({target.ip_address}) with no trace. "
+                f"Services [{services}]."
+            )
+            self.state.message_log.append(msg)
+            return True, msg
+
+        if name == "buffer_overflow":
+            if not target_id:
+                return False, "Usage: exploit buffer_overflow <node_id>"
+            node = self.find_node(target_id)
+            if not node:
+                return False, f"Target '{target_id}' not found."
+            if node.status == NodeStatus.BREACHED:
+                return False, f"Node '{node.name}' is already breached."
+            gate = self._story_gate_reason(node)
+            if gate:
+                return False, gate
+            curr = self.get_current_node()
+            if node.node_id not in curr.connected_ids and node.node_id != curr.node_id:
+                return False, f"Target '{node.hostname}' is not in direct subnet range."
+            self.add_trace(12)
+            if self.state.is_game_over:
+                fail_msg = "BUFFER OVERFLOW DETONATED: the grid severed the link before the payload landed."
+                self.state.message_log.append(fail_msg)
+                return False, fail_msg
+            breached, breach_msg = self.complete_breach(node.node_id)
+            if not breached:
+                return False, breach_msg
+            self.deck.exploits.remove(name)
+            msg = (
+                f"BUFFER OVERFLOW CHIP BURNED: {node.hostname} fell to a register smash "
+                f"(+12% trace). {breach_msg}"
+            )
+            self.state.message_log.append(msg)
+            return True, msg
+
+        if name == "spoof_ip":
+            if self.state.trace_percent <= 0:
+                return False, "Trace is already at 0%; hold the spoof_ip chip."
+            reduced = min(self.state.trace_percent, 30)
+            self.state.trace_percent = max(0, self.state.trace_percent - 30)
+            self.deck.exploits.remove(name)
+            msg = (
+                f"SPOOF_IP CHIP BURNED: bounced the connection and shed {reduced}% trace "
+                f"(current: {self.state.trace_percent}%)."
+            )
+            self.state.message_log.append(msg)
+            return True, msg
+
+        if name == "zero_day_forge":
+            if not target_id:
+                return False, "Usage: exploit zero_day_forge <node_id>"
+            if target_id.lower() in ("hunter", "aegis", "netwatch"):
+                return False, "Zero-day forge cannot be spent on a hunter."
+            if target_id not in self.nodes:
+                return False, f"Unknown node '{target_id}'."
+            target = self.nodes[target_id]
+            if target.status == NodeStatus.BREACHED:
+                return False, f"Node '{target.name}' is already breached."
+            curr = self.get_current_node()
+            if target_id not in curr.connected_ids and target_id != curr.node_id:
+                return False, f"Target '{target.name}' is not in direct subnet range of '{curr.name}'."
+            gate = self._story_gate_reason(target)
+            if gate:
+                return False, gate
+            breach_cost = min(15, target.security_level * 3)
+            self.add_trace(breach_cost)
+            if self.state.is_game_over:
+                fail_msg = "💀 FORGED ZERO-DAY BURNED: the grid severed the link before it landed."
+                self.state.message_log.append(fail_msg)
+                return False, fail_msg
+            breached, breach_msg = self.complete_breach(target_id)
+            if not breached:
+                return False, breach_msg
+            self.deck.exploits.remove(name)
+            msg = (
+                f"🧠 FORGED ZERO-DAY DEPLOYED: {target.name} fell without a mini-game "
+                f"(+{breach_cost}% trace). {breach_msg}"
+            )
+            self.state.message_log.append(msg)
             return True, msg
 
         if name == "brute_miner":
@@ -2226,6 +2370,7 @@ class GameEngine:
             node.status = NodeStatus.DISCOVERED
 
         contract_before = self.state.active_contract
+        self._mark_probed(node.node_id)
         self.add_trace(4)
         self.regenerate_cpu(1)
         self.advance_turn()
@@ -2340,6 +2485,9 @@ class GameEngine:
             trace_add = node.trace_rate
             exploit_label = f"Zero-Day Buffer Exploit on {target_port.service}"
 
+        if getattr(self.deck, "operating_stance", OperatingStance.BALANCED) == OperatingStance.ANALYSIS:
+            required_ram = max(16, required_ram - 32)
+
         if self.deck.ram_mb < required_ram:
             return False, f"INSUFFICIENT RAM: Infiltration requires {required_ram}MB buffer memory (deck has {self.deck.ram_mb}MB)."
 
@@ -2354,12 +2502,13 @@ class GameEngine:
         av_notice = ""
         if node.antivirus and node.antivirus.enabled and not node.antivirus.evaded:
             stealth = selected_cve.stealth_rating if selected_cve else 3
+            av_mult = 0.5 if getattr(self.deck, "operating_stance", OperatingStance.BALANCED) == OperatingStance.STEALTH else 1.0
             if stealth < 3:
-                node.antivirus.alert_level = min(100, node.antivirus.alert_level + 25)
+                node.antivirus.alert_level = min(100, node.antivirus.alert_level + int(25 * av_mult))
                 self.add_trace(8)
                 av_notice = f"\n⚠️ [ANTIVIRUS WARNING] {node.antivirus.name} detected noisy exploit signature! Alert level spiked to {node.antivirus.alert_level}%."
             else:
-                node.antivirus.alert_level = min(100, node.antivirus.alert_level + 5)
+                node.antivirus.alert_level = min(100, node.antivirus.alert_level + max(1, int(5 * av_mult)))
 
         self.deck.cpu_cycles -= cpu_needed
         target_port.breached = True
@@ -3046,5 +3195,217 @@ class GameEngine:
     def list_crafting_recipes(self) -> List[Dict[str, Any]]:
         """List available malware crafting recipes in the workshop."""
         return [r.to_dict() for r in CRAFTING_RECIPES.values()]
+
+    def spend_threat_intel(self, mode: str, target_query: Optional[str] = None) -> Tuple[bool, str]:
+        """Burn ANALYSIS-stance threat intel for a tactical edge.
+
+        - reveal (1 intel): remote deep-scan a host without adjacency and without trace.
+        - forge (2 intel): mint a single-use zero_day_forge chip that breaches a host outright.
+        """
+        if self.state.is_game_over:
+            return False, "Cannot spend intel: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot spend intel: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot spend intel: mission already complete."
+
+        action = str(mode or "reveal").lower().strip()
+        if action not in ("reveal", "forge"):
+            return False, f"Unknown intel action '{mode}'. Use 'reveal' or 'forge'."
+
+        cost = 1 if action == "reveal" else 2
+        if action == "forge" and "zero_day_forge" in self.deck.exploits:
+            return False, "A zero_day_forge chip is already loaded. Burn it before forging another."
+        if self.deck.threat_intel_count < cost:
+            return False, (
+                f"INSUFFICIENT THREAT INTEL: {action} needs {cost} fragment(s), "
+                f"deck holds {self.deck.threat_intel_count}. Breach hosts in ANALYSIS stance to harvest intel."
+            )
+
+        if action == "forge":
+            self.deck.threat_intel_count -= cost
+            self.deck.exploits.append("zero_day_forge")
+            msg = (
+                f"🧠 INTEL FORGED: assembled a single-use zero_day_forge chip from {cost} threat fragments. "
+                "Run it on any adjacent host to breach it outright."
+            )
+            self.state.message_log.append(msg)
+            return True, msg
+
+        node = self.find_node(target_query or "")
+        if not node:
+            return False, f"Intel reveal needs a known host; '{target_query}' was not found."
+        if node.status == NodeStatus.BREACHED:
+            return False, f"{node.hostname} is already breached; hold the fragment for another target."
+
+        # Threat intel is a side-effect-free remote deep scan: it must not add
+        # trace, spend CPU, or advance the world clock.
+        if node.status == NodeStatus.LOCKED:
+            node.status = NodeStatus.DISCOVERED
+        self._mark_probed(node.node_id)
+        self.deck.threat_intel_count -= cost
+
+        open_ports = [f"{p.port}/{p.service}" for p in node.ports]
+        vuln_ports = [f"{p.port}/{p.service}" for p in node.ports if p.vulnerable]
+        blocked = []
+        if node.firewall and node.firewall.enabled:
+            blocked = [str(p) for p in node.ports if node.firewall.is_port_blocked(p.port)]
+        edr = node.antivirus.name if node.antivirus and node.antivirus.enabled else "none"
+        msg = (
+            f"🛰️ INTEL REVEAL ({cost} fragment): {node.hostname} ({node.ip_address}) — "
+            f"services [{', '.join(open_ports) or 'none'}] | "
+            f"vulnerable [{', '.join(vuln_ports) or 'none'}] | "
+            f"blocked ports [{', '.join(blocked) or 'none'}] | EDR [{edr}]"
+        )
+        self.state.message_log.append(msg)
+        return True, msg
+
+    def set_stance(self, stance_query: str) -> Tuple[bool, str]:
+        """Switch cyberdeck operating bus stance: balanced, stealth, overclock, analysis."""
+        if self.state.is_game_over:
+            return False, "Cannot shift stance: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot shift stance: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot shift stance: mission already complete."
+
+        stance = (stance_query or "").strip().lower()
+        valid = (OperatingStance.BALANCED, OperatingStance.STEALTH, OperatingStance.OVERCLOCK, OperatingStance.ANALYSIS)
+        if stance not in valid:
+            return False, f"Unknown operating stance '{stance_query}'. Available: {', '.join(valid)}."
+
+        if self.deck.operating_stance == stance:
+            return True, f"Cyberdeck operating bus is already in {stance.upper()} stance."
+
+        self.deck.operating_stance = stance
+        effects = {
+            OperatingStance.BALANCED: "Standard neural throughput calibrated.",
+            OperatingStance.STEALTH: "Phantom routing engaged: -35% trace generation, -50% EDR alert buildup.",
+            OperatingStance.OVERCLOCK: "Blitz bus engaged: +25% breach bounty, accelerated CPU regen (+25% trace generation).",
+            OperatingStance.ANALYSIS: "Oracle diagnostics engaged: -32MB RAM threshold, 1-2 threat intel per fresh breach.",
+        }
+        msg = f"⚡ Stance shifted to [{stance.upper()}]. {effects[stance]}"
+        self.state.message_log.append(msg)
+        return True, msg
+
+    def add_proxy_hop(self, node_query: str) -> Tuple[bool, str]:
+        """Route neural telemetry through a compromised host to dampen trace buildup."""
+        if self.state.is_game_over:
+            return False, "Cannot route proxy: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot route proxy: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot route proxy: mission already complete."
+
+        node = self.find_node(node_query)
+        if not node:
+            return False, f"Target host '{node_query}' not found."
+        if node.status != NodeStatus.BREACHED:
+            return False, f"Cannot proxy through {node.hostname} ({node.ip_address}): host is not breached."
+        if node.node_id == self.state.current_node_id:
+            return False, f"Cannot proxy through active terminal host {node.hostname}."
+        if node.node_id in self.deck.proxy_chain:
+            return False, f"Host {node.hostname} is already in the proxy chain."
+        if len(self.deck.proxy_chain) >= 3:
+            return False, "Proxy chain limit reached (max 3 hops). Sever a proxy hop first."
+        if self.deck.cpu_cycles < 1:
+            return False, "Cannot route proxy: at least 1 CPU cycle is required to splice the tunnel."
+
+        self.deck.cpu_cycles -= 1
+        self.deck.proxy_chain.append(node.node_id)
+        dampen_pct = min(45, len(self.deck.proxy_chain) * 15)
+        msg = (
+            f"🔗 Proxy tunnel established via {node.hostname} ({node.ip_address}) (-1 CPU). "
+            f"Signal dampening: -{dampen_pct}% trace generation "
+            f"({len(self.deck.proxy_chain)}/3 hops active)."
+        )
+        self.state.message_log.append(msg)
+        return True, msg
+
+    def sever_proxy(self, node_query: Optional[str] = None) -> Tuple[bool, str]:
+        """Burn a proxy tunnel connection to dump 15% trace immediately."""
+        if self.state.is_game_over:
+            return False, "Cannot sever proxy: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot sever proxy: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot sever proxy: mission already complete."
+        if not self.deck.proxy_chain:
+            return False, "No active proxy hops in tunnel."
+
+        target_id: Optional[str] = None
+        if node_query:
+            node = self.find_node(node_query)
+            if not node or node.node_id not in self.deck.proxy_chain:
+                return False, f"Host '{node_query}' is not in active proxy chain."
+            target_id = node.node_id
+        else:
+            target_id = self.deck.proxy_chain[-1]
+
+        self.deck.proxy_chain.remove(target_id)
+        node = self.nodes.get(target_id)
+        host_label = f"{node.hostname} ({node.ip_address})" if node else target_id
+
+        trace_dump = min(self.state.trace_percent, 15)
+        self.state.trace_percent = max(0, self.state.trace_percent - trace_dump)
+        msg = f"💥 Proxy tunnel severed at {host_label}! Scrambled telemetry dropped -{trace_dump}% trace ({len(self.deck.proxy_chain)} hops remaining)."
+        self.state.message_log.append(msg)
+        return True, msg
+
+    def quickhack(self, target_query: str) -> Tuple[bool, str]:
+        """Instant-breach an adjacent low-security host at a steep CPU and trace cost.
+
+        Quickhacking skips the mini-game but cannot defeat hardened ICE. It exists so a
+        confident runner can trade resources for tempo, not to bypass the puzzle loop.
+        """
+        if self.state.is_game_over:
+            return False, "Cannot quickhack: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot quickhack: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot quickhack: mission already complete."
+
+        node = self.find_node(target_query)
+        if not node:
+            return False, f"Target '{target_query}' not found."
+        if node.status == NodeStatus.BREACHED:
+            return False, f"Host {node.hostname} ({node.ip_address}) is already breached."
+
+        gate = self._story_gate_reason(node)
+        if gate:
+            return False, gate
+        lockdown = self._lockdown_reason(node)
+        if lockdown:
+            return False, lockdown
+
+        curr = self.get_current_node()
+        if node.node_id not in curr.connected_ids and node.node_id != curr.node_id:
+            return False, f"Host {node.hostname} ({node.ip_address}) is not adjacent in routing range."
+
+        if node.security_level > 2:
+            self.add_trace(6)
+            return False, (
+                f"🧠 QUICKHACK REJECTED: {node.hostname} runs security tier {node.security_level} ICE. "
+                "Rapid injection only pierces tiers 1-2; use probe + exploit for hardened hosts."
+            )
+
+        cpu_cost = 2 + node.security_level
+        if self.deck.cpu_cycles < cpu_cost:
+            return False, (
+                f"Insufficient CPU for quickhack: needs {cpu_cost} cycles "
+                f"(deck has {self.deck.cpu_cycles})."
+            )
+
+        self.clear_pending_puzzle(node.node_id)
+        self.deck.cpu_cycles -= cpu_cost
+        self.add_trace(10 + node.security_level * 4)
+        self.advance_turn()
+        breached, breach_msg = self.complete_breach(node.node_id)
+        if not breached:
+            return False, f"⚡ QUICKHACK SPENT but the breach collapsed:\n{breach_msg}"
+        return True, (
+            f"⚡ QUICKHACK LANDED on {node.hostname} ({node.ip_address}) for {cpu_cost} CPU. "
+            f"Rapid injection skipped the ICE dialogue.\n{breach_msg}"
+        )
 
 

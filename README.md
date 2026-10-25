@@ -1,6 +1,6 @@
 # cyberpulse
 
-[![Built with AIKit](https://img.shields.io/badge/built%20with-AIKit-6f42c1)](https://github.com/Aegean-E/AIKit)
+[![Built with AIKit](https://img.shields.io/badge/built%20with-AIKit-6f42c1)](https://github.com/AegeanWorks/AIKit)
 
 CyberPulse is a retro-cyberpunk terminal hacking simulation game designed around empirical behavioral psychology, featuring procedural puzzle nodes, ICE defenses, push-your-luck extraction mechanics, variable-ratio reward schedules, near-miss striatal feedback, persistent career progression, a five-act story campaign, an operative relationship system, a dynamic quest board, combo/overdrive risk-reward mechanics, and a living-grid world simulation with an in-game clock, corporate alert, generated news, ambient events, host re-securing, a drifting black market, tactical shifts, lay-low downtime, and a deadline-bound Syndicate contract market.
 
@@ -106,7 +106,7 @@ CyberPulse's mechanics are grounded in cognitive neuroscience and behavioral gam
 ## 🎮 How to Play
 
 ### 1. Web Cyberdeck (Visual CRT & Web Audio)
-Launch the visual browser-based cyberpunk cyberdeck with a main menu, story/mission board, operative dialogue modal, interactive 2D node matrix canvas, visual oscilloscope/buffer mini-games, a living-grid ticker (clock, alert, market, generated headlines), and synthesized 8-bit sound FX:
+Launch the browser cyberdeck: main menu, story/mission board, operative channels, interactive 2D node matrix, tactical stance/proxy dock, visual mini-games, a living-grid ticker (clock, alert, market, headlines), and synthesized 8-bit FX:
 
 ```bash
 # Launch interactive Web Cyberdeck (auto-opens browser at http://127.0.0.1:8420)
@@ -144,7 +144,7 @@ python -m cyberpulse.cli --seed 42069
 | `social <ip> [vec] [emp]` | Multi-vector social engineering (`spear_phish`, `pretext`, `bait`, `vishing`); success odds follow the in-game shift | Human factor exploitation & credential harvesting |
 | `phish <ip>` | Legacy quick spear-phish credential lure against target staff | Social engineering & security downgrade |
 | `ls [ip]` | List virtual directory contents on breached host (`/etc`, `/home`, `/data`) | Target file discovery & intel gathering |
-| `steal <file>` / `download` | Exfiltrate data; payout fences at the live black-market index (hot grid, hotter price); auto-archives a copy to local rig `/loot/` | Data theft & primary heist objective |
+| `steal <file>` / `download` | Exfiltrate data; payout tracks the live black-market index and archives a copy to rig `/loot/` | Data theft & primary heist objective |
 | `keylogger [ip]` | Deploy passive background keylogger daemon on breached host (yield scales with host security tier) | In-game persistent background surveillance |
 | `daemons` | Monitor all active background listener daemons and their credit yields | Passive income & risk telemetry |
 | `workshop` | Inspect malware crafting lab recipes and synthesis requirements | In-game virus & exploit workshop |
@@ -154,6 +154,7 @@ python -m cyberpulse.cli --seed 42069
 | `scan` | Scan surrounding connected nodes to reveal topology and IP addresses | Information foraging & strategic autonomy |
 | `spoof` | Burn 3 CPU cycles to bounce your proxy and reduce security trace by 25% | Risk mitigation & resource trade-offs |
 | `overdrive` | Burn 2 CPU and 8% trace to stack +1 combo and +10 unbanked credits | Voluntary risk, combo priming & dopamine anticipation |
+| `stance <mode>` / `proxy <ip>` / `quickhack <ip>` / `intel <reveal\|forge>` | Shift deck stance, route a proxy hop, instant-breach a tier 1-2 host, or spend threat intel | Tactical resource & risk modulation |
 | `lay_low [1-3]` / `wait` | Ghost the connection for 1-3 turns: +1 CPU and up to -2% trace per turn while the grid keeps moving | Downtime recovery & shift-aware risk management |
 | `world` / `city` / `grid` | Show the in-game clock, shift doctrine, grid alert, market index, and latest headlines | Living world awareness & consequence telemetry |
 | `news` / `wire` | Read the generated grid news wire (`news 20` for a longer feed) | Diegetic feedback & attribution of events |

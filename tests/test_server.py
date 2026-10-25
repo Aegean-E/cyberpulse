@@ -183,6 +183,7 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertTrue(probe_res["ok"])
         self.assertIn("Nmap scan report", probe_res["message"])
+        self.assertIn("node_proxy_a", probe_res["state"]["state"]["probed_nodes"])
 
         # 2. Exploit FTP port 21
         status, exp_res = self._post("/api/action", {"action": "exploit_service", "target": "192.168.1.10", "port": 21})
@@ -228,6 +229,59 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertEqual(ldata["hostname"], "rig.netrunner.local")
         self.assertIsInstance(ldata["files"], list)
         self.assertIsInstance(ldata["daemons"], list)
+
+    def test_tactical_stance_proxy_and_quickhack_actions(self):
+        self._post("/api/action", {"action": "reset", "seed": 7})
+        try:
+            status, stance = self._post("/api/action", {"action": "stance", "stance": "stealth"})
+            self.assertEqual(status, 200)
+            self.assertTrue(stance["ok"])
+            self.assertEqual(stance["state"]["deck"]["operating_stance"], "stealth")
+
+            status, hack = self._post("/api/action", {"action": "quickhack", "target": "192.168.1.10"})
+            self.assertEqual(status, 200)
+            self.assertTrue(hack["ok"])
+            self.assertIn("QUICKHACK LANDED", hack["message"])
+            self.assertEqual(hack["state"]["nodes"]["node_proxy_a"]["status"], "BREACHED")
+
+            status, proxy = self._post("/api/action", {"action": "proxy", "target": "192.168.1.10"})
+            self.assertEqual(status, 200)
+            self.assertTrue(proxy["ok"])
+            self.assertEqual(proxy["state"]["deck"]["proxy_chain"], ["node_proxy_a"])
+
+            status, sever = self._post("/api/action", {"action": "sever_proxy"})
+            self.assertEqual(status, 200)
+            self.assertTrue(sever["ok"])
+            self.assertEqual(sever["state"]["deck"]["proxy_chain"], [])
+        finally:
+            self._post("/api/action", {"action": "reset", "seed": 1337})
+
+    def test_intel_action_reveals_and_forges(self):
+        self._post("/api/action", {"action": "reset", "seed": 11})
+        try:
+            status, denied = self._post("/api/action", {"action": "intel", "mode": "reveal", "target": "node_vault_1"})
+            self.assertEqual(status, 200)
+            self.assertFalse(denied["ok"])
+            self.assertIn("INSUFFICIENT THREAT INTEL", denied["message"])
+
+            state = denied["state"]
+            self.assertGreaterEqual(state["deck"]["threat_intel_count"], 0)
+            session = self.server.RequestHandlerClass.server_session
+            session.engine.deck.threat_intel_count = 2
+
+            status, reveal = self._post("/api/action", {"action": "intel", "mode": "reveal", "target": "node_vault_1"})
+            self.assertEqual(status, 200)
+            self.assertTrue(reveal["ok"])
+            self.assertIn("INTEL REVEAL", reveal["message"])
+            self.assertEqual(reveal["state"]["deck"]["threat_intel_count"], 1)
+            self.assertTrue(reveal["state"]["nodes"]["node_vault_1"]["ports"])
+
+            status, forge = self._post("/api/action", {"action": "intel", "mode": "forge"})
+            self.assertEqual(status, 200)
+            self.assertFalse(forge["ok"])
+            self.assertIn("INSUFFICIENT THREAT INTEL", forge["message"])
+        finally:
+            self._post("/api/action", {"action": "reset", "seed": 1337})
 
     def test_server_phish_craft_and_daemon(self):
         # 1. Phish target

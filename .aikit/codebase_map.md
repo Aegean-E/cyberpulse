@@ -7,10 +7,10 @@
 
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `26`
-- **Total Classes**: `55`
+- **Total Classes**: `57`
 - **Total Top-Level Functions**: `67`
-- **Total Class Methods**: `476`
-- **Total Source Lines**: `11119`
+- **Total Class Methods**: `507`
+- **Total Source Lines**: `11877`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1000` lines (`47349` bytes)
+**Size**: `1041` lines (`49110` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -58,12 +58,13 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3050` lines (`141853` bytes)
+**Size**: `3411` lines (`159822` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
   - Method `.__init__(seed, career_profile)`
   - Method `.get_current_node()`
+  - Method `._mark_probed(node_id)` - *Record that the runner has mapped a host's services (survives save/load).*
   - Method `._find_quest(quest_id)`
   - Method `._find_contact(contact_id)`
   - Method `._log_story(message)`
@@ -90,7 +91,7 @@
   - Method `._lockdown_reason(node)` - *Return a denial when a host's ICE is still rotating after a burned intrusion.*
   - Method `.register_puzzle_failure(node_id, reason)` - *Apply the cost of a burned intrusion script: trace, combo loss, and a host lockdown.*
   - Method `.resolve_puzzle_near_miss(puzzle)` - *Record a near miss and convert the first one per puzzle into a bonus attempt.*
-  - Method `.mitigated_trace(raw_amount)` - *Return the trace actually added after passive ICE dampener mitigation.*
+  - Method `.mitigated_trace(raw_amount)` - *Return the trace actually added after passive ICE dampener, stance, and proxy mitigation.*
   - Method `.extraction_surge()` - *Black ICE surge applied while pulling the jack, before the link is cut.*
   - Method `.extraction_risk()` - *Preview the extraction surge and whether it would burn an active run.*
   - Method `.add_trace(raw_amount)` - *Increase system trace, mitigated by ICE dampeners. 100% triggers lockout & loss of loot.*
@@ -159,18 +160,24 @@
   - Method `.list_cves()` - *Return the catalog of weaponized CVE exploit payloads.*
   - Method `.craft_virus(recipe_name)` - *Assemble a custom virus chip in the netrunner workshop.*
   - Method `.list_crafting_recipes()` - *List available malware crafting recipes in the workshop.*
+  - Method `.spend_threat_intel(mode, target_query)` - *Burn ANALYSIS-stance threat intel for a tactical edge.*
+  - Method `.set_stance(stance_query)` - *Switch cyberdeck operating bus stance: balanced, stealth, overclock, analysis.*
+  - Method `.add_proxy_hop(node_query)` - *Route neural telemetry through a compromised host to dampen trace buildup.*
+  - Method `.sever_proxy(node_query)` - *Burn a proxy tunnel connection to dump 15% trace immediately.*
+  - Method `.quickhack(target_query)` - *Instant-breach an adjacent low-security host at a steep CPU and trace cost.*
 
 ---
 
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `607` lines (`21558` bytes)
+**Size**: `626` lines (`22252` bytes)
 
 **Classes:**
 - `class NodeType`
 - `class NodeStatus`
 - `class RewardType`
+- `class OperatingStance`
 - `class PortService` - *An exposed TCP/UDP network service on a target host.*
   - Method `.to_dict()`
   - Method `.from_dict(data)`
@@ -297,7 +304,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `678` lines (`30657` bytes)
+**Size**: `709` lines (`32148` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -434,7 +441,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `396` lines (`16653` bytes)
+**Size**: `413` lines (`17333` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -470,6 +477,7 @@
   - Method `.test_cli_reuses_pending_puzzle_attempts()`
   - Method `.test_failed_puzzle_breaks_combo()`
   - Method `.test_cli_hunter_and_counter_commands()`
+  - Method `.test_unknown_command_reports_and_tactical_commands_run()`
   - Method `.test_start_launcher_function()`
 
 ---
@@ -477,7 +485,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `1487` lines (`62365` bytes)
+**Size**: `1704` lines (`72251` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -583,6 +591,28 @@
   - Method `.test_accept_quest_rejects_terminal_states()`
   - Method `.test_core_is_sealed_until_act_four()`
   - Method `.test_download_contract_respects_trace_limit()`
+- `class TestDeckStanceProxyAndQuickhack` - *Tactical depth added by operating stances, proxy tunnels, and quickhacks.*
+  - Method `.setUp()`
+  - Method `.test_stance_changes_trace_math_and_rejects_unknown()`
+  - Method `.test_overclock_stance_accelerates_cpu_regen()`
+  - Method `.test_proxy_hop_requires_breach_and_costs_cpu()`
+  - Method `.test_proxy_chain_dampens_trace_and_sever_dumps_trace()`
+  - Method `.test_a_resecured_or_stale_proxy_stops_dampening()`
+  - Method `.test_quickhack_breaches_low_tier_adjacent_host_at_a_cost()`
+  - Method `.test_quickhack_rejects_hardened_and_distant_hosts()`
+  - Method `.test_quickhack_needs_cpu()`
+  - Method `.test_analysis_stance_harvests_intel_on_fresh_breach()`
+  - Method `.test_intel_reveal_maps_a_distant_host_without_trace()`
+  - Method `.test_intel_reveal_rejects_breached_host_without_spending()`
+  - Method `.test_intel_forge_loads_zero_day_chip()`
+  - Method `.test_intel_reveal_rejects_unknown_mode_and_empty_pool()`
+  - Method `.test_zero_day_forge_breaches_adjacent_host_once()`
+  - Method `.test_zero_day_forge_rejects_distant_target()`
+  - Method `.test_port_scan_chip_maps_adjacent_host_without_trace_or_turn()`
+  - Method `.test_buffer_overflow_chip_breaches_at_a_trace_cost()`
+  - Method `.test_spoof_ip_chip_sheds_trace_and_refuses_when_clean()`
+  - Method `.test_probe_and_intel_reveal_record_probed_nodes()`
+  - Method `.test_port_scan_chip_records_probed_node()`
 
 ---
 
@@ -698,7 +728,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `670` lines (`29117` bytes)
+**Size**: `724` lines (`31963` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -718,6 +748,8 @@
   - Method `.test_static_assets_served()`
   - Method `.test_server_simulation_actions()`
   - Method `.test_get_workshop_and_local_files()`
+  - Method `.test_tactical_stance_proxy_and_quickhack_actions()`
+  - Method `.test_intel_action_reveals_and_forges()`
   - Method `.test_server_phish_craft_and_daemon()`
   - Method `.test_get_cves_firewall_antivirus()`
   - Method `.test_firewall_bypass_evade_and_social()`
@@ -769,7 +801,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `254` lines (`9369` bytes)
+**Size**: `272` lines (`10094` bytes)
 
 **Classes:**
 - `class TestStorage`
@@ -777,6 +809,7 @@
   - Method `.test_save_and_load()`
   - Method `.test_load_nonexistent()`
   - Method `.test_save_preserves_story_quests_and_contacts()`
+  - Method `.test_save_preserves_tactical_deck_state()`
   - Method `.test_load_backfills_story_for_old_save()`
   - Method `.test_career_save_and_load()`
   - Method `.test_career_default_fallback()`

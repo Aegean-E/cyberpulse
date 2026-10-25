@@ -1,125 +1,23 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-gapfix-verify",
-    "last_phase": "phase 4",
+    "task_id": "task-cyberpulse-ui-overhaul-and-mechanics",
+    "last_phase": "phase 3",
     "active_phase": 5,
     "status": "completed",
-    "updated_at": 1792684647.1963556,
-    "impact_assessment": {
-      "why": "Verification found the paid-only drop unreachable for a 0-credit career and duplicate action notices.",
-      "benefits": "Drop is always usable once per broker window; CLI output is clean.",
-      "risks": "contract: drop behavior and notice presentation only",
-      "mitigation": "Engine test covers fee, waived-fee cooldown, and spam guard; full suite and gates."
-    },
-    "completed_at": 1792684720.3575456
+    "updated_at": 1792966575.252814,
+    "owner": "kilo:main",
+    "started_by": "unidentified",
+    "continuations": [
+      {
+        "agent": "kilo:main",
+        "from": "unidentified",
+        "at": 1792958239.8479528
+      }
+    ],
+    "completed_at": 1792966583.2182097
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-contracts-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[3/6] Contract clock and completion: tick_world warnings/expiry, deferred repost after the action tick, trust/alert failure cost, centralized payout with trust+rush bonuses, specific-target breach/extract/wipe checks, cooled sign-off and pre-tick contract capture; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792651350.7736173,
-      "timestamp_str": "2026-10-22 09:42:30",
-      "impact_assessment": {
-        "why": "Make deadlines consequential and stop action-tick ordering from completing the wrong contract or leaving a stealth job unconfirmable.",
-        "benefits": "Deterministic job pressure, no accidental replacement-contract payout, recoverable trace-limit failures.",
-        "risks": "contract: active contract may be briefly None between expiry and next tick; state: additive notice",
-        "mitigation": "Deadline, payout, target, expiry-tick, and sign-off tests."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-contracts-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[4/6] Contract surfaces: CLI contract/bounty briefing, HUD job clock and job alert, post-command notice printing; Web contract card risk/deadline/rush/notice; state payload exposes all contract fields; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792651355.2664115,
-      "timestamp_str": "2026-10-22 09:42:35",
-      "impact_assessment": {
-        "why": "A deadline the player cannot see is not a mechanic.",
-        "benefits": "Both clients make the job clock and expiry visible.",
-        "risks": "contract: CLI aliases and Web text only",
-        "mitigation": "CLI briefing and expiry-notice tests, Node syntax check."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-contracts-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[5/6] Verification and tuning: 269 tests green, generation distribution checked, rewards tuned to shop scale, legacy objective fallback, deadline ordering and wipe sign-off covered; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792651361.2852466,
-      "timestamp_str": "2026-10-22 09:42:41",
-      "impact_assessment": {
-        "why": "Validate the new loop under tests and balance simulation.",
-        "benefits": "No regression in legacy contracts; contract pay stays aligned with upgrade costs.",
-        "risks": "contract: none; state: none",
-        "mitigation": "Full discover, distribution script, 4/4 aikit gates."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-contracts-v1",
-      "phase": "phase 4",
-      "phase_num": 4,
-      "description": "[6/6] Docs and gates: README contract/job-clock sections, ADR-020, codebase map regenerated, 269 tests green, 4/4 Phase 4 gates; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792651365.191347,
-      "timestamp_str": "2026-10-22 09:42:45",
-      "impact_assessment": {
-        "why": "Close with living documentation and a passed gate shield.",
-        "benefits": "The job loop is discoverable and its balance rationale recorded.",
-        "risks": "contract: docs/bookkeeping only",
-        "mitigation": "aikit check cyberpulse."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-contracts-v1",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-contracts-v1' completed successfully.",
-      "status": "completed",
-      "timestamp": 1792651380.1584115,
-      "timestamp_str": "2026-10-22 09:43:00"
-    },
-    {
-      "task_id": "task-cyberpulse-offer-board-v1",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/5] Plan: Syndicate job board - three rotating offers, accept/decline choice, offer shelf life, deadline start on acceptance, CLI/Web/API surfaces, tests, ADR-021",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792657966.2531755,
-      "timestamp_str": "2026-10-22 11:32:46",
-      "impact_assessment": {
-        "why": "The contract market still auto-assigns a single job, so risk tiers and givers are not a player choice. An offer board adds autonomy, makes risk/reward selection legible, and gives declining a real broker-relationship cost.",
-        "benefits": "Players choose risk tier, objective, target, and giver; offers rotate on the clock; active jobs still have a hard deadline; trust remains the payout/deadline currency.",
-        "risks": "contract: GameState.contract_offers additive; BountyContract gains offer/accept fields; completing or expiring a job now leaves active_contract None until acceptance; existing tests that assume auto-dispatch need updating; dependency: none; concurrency: server mutations stay under the session lock; state: offers persist and must default for old saves",
-        "mitigation": "Backward-compatible defaults, a single offer generator reused by initial/refresh paths, explicit lifecycle tests, CLI/API tests, full discover after each milestone, and ADR-021."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-offer-board-v1",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[2/5] Offer model and rotation: GameState.contract_offers, offer_expires_turn/deadline_turns, deferred deadline-on-acceptance, three distinct offers with risk-scaled shelf life, board refresh on init/load/tick; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1792666197.8202465,
-      "timestamp_str": "2026-10-22 13:49:57",
-      "impact_assessment": {
-        "why": "Give the player a real choice of job and keep the board fresh.",
-        "benefits": "Three visible offers, distinct targets, no silent deadlines.",
-        "risks": "contract: additive fields; state: offers persisted",
-        "mitigation": "Model/storage/board tests and full suite."
-      }
-    },
     {
       "task_id": "task-cyberpulse-offer-board-v1",
       "phase": "phase 3",
@@ -306,6 +204,92 @@
       "status": "completed",
       "timestamp": 1792684720.3575475,
       "timestamp_str": "2026-10-22 18:58:40"
+    },
+    {
+      "task_id": "task-cyberpulse-ui-overhaul-and-mechanics",
+      "phase": "phase 2",
+      "phase_num": 2,
+      "description": "[1/4] Architectural design: cyberdeck stances, proxy routing, and UI overhaul",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792957593.9550252,
+      "timestamp_str": "2026-10-25 22:46:33",
+      "agent": "unidentified",
+      "impact_assessment": {
+        "why": "Overhaul clunky text-heavy UI into a modern aesthetic cyberpunk cyberdeck, and add tactical gameplay depth with cyberdeck operating stances, proxy tunneling, and quick-hacks",
+        "benefits": "Intuitive aesthetic UI with reduced cognitive load, streamlined intrusion flow, and deeper tactical decision-making",
+        "risks": "contract: preserve existing CLI/API backward compatibility; dependency: standard-library only; concurrency: thread-safe server state; state: backward-compatible savegame schema",
+        "mitigation": "Additive model fields with defaults, non-breaking REST endpoints, and thorough unit testing"
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-ui-overhaul-and-mechanics",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[2/4] Mechanics wiring: stance/proxy/quickhack engine hardening, REST actions, CLI commands, state surfacing, and tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792958239.8479528,
+      "timestamp_str": "2026-10-25 22:57:19",
+      "agent": "kilo:main",
+      "handoff": {
+        "next": "wire stance/proxy/quickhack into server+CLI, add tests, then rebuild UI"
+      },
+      "continued_from": "unidentified"
+    },
+    {
+      "task_id": "task-cyberpulse-ui-overhaul-and-mechanics",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[3/4] UI overhaul shipped: tactical HUD, stance/proxy dock, quickhack, intel forge, mission board polish; checklists: passed; tests 299 pass; gates 4/4",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792962060.8215277,
+      "timestamp_str": "2026-10-26 00:01:00",
+      "agent": "kilo:main"
+    },
+    {
+      "task_id": "task-cyberpulse-ui-overhaul-and-mechanics",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[4/4] Verification and polish complete: 299 tests pass, gates 4/4, responsive UI verified at 1600/1440/1366/1024/820, all modals and interactions smoke-tested; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792963340.840207,
+      "timestamp_str": "2026-10-26 00:22:20",
+      "agent": "kilo:main"
+    },
+    {
+      "task_id": "task-cyberpulse-ui-overhaul-and-mechanics",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[4/4] Review pass fixed state bugs: probe-only bay gating, target/folder switching, starter chip handlers (port_scan/buffer_overflow/spoof_ip), side-effect-free intel reveal; 302 tests pass, gates 4/4; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792964732.357373,
+      "timestamp_str": "2026-10-26 00:45:32",
+      "agent": "kilo:main"
+    },
+    {
+      "task_id": "task-cyberpulse-ui-overhaul-and-mechanics",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[4/4] Review fixes: persistent probed-node state, reachable CLI unknown-command message, reset clears stale panels, intel reveal/sever guards, dead phish button removed; 307 tests pass, gates 4/4; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1792966575.252814,
+      "timestamp_str": "2026-10-26 01:16:15",
+      "agent": "kilo:main"
+    },
+    {
+      "task_id": "task-cyberpulse-ui-overhaul-and-mechanics",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-ui-overhaul-and-mechanics' completed successfully.",
+      "status": "completed",
+      "timestamp": 1792966583.2182117,
+      "timestamp_str": "2026-10-26 01:16:23",
+      "agent": "kilo:main"
     }
   ]
 }

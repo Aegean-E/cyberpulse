@@ -79,6 +79,7 @@ def print_hud(engine: GameEngine) -> None:
         lethal = " ⚠ LETHAL EXTRACTION" if risk["lethal"] else ""
         print(f"[*] Jackout ICE: +{risk['surge']}% surge (projected trace {risk['projected_trace']}%){lethal}")
     print(f"[*] Deck:       CPU: {engine.deck.cpu_cycles}/{engine.deck.max_cpu} | RAM: {engine.deck.ram_mb}MB | Creds: {engine.deck.cryptocreds}{unbanked_str}")
+    print(f"[*] Stance:     {engine.deck.operating_stance.upper()} | Proxies: {len(engine.deck.proxy_chain)}/3 | Threat Intel: {engine.deck.threat_intel_count}")
     print(f"[*] Upgrades:   ICE Dampener: Lvl {engine.deck.ice_dampener_level} | Overclock: Lvl {engine.deck.overclock_level}")
     exploits_str = ', '.join(engine.deck.exploits) if engine.deck.exploits else "None"
     print(f"[*] Exploits:   {exploits_str}")
@@ -434,7 +435,7 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
         if choice in ("6", "help", "how"):
             print("Commands: status, contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
             print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
-            print("          move, overdrive, spoof, cash_out, shop, buy, career, save, load, quit")
+            print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career, save, load, quit")
             continue
         if choice in ("q", "quit", "exit"):
             print("👋 Neural link closed.")
@@ -747,6 +748,46 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         print(msg)
         return True
 
+    if action in ("stance", "posture"):
+        if len(parts) < 2:
+            print(f"Current stance: {engine.deck.operating_stance.upper()} | Options: balanced, stealth, overclock, analysis")
+            return True
+        ok, msg = engine.set_stance(parts[1])
+        print(msg)
+        return True
+
+    if action in ("proxy", "add_proxy"):
+        if len(parts) < 2:
+            print("Usage: proxy <breached_host> (route telemetry through a breached host, -15% trace per hop, costs 1 CPU)")
+            return True
+        ok, msg = engine.add_proxy_hop(parts[1])
+        print(msg)
+        return True
+
+    if action in ("unproxy", "sever_proxy"):
+        target = parts[1] if len(parts) > 1 else None
+        ok, msg = engine.sever_proxy(target)
+        print(msg)
+        return True
+
+    if action in ("quickhack", "qh"):
+        if len(parts) < 2:
+            print("Usage: quickhack <host> (instant breach on a tier 1-2 adjacent host at a steep CPU/trace cost)")
+            return True
+        ok, msg = engine.quickhack(parts[1])
+        print(msg)
+        return True
+
+    if action in ("intel", "threat_intel"):
+        if len(parts) < 2 or parts[1].lower() not in ("reveal", "forge"):
+            print(f"Threat intel: {engine.deck.threat_intel_count} fragment(s). Usage: intel reveal <host> | intel forge")
+            return True
+        mode = parts[1].lower()
+        target = parts[2] if len(parts) > 2 else None
+        ok, msg = engine.spend_threat_intel(mode, target)
+        print(msg)
+        return True
+
     if action in ("jackout", "cash_out"):
         ok, msg = engine.jackout()
         print(msg)
@@ -892,7 +933,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("No saved game found.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, spoof, cash_out, shop, buy, career, status, save, load, quit")
+    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career, status, save, load, quit")
     return True
 
 

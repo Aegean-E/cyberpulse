@@ -376,6 +376,23 @@ class TestCLI(unittest.TestCase):
         self.assertIn("NETWATCH COUNTER-INFILTRATION RADAR", out)
         self.assertIn("Radar Status: CLEAR", out)
 
+    def test_unknown_command_reports_and_tactical_commands_run(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "bogus_command")
+        self.assertEqual(code, 0)
+        self.assertIn("Unknown command: 'bogus_command'", out)
+
+        code, out = self.run_cli(
+            "--seed",
+            "1337",
+            "--exec",
+            "stance stealth;quickhack node_proxy_a;proxy node_proxy_a;unproxy",
+        )
+        self.assertEqual(code, 0)
+        self.assertIn("Stance shifted to [STEALTH]", out)
+        self.assertIn("QUICKHACK LANDED", out)
+        self.assertIn("Proxy tunnel established", out)
+        self.assertIn("Proxy tunnel severed", out)
+
     def test_start_launcher_function(self):
         import start
 

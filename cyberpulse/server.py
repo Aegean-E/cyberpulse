@@ -346,6 +346,37 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 
+            if action == "stance":
+                stance = payload.get("stance", "")
+                ok, msg = engine.set_stance(stance)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action in ("proxy", "add_proxy"):
+                target = payload.get("target") or ""
+                ok, msg = engine.add_proxy_hop(target)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action in ("sever_proxy", "unproxy"):
+                target = payload.get("target")
+                ok, msg = engine.sever_proxy(target)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action == "quickhack":
+                target = payload.get("target") or ""
+                ok, msg = engine.quickhack(target)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action == "intel":
+                mode = payload.get("mode", "reveal")
+                target = payload.get("target") or ""
+                ok, msg = engine.spend_threat_intel(mode, target)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
             if action in ("lay_low", "wait"):
                 ok, msg = engine.lay_low(payload.get("turns", 1))
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})

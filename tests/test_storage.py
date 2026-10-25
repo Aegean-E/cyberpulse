@@ -50,6 +50,24 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(len(loaded.state.contacts), 4)
         self.assertTrue(loaded.state.story_log)
 
+    def test_save_preserves_tactical_deck_state(self):
+        engine = GameEngine(seed=42)
+        engine.deck.operating_stance = "stealth"
+        engine.deck.cpu_cycles = 8
+        engine.complete_breach("node_proxy_a")
+        engine.add_proxy_hop("node_proxy_a")
+        engine.deck.threat_intel_count = 3
+        engine.probe_host("node_proxy_a")
+
+        self.save_mgr.save(engine)
+        loaded = self.save_mgr.load()
+
+        self.assertIsNotNone(loaded)
+        self.assertEqual(loaded.deck.operating_stance, "stealth")
+        self.assertEqual(loaded.deck.proxy_chain, ["node_proxy_a"])
+        self.assertEqual(loaded.deck.threat_intel_count, 3)
+        self.assertIn("node_proxy_a", loaded.state.probed_nodes)
+
     def test_load_backfills_story_for_old_save(self):
         engine = GameEngine(seed=42)
         engine.state.quests = []

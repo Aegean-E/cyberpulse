@@ -116,6 +116,33 @@ const state = {
 };
 
 // Node matrix layout coordinates on 800x560 canvas
+const DESIGN_W = 800;
+const DESIGN_H = 560;
+
+function matrixViewport() {
+  const canvas = document.getElementById("matrix-canvas");
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
+    canvas.width = Math.max(1, Math.round(rect.width * dpr));
+    canvas.height = Math.max(1, Math.round(rect.height * dpr));
+  }
+  const scale = Math.min(rect.width / DESIGN_W, rect.height / DESIGN_H);
+  const offX = (rect.width - DESIGN_W * scale) / 2;
+  const offY = (rect.height - DESIGN_H * scale) / 2;
+  return { dpr, scale, offX, offY, cssW: rect.width, cssH: rect.height };
+}
+
+function toDesignPoint(clientX, clientY) {
+  const canvas = document.getElementById("matrix-canvas");
+  const rect = canvas.getBoundingClientRect();
+  const view = matrixViewport();
+  const cssX = clientX - rect.left;
+  const cssY = clientY - rect.top;
+  return { x: (cssX - view.offX) / view.scale, y: (cssY - view.offY) / view.scale };
+}
+
+// Node matrix layout coordinates on the 800x560 design space
 const NODE_POSITIONS = {
   node_gateway:       { x: 100, y: 280, label: "GATEWAY" },
   node_proxy_a:       { x: 260, y: 150, label: "PROXY ALPHA" },
@@ -170,14 +197,14 @@ function initUIEvents() {
   const btnAudio = document.getElementById("btn-audio");
   btnAudio.addEventListener("click", () => {
     sfx.enabled = !sfx.enabled;
-    btnAudio.textContent = sfx.enabled ? "🔊 FX: ON" : "🔇 FX: OFF";
+    btnAudio.textContent = sfx.enabled ? "FX ON" : "FX OFF";
     if (sfx.enabled) sfx.click();
   });
 
   const btnCrt = document.getElementById("btn-crt");
   btnCrt.addEventListener("click", () => {
     document.body.classList.toggle("crt-effects");
-    btnCrt.textContent = document.body.classList.contains("crt-effects") ? "📺 CRT: ON" : "📺 CRT: OFF";
+    btnCrt.textContent = document.body.classList.contains("crt-effects") ? "CRT ON" : "CRT OFF";
     sfx.click();
   });
 
@@ -202,6 +229,25 @@ function initUIEvents() {
   document.getElementById("btn-quests-open").addEventListener("click", openQuestsModal);
   document.getElementById("btn-contacts-open").addEventListener("click", openContactsModal);
   document.getElementById("btn-overdrive").addEventListener("click", handleOverdrive);
+  document.getElementById("btn-quickhack").addEventListener("click", handleQuickhack);
+  document.getElementById("btn-proxy-node").addEventListener("click", handleAddProxy);
+  const revealBtn = document.getElementById("btn-intel-reveal");
+  const forgeBtn = document.getElementById("btn-intel-forge");
+  if (revealBtn) revealBtn.addEventListener("click", () => handleIntel("reveal"));
+  if (forgeBtn) forgeBtn.addEventListener("click", () => handleIntel("forge"));
+
+  document.querySelectorAll(".stance-btn").forEach((btn) => {
+    btn.addEventListener("click", () => handleStance(btn.dataset.stance));
+  });
+
+  const consolePanel = document.getElementById("console-panel");
+  const consoleToggle = document.getElementById("btn-console-toggle");
+  if (consolePanel && consoleToggle) {
+    consoleToggle.addEventListener("click", () => {
+      const open = consolePanel.classList.toggle("open");
+      consoleToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+  }
 
   // Main menu
   document.getElementById("menu-jack-in").addEventListener("click", () => {
@@ -364,6 +410,12 @@ function initUIEvents() {
     } else if (key === "KeyL") {
       e.preventDefault();
       handleLayLow();
+    } else if (key === "KeyV") {
+      e.preventDefault();
+      handleSpoof();
+    } else if (key === "KeyH") {
+      e.preventDefault();
+      handleQuickhack();
     }
   });
 }
@@ -397,16 +449,51 @@ async function refreshFullState() {
   updateExploitChips(data.deck.exploits);
   if (state.selectedNodeId) {
     updateTargetCard(state.selectedNodeId);
+  } else {
+    renderEmptyTargetCard();
   }
+}
+
+function formatShiftDoctrine(world) {
+  const mods = world.shift_modifiers || {};
+  const parts = [];
+  if (mods.resecure_chance_delta) {
+    const pct = Math.round(mods.resecure_chance_delta * 100);
+    parts.push(`RESEC ${pct > 0 ? "+" : ""}${pct}%`);
+  }
+  if (mods.market_bias) {
+    const pct = Math.round(mods.market_bias * 100);
+    parts.push(`MKT ${pct > 0 ? "+" : ""}${pct}%`);
+  }
+  if (mods.alert_decay_bonus) {
+    parts.push(`COOLDOWN +${mods.alert_decay_bonus}`);
+  }
+  if (mods.hunter_threshold) {
+    parts.push(`HUNT ${mods.hunter_threshold}%`);
+  }
+  return parts.length ? parts.join(" · ") : "STANDARD POSTURE";
+}
+
+function renderEmptyTargetCard() {
+  const card = document.getElementById("target-card");
+  if (!card) return;
+  card.classList.add("is-empty");
+  const nameEl = document.getElementById("target-name");
+  if (nameEl) nameEl.textContent = "Select a node on the matrix";
+  const badgeEl = document.getElementById("target-badge");
+  if (badgeEl) badgeEl.textContent = "NO SELECTION";
 }
 
 function renderGridTicker(world) {
   const bar = document.getElementById("grid-bar");
   if (!bar || !world) return;
 
-  document.getElementById("grid-clock").textContent = (world.clock || "Day 1 08:00").toUpperCase();
+  const clockText = (world.clock || "Day 1 08:00").replace(/\s*\([^)]*\)\s*/g, " ").trim();
+  document.getElementById("grid-clock").textContent = clockText.toUpperCase();
   document.getElementById("grid-shift").textContent = (world.shift || "Morning").toUpperCase();
-  document.getElementById("grid-shift-effect").textContent = (world.shift_effect || "Standard posture").toUpperCase();
+  const effectEl = document.getElementById("grid-shift-effect");
+  effectEl.textContent = formatShiftDoctrine(world);
+  effectEl.title = (world.shift_effect || "Standard posture").toUpperCase();
 
   const alertEl = document.getElementById("grid-alert");
   const alertLevel = world.alert_level || 0;
@@ -426,7 +513,7 @@ function renderGridTicker(world) {
       const h = activeHunters[0];
       const dist = world.nearest_hunter_distance;
       const distStr = dist === 0 ? "INTERCEPT!" : (dist > 0 ? `${dist} HOP${dist > 1 ? "S" : ""}` : "UNKNOWN");
-      hunterEl.textContent = `🚨 HUNTER: ${h.name.toUpperCase()} (${distStr})`;
+      hunterEl.textContent = `HUNTER: ${h.name.toUpperCase()} (${distStr})`;
       hunterEl.classList.toggle("hot", dist <= 1);
     } else {
       hunterEl.style.display = "none";
@@ -457,6 +544,14 @@ function renderHUD(data) {
 
   // RAM Gauge
   document.getElementById("val-ram").textContent = `${deck.ram_mb}MB`;
+  const ramPercent = deck.max_ram ? (deck.ram_mb / deck.max_ram) * 100 : 100;
+  document.getElementById("fill-ram").style.width = `${ramPercent}%`;
+
+  // Stance switcher reflects the active operating bus
+  document.querySelectorAll(".stance-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.stance === (deck.operating_stance || "balanced"));
+  });
+  renderProxyStrip(data);
 
   // Trace Danger Meter
   const trace = gState.trace_percent;
@@ -466,6 +561,7 @@ function renderHUD(data) {
   traceEl.textContent = extRisk.surge
     ? `${trace}% · JACK +${extRisk.surge}%`
     : `${trace}%`;
+  document.getElementById("gauge-trace").classList.toggle("hot", trace >= 60);
   traceEl.title = extRisk.lethal
     ? `LETHAL: pulling the jack now projects ${extRisk.projected_trace}% trace and will burn the deck.`
     : extRisk.surge
@@ -481,6 +577,13 @@ function renderHUD(data) {
   document.getElementById("val-loot").textContent = `${gState.unbanked_creds} CR`;
   document.getElementById("val-bank").textContent = `${career.banked_creds} CR`;
   document.getElementById("val-combo").textContent = `x${gState.combo_streak || 0}`;
+  const intelEl = document.getElementById("val-intel");
+  if (intelEl) {
+    const intel = deck.threat_intel_count || 0;
+    intelEl.textContent = `${intel}`;
+    intelEl.classList.toggle("highlight-value", intel > 0);
+    intelEl.parentElement.title = "Threat intel: harvest in ANALYSIS stance, spend in the LAB.";
+  }
 
   // Living grid ticker: clock, alert, market, and the newest headline
   renderGridTicker(data.world || gState.world);
@@ -534,16 +637,42 @@ function renderHUD(data) {
   if (gState.is_victory) {
     const summary = data.run_summary || {};
     const legacy = (summary.epilogue || []).join(" ");
-    const stats = `Best combo x${summary.best_combo || 0} | Quests ${summary.quests_completed_count || 0}/${summary.quests_total || 0}.`;
-    showBanner(summary.outcome_title || "MISSION ACCOMPLISHED", `${legacy} ${stats}`.trim());
+    showBanner(
+      summary.outcome_title || "MISSION ACCOMPLISHED",
+      legacy || "The supercore falls and the Syndicate owes you a favor.",
+      buildRunStats(summary, gState)
+    );
     sfx.jackpot();
   } else if (gState.is_game_over) {
     const summary = data.run_summary || {};
     const legacy = (summary.epilogue || []).join(" ");
-    const stats = `Best combo x${summary.best_combo || 0} | Quests ${summary.quests_completed_count || 0}/${summary.quests_total || 0}.`;
-    showBanner(summary.outcome_title || "CONNECTION TERMINATED", `${legacy} ${stats}`.trim());
+    showBanner(
+      summary.outcome_title || "CONNECTION TERMINATED",
+      legacy || "Trace hit 100%. The deck burned and the grid forgot your name.",
+      buildRunStats(summary, gState)
+    );
     sfx.failure();
   }
+}
+
+function buildRunStats(summary, gState) {
+  const turns = summary.turns_elapsed || (gState && gState.turns_elapsed) || 0;
+  const breached = summary.nodes_breached;
+  const bestCombo = summary.best_combo || (gState && gState.best_combo) || 0;
+  const questsDone = summary.quests_completed_count || 0;
+  const questsTotal = summary.quests_total || 0;
+  const stats = [];
+  if (typeof breached === "number") {
+    stats.push({ label: "HOSTS BREACHED", value: `${breached}` });
+  }
+  if (turns) {
+    stats.push({ label: "TURNS", value: `${turns}` });
+  }
+  stats.push({ label: "BEST COMBO", value: `x${bestCombo}` });
+  if (questsTotal) {
+    stats.push({ label: "MISSIONS", value: `${questsDone}/${questsTotal}` });
+  }
+  return stats;
 }
 
 function applyStateSnapshot(res) {
@@ -564,26 +693,186 @@ function updateExploitChips(exploits) {
   exploits.forEach((name) => {
     const btn = document.createElement("button");
     btn.className = "exploit-chip-btn";
-    btn.textContent = `⚡ ${name.toUpperCase()}`;
+    btn.textContent = name.replace(/_/g, " ").toUpperCase();
     btn.title = `Deploy exploit chip: ${name}`;
     btn.addEventListener("click", () => handleUseExploit(name));
     container.appendChild(btn);
   });
 }
 
-function addTerminalLog(msg, type = "info") {
-  const stream = document.getElementById("terminal-stream");
-  const line = document.createElement("div");
-  line.className = `log-line ${type}`;
-  line.textContent = `> ${msg}`;
-  stream.appendChild(line);
-  stream.scrollTop = stream.scrollHeight;
+function renderProxyStrip(data) {
+  const strip = document.getElementById("proxy-strip");
+  if (!strip) return;
+  const chain = (data && data.deck && data.deck.proxy_chain) || [];
+  strip.innerHTML = '<span class="dock-label">PROXY</span>';
+  if (!chain.length) {
+    const empty = document.createElement("span");
+    empty.className = "proxy-empty";
+    empty.textContent = "NONE";
+    strip.appendChild(empty);
+    return;
+  }
+  chain.forEach((nodeId) => {
+    const node = data.nodes ? data.nodes[nodeId] : null;
+    const chip = document.createElement("span");
+    chip.className = "proxy-chip";
+    chip.textContent = node ? node.hostname : nodeId;
+    const sever = document.createElement("button");
+    sever.type = "button";
+    sever.title = "Sever this proxy hop";
+    sever.textContent = "×";
+    sever.addEventListener("click", () => handleSeverProxy(nodeId));
+    chip.appendChild(sever);
+    strip.appendChild(chip);
+  });
 }
 
-function showBanner(title, sub) {
+async function handleStance(stance) {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "stance", stance });
+  if (res && res.ok) {
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "Stance shift refused.", "warn");
+  }
+}
+
+async function handleIntel(mode) {
+  if (mode === "reveal" && !state.selectedNodeId) {
+    addTerminalLog("Select a host before spending intel on a reveal.", "warn");
+    return;
+  }
+  sfx.click();
+  const res = await apiPost("/api/action", {
+    action: "intel",
+    mode,
+    target: state.selectedNodeId || "",
+  });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+    updateExploitChips(res.state.deck.exploits);
+    if (state.selectedNodeId) updateTargetCard(state.selectedNodeId);
+    if (document.getElementById("modal-workshop").classList.contains("hidden")) {
+      return;
+    }
+    openWorkshopModal();
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "Threat intel refused.", "warn");
+  }
+}
+
+async function handleAddProxy() {
+  const target = state.selectedNodeId;
+  if (!target) {
+    addTerminalLog("Select a breached host first.", "warn");
+    return;
+  }
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "proxy", target });
+  if (res && res.ok) {
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+    updateTargetCard(target);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "Cannot route a proxy through that host.", "warn");
+  }
+}
+
+async function handleSeverProxy(nodeId) {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "sever_proxy", target: nodeId });
+  if (res && res.ok) {
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "No proxy hop to sever.", "warn");
+  }
+}
+
+async function handleQuickhack() {
+  const target = state.selectedNodeId;
+  if (!target) {
+    addTerminalLog("Select an adjacent host to quickhack.", "warn");
+    return;
+  }
+  sfx.scan();
+  addTerminalLog(`Rapid-injecting ICE breaker into ${target}...`, "info");
+  const res = await apiPost("/api/action", { action: "quickhack", target });
+  if (res && res.ok) {
+    sfx.jackpot();
+    addTerminalLog(res.message, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+    updateTargetCard(target);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || "Quickhack failed.", "warn");
+    if (res.state) {
+      state.data = res.state;
+      renderHUD(res.state);
+      updateTargetCard(target);
+    }
+  }
+}
+
+function addTerminalLog(msg, type = "info") {
+  const stream = document.getElementById("terminal-stream");
+  const clean = stripGlyphs(msg);
+  const line = document.createElement("div");
+  line.className = `log-line ${type}`;
+  line.textContent = `> ${clean}`;
+  stream.appendChild(line);
+  stream.scrollTop = stream.scrollHeight;
+  const latest = document.getElementById("console-latest");
+  if (latest) latest.textContent = clean;
+}
+
+function stripGlyphs(text) {
+  return String(text || "")
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{2B00}-\u{2BFF}]/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function showBanner(title, sub, stats = null) {
   const banner = document.getElementById("announcement-banner");
-  document.getElementById("banner-heading").textContent = title;
-  document.getElementById("banner-sub").textContent = sub;
+  const kicker = document.getElementById("banner-kicker");
+  document.getElementById("banner-heading").textContent = stripGlyphs(title);
+  document.getElementById("banner-sub").textContent = stripGlyphs(sub);
+  const statsEl = document.getElementById("banner-stats");
+  if (statsEl) {
+    statsEl.innerHTML = "";
+    (stats || []).forEach((entry) => {
+      const cell = document.createElement("div");
+      cell.className = "banner-stat";
+      const label = document.createElement("span");
+      label.className = "banner-stat-label";
+      label.textContent = entry.label;
+      const value = document.createElement("span");
+      value.className = "banner-stat-value";
+      value.textContent = entry.value;
+      cell.appendChild(label);
+      cell.appendChild(value);
+      statsEl.appendChild(cell);
+    });
+    statsEl.classList.toggle("hidden", !(stats && stats.length));
+  }
+  if (kicker) {
+    const bad = /terminated|burn|burnout|lockout|severed/i.test(title);
+    kicker.textContent = bad ? "CONNECTION LOST" : "RUN COMPLETE";
+    kicker.classList.toggle("bad", bad);
+  }
   banner.classList.remove("hidden");
 }
 
@@ -652,7 +941,11 @@ async function handleJackout() {
     addTerminalLog(res.message, "success");
     state.data = res.state;
     renderHUD(res.state);
-    showBanner("EXTRACTION CONFIRMED", res.message);
+    showBanner(
+      "EXTRACTION CONFIRMED",
+      stripGlyphs(res.message),
+      buildRunStats(res.state.run_summary || {}, res.state.state || {})
+    );
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || "Cannot jack out here.", "warn");
@@ -668,6 +961,7 @@ async function handleReset() {
     state.data = res.state;
     state.selectedNodeId = null;
     closePuzzleBay();
+    renderEmptyTargetCard();
     renderHUD(res.state);
   }
 }
@@ -681,6 +975,10 @@ async function handleUseExploit(name) {
     addTerminalLog(res.message, "success");
     state.data = res.state;
     renderHUD(res.state);
+    updateExploitChips(res.state.deck.exploits);
+    if (state.selectedNodeId) {
+      updateTargetCard(state.selectedNodeId);
+    }
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || "Exploit execution failed.", "warn");
@@ -698,15 +996,11 @@ function initMatrixCanvas() {
   // Mouse interaction
   canvas.addEventListener("click", (e) => {
     sfx.init();
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const mouseX = (e.clientX - rect.left) * scaleX;
-    const mouseY = (e.clientY - rect.top) * scaleY;
+    const pt = toDesignPoint(e.clientX, e.clientY);
 
     // Hit test against nodes
     for (const [nid, pos] of Object.entries(NODE_POSITIONS)) {
-      const dist = Math.hypot(mouseX - pos.x, mouseY - pos.y);
+      const dist = Math.hypot(pt.x - pos.x, pt.y - pos.y);
       if (dist <= 28) {
         selectNode(nid);
         sfx.click();
@@ -726,16 +1020,12 @@ function initMatrixCanvas() {
 function selectNode(nodeId) {
   state.selectedNodeId = nodeId;
   updateTargetCard(nodeId);
-  if (state.data && state.data.nodes[nodeId] && state.data.nodes[nodeId].status === "BREACHED") {
-    loadFilesystemView(nodeId);
-  } else {
-    document.getElementById("filesystem-container").classList.add("hidden");
-    document.getElementById("puzzle-idle").classList.remove("hidden");
-  }
 }
 
 function updateTargetCard(nodeId) {
   if (!state.data || !state.data.nodes[nodeId]) return;
+  const card = document.getElementById("target-card");
+  if (card) card.classList.remove("is-empty");
   const node = state.data.nodes[nodeId];
   const deck = state.data.deck;
   const curr = state.data.current_node;
@@ -801,12 +1091,14 @@ function updateTargetCard(nodeId) {
   const btnProbe = document.getElementById("btn-probe-node");
   const btnHack = document.getElementById("btn-init-hack");
   const btnMove = document.getElementById("btn-move-node");
-  const btnPhish = document.getElementById("btn-phish-node");
   const btnKeylogger = document.getElementById("btn-keylogger-node");
   const btnWipe = document.getElementById("btn-wipe-logs");
   const btnBypass = document.getElementById("btn-bypass-fw");
   const btnEvade = document.getElementById("btn-evade-av");
   const btnSocial = document.getElementById("btn-social-eng");
+  const btnQuickhack = document.getElementById("btn-quickhack");
+  const btnProxy = document.getElementById("btn-proxy-node");
+
 
   const isAdjacent = curr.connected_ids.includes(nodeId) || curr.node_id === nodeId;
   const isBreached = node.status === "BREACHED";
@@ -817,7 +1109,6 @@ function updateTargetCard(nodeId) {
     ? `Host ICE is rotating until turn ${node.lockdown_until_turn}. Lay low or target another host.`
     : "Initiate intrusion.";
   btnMove.disabled = !isBreached || curr.node_id === nodeId;
-  if (btnPhish) btnPhish.disabled = isBreached || (node.status === "LOCKED" && !isAdjacent);
   btnKeylogger.disabled = !isBreached;
   btnWipe.disabled = !isBreached;
 
@@ -832,11 +1123,25 @@ function updateTargetCard(nodeId) {
   if (btnSocial) {
     btnSocial.disabled = isBreached || (node.status === "LOCKED" && !isAdjacent);
   }
+  if (btnQuickhack) {
+    btnQuickhack.disabled = isBreached || !isAdjacent || lockedDown || node.security_level > 2;
+    btnQuickhack.title = node.security_level > 2
+      ? "Quickhack cannot pierce security tier 3+; probe and exploit instead."
+      : "Instant breach: steep CPU and trace cost, no mini-game.";
+    btnQuickhack.classList.toggle("available", !btnQuickhack.disabled);
+  }
+  if (btnProxy) {
+    const chain = deck.proxy_chain || [];
+    btnProxy.disabled = !isBreached || curr.node_id === nodeId || chain.includes(nodeId) || chain.length >= 3;
+    btnProxy.title = chain.length >= 3
+      ? "Proxy chain is full (3 hops)."
+      : "Route telemetry through this breached host (-15% trace per hop, 1 CPU).";
+  }
 
   if (isBreached) {
     document.getElementById("probed-ports-container").classList.add("hidden");
     loadFilesystemView(nodeId);
-  } else if (node.ports && node.ports.length > 0 && node.status !== "LOCKED") {
+  } else if ((state.data.state.probed_nodes || []).includes(nodeId) && node.ports && node.ports.length > 0) {
     renderProbedPortsBay(node);
   } else {
     document.getElementById("probed-ports-container").classList.add("hidden");
@@ -900,7 +1205,7 @@ function renderProbedPortsBay(node) {
       </div>
       <div class="port-card-actions">
         ${fwBlocked ? `<button class="port-action-btn bypass-btn" data-port="${p.port}">BYPASS FW</button>` : ''}
-        ${p.vulnerable && !p.breached && !fwBlocked ? `<button class="port-action-btn exploit-btn" data-port="${p.port}">💥 EXPLOIT</button>` : ''}
+        ${p.vulnerable && !p.breached && !fwBlocked ? `<button class="port-action-btn exploit-btn" data-port="${p.port}">EXPLOIT</button>` : ''}
       </div>
     `;
 
@@ -954,6 +1259,7 @@ async function loadFilesystemView(nodeId) {
   document.getElementById("puzzle-frequency").classList.add("hidden");
   document.getElementById("puzzle-buffer").classList.add("hidden");
   document.getElementById("puzzle-hash").classList.add("hidden");
+  document.getElementById("probed-ports-container").classList.add("hidden");
   document.getElementById("filesystem-container").classList.remove("hidden");
   document.getElementById("fs-target-host").textContent = `${node.hostname} (${node.ip_address})`;
 
@@ -1006,11 +1312,23 @@ async function loadFilesystemView(nodeId) {
 }
 
 function drawMatrix(ctx, time) {
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  const view = matrixViewport();
+  ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+  ctx.clearRect(0, 0, view.cssW, view.cssH);
 
   if (!state.data) return;
   const nodes = state.data.nodes;
   const currNodeId = state.data.state.current_node_id;
+
+  // Project design-space coordinates into fixed-size screen coordinates so that
+  // node glyphs and labels stay legible at any panel size.
+  const sx = (x) => view.offX + x * view.scale;
+  const sy = (y) => view.offY + y * view.scale;
+  const compact = view.scale < 0.8;
+  const nodeR = compact ? 16 : 20;
+  const coreR = compact ? 7 : 9;
+  const labelSize = compact ? 10 : 11;
+  const ipSize = compact ? 8.5 : 9;
 
   // 1. Draw Network Connection Edges
   for (const [nid, node] of Object.entries(nodes)) {
@@ -1021,20 +1339,25 @@ function drawMatrix(ctx, time) {
       const p2 = NODE_POSITIONS[cid];
       if (!p2 || nid > cid) continue; // Draw each edge once
 
+      const x1 = sx(p1.x);
+      const y1 = sy(p1.y);
+      const x2 = sx(p2.x);
+      const y2 = sy(p2.y);
+
       ctx.beginPath();
-      ctx.moveTo(p1.x, p1.y);
-      ctx.lineTo(p2.x, p2.y);
-      ctx.strokeStyle = "rgba(40, 160, 90, 0.25)";
-      ctx.lineWidth = 2;
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = "rgba(40, 160, 90, 0.24)";
+      ctx.lineWidth = 1.5;
       ctx.stroke();
 
       // Moving data packet dots along active connections
       const packetPhase = (time * 0.0008 + (p1.x * 0.01)) % 1;
-      const px = p1.x + (p2.x - p1.x) * packetPhase;
-      const py = p1.y + (p2.y - p1.y) * packetPhase;
+      const px = x1 + (x2 - x1) * packetPhase;
+      const py = y1 + (y2 - y1) * packetPhase;
       ctx.beginPath();
-      ctx.arc(px, py, 2.5, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(0, 255, 170, 0.6)";
+      ctx.arc(px, py, 2, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0, 255, 170, 0.55)";
       ctx.fill();
     }
   }
@@ -1044,6 +1367,8 @@ function drawMatrix(ctx, time) {
     const pos = NODE_POSITIONS[nid];
     if (!pos) continue;
 
+    const cx = sx(pos.x);
+    const cy = sy(pos.y);
     const isCurrent = nid === currNodeId;
     const isSelected = nid === state.selectedNodeId;
     const isBreached = node.status === "BREACHED";
@@ -1051,22 +1376,22 @@ function drawMatrix(ctx, time) {
 
     // Glowing Outer Ring
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 22, 0, Math.PI * 2);
+    ctx.arc(cx, cy, nodeR, 0, Math.PI * 2);
     if (isCurrent) {
-      ctx.fillStyle = "rgba(0, 220, 255, 0.2)";
-      ctx.strokeStyle = "hsl(185, 100%, 50%)";
-      ctx.lineWidth = 2.5;
-    } else if (isBreached) {
-      ctx.fillStyle = "rgba(0, 255, 120, 0.15)";
-      ctx.strokeStyle = "hsl(140, 100%, 50%)";
+      ctx.fillStyle = "rgba(0, 220, 255, 0.18)";
+      ctx.strokeStyle = "hsl(185, 100%, 55%)";
       ctx.lineWidth = 2;
+    } else if (isBreached) {
+      ctx.fillStyle = "rgba(0, 255, 120, 0.13)";
+      ctx.strokeStyle = "hsl(140, 100%, 50%)";
+      ctx.lineWidth = 1.6;
     } else if (isDiscovered) {
-      ctx.fillStyle = "rgba(255, 180, 0, 0.1)";
-      ctx.strokeStyle = "hsl(45, 100%, 50%)";
-      ctx.lineWidth = 1.5;
+      ctx.fillStyle = "rgba(255, 180, 0, 0.09)";
+      ctx.strokeStyle = "hsl(45, 100%, 52%)";
+      ctx.lineWidth = 1.3;
     } else {
       ctx.fillStyle = "rgba(40, 40, 40, 0.3)";
-      ctx.strokeStyle = "#555";
+      ctx.strokeStyle = "rgba(140, 150, 165, 0.4)";
       ctx.lineWidth = 1;
     }
     ctx.fill();
@@ -1074,35 +1399,41 @@ function drawMatrix(ctx, time) {
 
     // Node Center Icon / Circle
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2);
-    ctx.fillStyle = isCurrent ? "hsl(185, 100%, 50%)" : (isBreached ? "hsl(140, 100%, 50%)" : (isDiscovered ? "hsl(45, 100%, 50%)" : "#444"));
+    ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+    ctx.fillStyle = isCurrent
+      ? "hsl(185, 100%, 52%)"
+      : (isBreached ? "hsl(140, 100%, 50%)" : (isDiscovered ? "hsl(45, 100%, 52%)" : "#3c4450"));
     ctx.fill();
 
     // Target Selection Halo
     if (isSelected) {
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 30, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
-      ctx.lineWidth = 1.5;
+      ctx.arc(cx, cy, nodeR + 7, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.75)";
+      ctx.lineWidth = 1.2;
       ctx.setLineDash([4, 4]);
       ctx.stroke();
       ctx.setLineDash([]);
     }
 
     // Node Label & IP
-    ctx.font = "11px 'Share Tech Mono', monospace";
-    ctx.fillStyle = isCurrent ? "hsl(185, 100%, 90%)" : "#aaa";
     ctx.textAlign = "center";
-    ctx.fillText(pos.label, pos.x, pos.y + 34);
+    ctx.font = `600 ${labelSize}px 'Cascadia Mono', 'Consolas', monospace`;
+    ctx.fillStyle = isCurrent
+      ? "hsl(185, 100%, 88%)"
+      : (isBreached ? "hsl(140, 60%, 74%)" : (isDiscovered ? "hsl(45, 55%, 78%)" : "rgba(170, 180, 195, 0.7)"));
+    ctx.fillText(pos.label, cx, cy + nodeR + 14);
 
-    ctx.font = "9px 'Share Tech Mono', monospace";
-    ctx.fillStyle = isBreached ? "hsl(140, 80%, 70%)" : (isDiscovered ? "hsl(45, 80%, 70%)" : "#666");
-    ctx.fillText(node.ip_address || "", pos.x, pos.y + 46);
+    ctx.font = `${ipSize}px 'Cascadia Mono', 'Consolas', monospace`;
+    ctx.fillStyle = isBreached
+      ? "rgba(80, 230, 150, 0.7)"
+      : (isDiscovered ? "rgba(255, 200, 80, 0.65)" : "rgba(140, 150, 165, 0.55)");
+    ctx.fillText(node.ip_address || "", cx, cy + nodeR + 26);
 
     if (isCurrent) {
-      ctx.font = "9px 'Orbitron', sans-serif";
-      ctx.fillStyle = "hsl(185, 100%, 70%)";
-      ctx.fillText("[ACTIVE TERMINAL]", pos.x, pos.y - 28);
+      ctx.font = `700 8px 'Cascadia Mono', 'Consolas', monospace`;
+      ctx.fillStyle = "rgba(0, 230, 255, 0.85)";
+      ctx.fillText("ACTIVE TERMINAL", cx, cy - nodeR - 10);
     }
 
     // Check if an active NetWatch Hunter is at this node
@@ -1110,16 +1441,20 @@ function drawMatrix(ctx, time) {
       ? state.data.world.hunters.filter(h => h.current_node_id === nid && h.status !== "neutralized")
       : [];
     if (huntersAtNode.length > 0) {
-      const pulse = Math.sin(time * 0.006) * 4;
+      const pulse = Math.sin(time * 0.006) * 3;
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 32 + pulse, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(255, 30, 60, 0.9)";
-      ctx.lineWidth = 2.5;
+      ctx.arc(cx, cy, nodeR + 8 + pulse, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(255, 30, 60, 0.85)";
+      ctx.lineWidth = 2;
       ctx.stroke();
 
-      ctx.font = "9px 'Orbitron', sans-serif";
-      ctx.fillStyle = "rgba(255, 60, 80, 0.95)";
-      ctx.fillText(`🚨 ${huntersAtNode[0].name.toUpperCase()}`, pos.x, pos.y - (isCurrent ? 40 : 28));
+      ctx.font = `700 8px 'Cascadia Mono', 'Consolas', monospace`;
+      ctx.fillStyle = "rgba(255, 70, 90, 0.95)";
+      ctx.fillText(
+        `HUNTER: ${huntersAtNode[0].name.toUpperCase()}`,
+        cx,
+        cy - nodeR - (isCurrent ? 24 : 10)
+      );
     }
   }
 }
@@ -1232,11 +1567,16 @@ async function handleStealFile(nodeId, path) {
   sfx.click();
   const res = await apiPost("/api/action", { action: "download_file", target: nodeId, path });
   if (res && res.ok) {
-    sfx.jackpot();
+    sfx.success();
     addTerminalLog(res.message, "success");
     state.data = res.state;
     renderHUD(res.state);
+    updateExploitChips(res.state.deck.exploits);
+    if (state.selectedNodeId) {
+      updateTargetCard(state.selectedNodeId);
+    }
   } else if (res) {
+
     sfx.failure();
     addTerminalLog(res.message || "Failed to steal file.", "warn");
     applyStateSnapshot(res);
@@ -1301,6 +1641,8 @@ function closePuzzleBay() {
   document.getElementById("puzzle-frequency").classList.add("hidden");
   document.getElementById("puzzle-buffer").classList.add("hidden");
   document.getElementById("puzzle-hash").classList.add("hidden");
+  document.getElementById("probed-ports-container").classList.add("hidden");
+  document.getElementById("filesystem-container").classList.add("hidden");
   state.activePuzzle = null;
 }
 
@@ -1884,7 +2226,7 @@ async function openRigModal() {
       card.className = "daemon-card";
       card.innerHTML = `
         <div>
-          <span class="daemon-title">👾 ${d.daemon_type.toUpperCase()}</span>
+          <span class="daemon-title">${d.daemon_type.toUpperCase()}</span>
           <span class="daemon-target">on node ${d.target_node_id} (active ${d.turns_active} turns)</span>
         </div>
         <div class="daemon-yield">+${d.yield_per_turn} CR / turn (${d.detection_risk}% trace)</div>
@@ -1907,6 +2249,14 @@ async function openWorkshopModal() {
   const banked = (state.data && state.data.deck) ? state.data.deck.cryptocreds : 0;
   const totalCreds = unbanked + banked;
   document.getElementById("workshop-creds").textContent = `${totalCreds} (${banked} BANKED + ${unbanked} UNBANKED)`;
+  const deckNow = (state.data && state.data.deck) || {};
+  const intelNow = deckNow.threat_intel_count || 0;
+  const intelCountEl = document.getElementById("workshop-intel-count");
+  if (intelCountEl) intelCountEl.textContent = `${intelNow} FRAGMENTS`;
+  const revealBtn = document.getElementById("btn-intel-reveal");
+  const forgeBtn = document.getElementById("btn-intel-forge");
+  if (revealBtn) revealBtn.disabled = intelNow < 1 || !state.selectedNodeId;
+  if (forgeBtn) forgeBtn.disabled = intelNow < 2 || (deckNow.exploits || []).includes("zero_day_forge");
   const grid = document.getElementById("workshop-recipes-grid");
   grid.innerHTML = "";
 

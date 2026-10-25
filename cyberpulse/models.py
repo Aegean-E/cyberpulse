@@ -24,6 +24,13 @@ class RewardType:
     CHIP_DROP = "CHIP_DROP"
 
 
+class OperatingStance:
+    BALANCED = "balanced"
+    STEALTH = "stealth"
+    OVERCLOCK = "overclock"
+    ANALYSIS = "analysis"
+
+
 @dataclass
 class PortService:
     """An exposed TCP/UDP network service on a target host."""
@@ -375,6 +382,9 @@ class CyberDeck:
         "CVE-2022-0778",
         "CVE-2025-9901",
     ])
+    operating_stance: str = OperatingStance.BALANCED
+    proxy_chain: List[str] = field(default_factory=list)
+    threat_intel_count: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
         res = asdict(self)
@@ -395,6 +405,12 @@ class CyberDeck:
             ]
         if "known_cves" not in clean:
             clean["known_cves"] = ["CVE-2024-38812", "CVE-2023-22515", "CVE-2024-21413", "CVE-2025-9901"]
+        if "operating_stance" not in clean:
+            clean["operating_stance"] = OperatingStance.BALANCED
+        if "proxy_chain" not in clean:
+            clean["proxy_chain"] = []
+        if "threat_intel_count" not in clean:
+            clean["threat_intel_count"] = 0
         return cls(**clean)
 
 
@@ -572,6 +588,7 @@ class GameState:
     quests: List[Quest] = field(default_factory=list)
     contacts: List[ContactProfile] = field(default_factory=list)
     world: WorldState = field(default_factory=WorldState)
+    probed_nodes: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         res = asdict(self)
@@ -593,6 +610,8 @@ class GameState:
             ]
         if "contract_seq" not in data_clean and offers:
             data_clean["contract_seq"] = 10000
+        if "probed_nodes" not in data_clean:
+            data_clean["probed_nodes"] = []
         quests = data_clean.get("quests")
         if isinstance(quests, list):
             data_clean["quests"] = [Quest.from_dict(q) if isinstance(q, dict) else q for q in quests]

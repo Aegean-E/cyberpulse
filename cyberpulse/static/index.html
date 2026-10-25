@@ -3,218 +3,257 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CYBERPULSE // Neural Intrusion Cyberdeck v0.3.0</title>
-  <meta name="description" content="Retro-cyberpunk neural hacking simulation with procedural node topology, real-time matrix canvas, and synthesized Web Audio.">
+  <title>CYBERPULSE // Neural Intrusion Cyberdeck</title>
+  <meta name="description" content="A retro-cyberpunk neural hacking simulation with procedural node topology, tactical stances, proxy tunnels, and quickhacks.">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="theme-phosphor crt-effects">
-  <!-- CRT Scanline & Glitch Layers -->
+<body class="theme-cyber">
   <div class="crt-overlay" id="crt-overlay"></div>
   <div class="crt-flicker"></div>
+  <div class="backdrop-grid"></div>
 
-  <!-- Main Cyberdeck Container -->
   <div class="cyberdeck-frame">
-    <!-- Top Telemetry Header -->
     <header class="deck-header">
       <div class="brand-zone">
-        <div class="deck-glitch-logo" data-text="CYBERPULSE">CYBERPULSE</div>
-        <span class="deck-sub-tag">NEURAL INTRUSION HARNESS // MK-IV</span>
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div class="brand-copy">
+          <div class="deck-glitch-logo" data-text="CYBERPULSE">CYBERPULSE</div>
+          <span class="deck-sub-tag">NEURAL INTRUSION HARNESS</span>
+        </div>
       </div>
 
-      <!-- Real-Time Hardware Gauges -->
       <div class="telemetry-gauges">
         <div class="gauge-box" id="gauge-cpu">
-          <span class="gauge-label">CPU CYCLES</span>
+          <span class="gauge-label">CPU</span>
           <div class="gauge-bar-track"><div class="gauge-bar-fill" id="fill-cpu" style="width: 100%;"></div></div>
           <span class="gauge-value" id="val-cpu">10/10</span>
         </div>
 
         <div class="gauge-box" id="gauge-ram">
-          <span class="gauge-label">SYSTEM RAM</span>
-          <div class="gauge-bar-track"><div class="gauge-bar-fill" id="fill-ram" style="width: 66%;"></div></div>
+          <span class="gauge-label">RAM</span>
+          <div class="gauge-bar-track"><div class="gauge-bar-fill" id="fill-ram" style="width: 100%;"></div></div>
           <span class="gauge-value" id="val-ram">64MB</span>
         </div>
 
         <div class="gauge-box alert-box" id="gauge-trace">
-          <span class="gauge-label">ICE TRACE RISK</span>
+          <span class="gauge-label">TRACE</span>
           <div class="gauge-bar-track trace-track"><div class="gauge-bar-fill trace-fill" id="fill-trace" style="width: 0%;"></div></div>
           <span class="gauge-value trace-value" id="val-trace">0%</span>
         </div>
 
-        <div class="gauge-box loot-box" id="gauge-loot">
-          <span class="gauge-label">UNBANKED LOOT</span>
+        <div class="gauge-box stat-box" id="gauge-loot">
+          <span class="gauge-label">LOOT</span>
           <span class="gauge-value highlight-value" id="val-loot">0 CR</span>
         </div>
 
-        <div class="gauge-box bank-box" id="gauge-bank">
-          <span class="gauge-label">CAREER BANK</span>
+        <div class="gauge-box stat-box" id="gauge-bank">
+          <span class="gauge-label">BANK</span>
           <span class="gauge-value" id="val-bank">100 CR</span>
         </div>
 
-        <div class="gauge-box combo-box" id="gauge-combo">
-          <span class="gauge-label">NEURAL COMBO</span>
+        <div class="gauge-box stat-box" id="gauge-combo">
+          <span class="gauge-label">COMBO</span>
           <span class="gauge-value highlight-value" id="val-combo">x0</span>
+        </div>
+
+        <div class="gauge-box stat-box" id="gauge-intel">
+          <span class="gauge-label">INTEL</span>
+          <span class="gauge-value" id="val-intel">0</span>
         </div>
       </div>
 
-      <!-- Control Toggles -->
       <div class="header-controls">
-        <button class="icon-btn" id="btn-audio" title="Toggle Synthesized Audio [A]" aria-label="Toggle Audio">🔊 FX: ON</button>
-        <button class="icon-btn" id="btn-crt" title="Toggle CRT Scanline Effect [C]" aria-label="Toggle Scanlines">📺 CRT: ON</button>
-        <select class="theme-select" id="theme-selector" title="Color Phosphor Scheme">
-          <option value="theme-phosphor">🟢 Phosphor Green</option>
-          <option value="theme-cyber">🔵 Cyber Cyan</option>
-          <option value="theme-amber">🟠 Amber Terminal</option>
+        <button class="icon-btn" id="btn-audio" title="Toggle synthesized audio [A]" aria-label="Toggle audio">FX ON</button>
+        <button class="icon-btn" id="btn-crt" title="Toggle CRT scanlines [C]" aria-label="Toggle scanlines">CRT OFF</button>
+        <select class="theme-select" id="theme-selector" title="Phosphor scheme" aria-label="Color scheme">
+          <option value="theme-cyber" selected>CYAN</option>
+          <option value="theme-phosphor">GREEN</option>
+          <option value="theme-amber">AMBER</option>
         </select>
       </div>
     </header>
 
-    <!-- Living Grid Ticker -->
     <div class="grid-bar" id="grid-bar">
       <span class="grid-chip" id="grid-clock">DAY 1 08:00</span>
       <span class="grid-chip" id="grid-shift">MORNING</span>
       <span class="grid-chip shift-chip" id="grid-shift-effect" title="Shift doctrine">STANDARD POSTURE</span>
       <span class="grid-chip alert-chip" id="grid-alert">GRID ALERT 10%</span>
       <span class="grid-chip market-chip" id="grid-market">MARKET x1.000</span>
-      <span class="grid-chip hunter-chip" id="grid-hunter" style="display: none;">RADAR: CLEAR</span>
-      <span class="grid-ticker" id="grid-ticker">GRIDWIRE: the wire is quiet; breach a host to make headlines.</span>
+      <span class="grid-chip hunter-chip" id="grid-hunter" style="display: none;">RADAR CLEAR</span>
+      <span class="grid-ticker" id="grid-ticker">GRIDWIRE // the wire is quiet; breach a host to make headlines.</span>
     </div>
 
-    <!-- Main Workspace Grid -->
     <main class="deck-workspace">
-      <!-- Left Panel: Operations & Console Log -->
-      <section class="panel panel-left">
-        <div class="panel-header">
-          <span class="panel-title">SYSTEM CONSOLE & TELEMETRY</span>
-          <span class="live-blinker">● LIVE</span>
+      <aside class="rail">
+        <div class="rail-group">
+          <button class="rail-btn special-action" id="btn-quests-open" title="Story and mission board [Q]" aria-label="Missions">
+            <span class="rail-glyph">◈</span><span class="rail-label">MISSIONS</span>
+          </button>
+          <button class="rail-btn info-action" id="btn-contacts-open" title="Operative channels [N]" aria-label="Contacts">
+            <span class="rail-glyph">◉</span><span class="rail-label">CREW</span>
+          </button>
+          <button class="rail-btn special-action" id="btn-cves-open" title="Weaponized CVE arsenal [C]" aria-label="CVE arsenal">
+            <span class="rail-glyph">⌖</span><span class="rail-label">ARSENAL</span>
+          </button>
+          <button class="rail-btn special-action" id="btn-workshop-open" title="Malware synthesis lab [M]" aria-label="Malware lab">
+            <span class="rail-glyph">⌬</span><span class="rail-label">LAB</span>
+          </button>
+          <button class="rail-btn special-action" id="btn-shop-open" title="Black market [B]" aria-label="Black market">
+            <span class="rail-glyph">▤</span><span class="rail-label">MARKET</span>
+          </button>
+          <button class="rail-btn info-action" id="btn-rig-open" title="Local rig and daemons [R]" aria-label="Local rig">
+            <span class="rail-glyph">▥</span><span class="rail-label">RIG</span>
+          </button>
+          <button class="rail-btn info-action" id="btn-career-open" title="Career dossier [D]" aria-label="Career dossier">
+            <span class="rail-glyph">◍</span><span class="rail-label">DOSSIER</span>
+          </button>
         </div>
+        <button class="rail-btn reset-action" id="btn-reset-run" title="Start a new seeded run" aria-label="New run">
+          <span class="rail-glyph">↻</span><span class="rail-label">NEW</span>
+        </button>
+      </aside>
 
-        <!-- Syndicate Contract Banner -->
-        <div class="contract-card" id="contract-card">
-          <div class="contract-header">
-            <span class="contract-tag">⚡ SYNDICATE BOUNTY</span>
-            <span class="contract-reward" id="contract-bounty-val">+200 CR</span>
-          </div>
-          <div class="contract-title" id="contract-title">Syndicate Infiltration Order: Data Extraction</div>
-          <div class="contract-meta" id="contract-status">TARGET: DATA_VAULT | MAX TRACE: 70%</div>
-        </div>
-
-        <!-- Story Beat & Active Objective -->
-        <div class="story-card" id="story-card">
-          <div class="story-header">
-            <span class="story-tag">📖 STORY</span>
+      <section class="board">
+        <div class="board-strip">
+          <div class="story-card" id="story-card">
+            <span class="story-tag">OBJECTIVE</span>
             <span class="story-act" id="story-act">ACT I // Ghost in the Gateway</span>
+            <span class="story-objective" id="story-objective">Breach two firewall routers to map the inner subnet.</span>
           </div>
-          <div class="story-objective" id="story-objective">Breach two FIREWALL routers to map the inner subnet.</div>
-        </div>
-
-        <!-- Tactical Command Deck -->
-        <div class="quick-actions">
-          <button class="action-btn" id="btn-scan" title="Scan surrounding nodes (+1 CPU recovery, +5% trace)">📡 SCAN MATRIX <span class="kbd-badge">[S]</span></button>
-          <button class="action-btn" id="btn-spoof" title="Burn 3 CPU to reduce trace by 25%">🛡️ SPOOF PROXY</button>
-          <select class="action-select" id="lay-low-turns" title="Turns to ghost the connection (1-3)">
-            <option value="1">1 turn</option>
-            <option value="2">2 turns</option>
-            <option value="3">3 turns</option>
-          </select>
-          <button class="action-btn" id="btn-lay-low" title="Ghost the connection for selected turns: +1 CPU per turn, grid clock advances">🛰️ LAY LOW <span class="kbd-badge">[L]</span></button>
-          <button class="action-btn alert-action" id="btn-jackout" title="Safe extraction: bank credits and secure career streak">🚪 JACK OUT <span class="kbd-badge">[J]</span></button>
-          <button class="action-btn special-action" id="btn-quests-open" title="Story log and mission board">📜 MISSIONS <span class="kbd-badge">[Q]</span></button>
-          <button class="action-btn info-action" id="btn-contacts-open" title="Talk to operatives, take jobs, call favors">🕶️ CONTACTS <span class="kbd-badge">[N]</span></button>
-          <button class="action-btn" id="btn-overdrive" title="Burn 2 CPU and 8% trace to stack a combo">⚡ OVERDRIVE</button>
-          <button class="action-btn special-action" id="btn-cves-open" title="Weaponized Zero-Day CVE Exploit Arsenal">🎯 CVE ARSENAL <span class="kbd-badge">[C]</span></button>
-          <button class="action-btn info-action" id="btn-rig-open" title="Inspect player CyberDeck virtual rig, local files & daemons">💻 LOCAL RIG <span class="kbd-badge">[R]</span></button>
-          <button class="action-btn special-action" id="btn-workshop-open" title="Synthesize custom viruses & keyloggers">🧪 MALWARE LAB <span class="kbd-badge">[M]</span></button>
-          <button class="action-btn special-action" id="btn-shop-open">🛒 BLACK MARKET <span class="kbd-badge">[B]</span></button>
-          <button class="action-btn info-action" id="btn-career-open">👤 CAREER DOSSIER <span class="kbd-badge">[D]</span></button>
-          <button class="action-btn reset-action" id="btn-reset-run">🔄 NEW SEED</button>
-        </div>
-
-        <!-- Exploit Chips Rack -->
-        <div class="exploit-rack">
-          <div class="rack-title">LOADED EXPLOIT CHIPS</div>
-          <div class="exploit-chips" id="exploit-chips-container">
-            <span class="empty-chips">No consumable chips loaded.</span>
+          <div class="contract-card" id="contract-card">
+            <div class="contract-head">
+              <span class="contract-tag">BOUNTY</span>
+              <span class="contract-reward" id="contract-bounty-val">+200 CR</span>
+            </div>
+            <div class="contract-title" id="contract-title">Syndicate Infiltration Order</div>
+            <div class="contract-meta" id="contract-status">TARGET: DATA_VAULT</div>
           </div>
         </div>
 
-        <!-- Terminal Output Stream -->
-        <div class="terminal-stream" id="terminal-stream">
-          <div class="log-line info">> Neural link synchronized to External Border Gateway.</div>
-          <div class="log-line success">> Cyberspace node grid topology mapped. System ready.</div>
+        <div class="matrix-stage">
+          <div class="matrix-canvas-container">
+            <canvas id="matrix-canvas" width="800" height="560"></canvas>
+            <div class="matrix-hud">
+              <span class="matrix-coords" id="matrix-coords">GRID // 7 NODES ONLINE</span>
+              <div class="canvas-legend">
+                <span class="legend-item"><span class="legend-dot dot-player"></span>YOU</span>
+                <span class="legend-item"><span class="legend-dot dot-breached"></span>BREACHED</span>
+                <span class="legend-item"><span class="legend-dot dot-discovered"></span>EXPOSED</span>
+                <span class="legend-item"><span class="legend-dot dot-locked"></span>SEALED</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="command-deck">
+            <div class="stance-row">
+              <span class="dock-label">STANCE</span>
+              <div class="stance-switch" id="stance-switch" role="group" aria-label="Deck stance">
+                <button class="stance-btn" data-stance="balanced" title="Balanced: no modifier">BAL</button>
+                <button class="stance-btn" data-stance="stealth" title="Stealth: -35% trace, quieter EDR">STL</button>
+                <button class="stance-btn" data-stance="overclock" title="Overclock: +25% bounty, faster CPU, +25% trace">OVR</button>
+                <button class="stance-btn" data-stance="analysis" title="Analysis: cheaper RAM, intel drops">ANL</button>
+              </div>
+              <div class="proxy-strip" id="proxy-strip" aria-label="Proxy chain">
+                <span class="dock-label">PROXY</span>
+                <span class="proxy-empty" id="proxy-empty">NONE</span>
+              </div>
+            </div>
+            <div class="dock-row">
+              <button class="action-btn dock-primary" id="btn-scan" title="Scan adjacent subnet (CPU recovery, +5% trace)"><span class="dock-key">S</span>SCAN</button>
+              <button class="action-btn dock-primary" id="btn-overdrive" title="Burn 2 CPU and 8% trace to prime the next combo"><span class="dock-key">O</span>OVERDRIVE</button>
+              <button class="action-btn dock-primary" id="btn-spoof" title="Burn 3 CPU to bounce your proxy and shed 25% trace"><span class="dock-key">V</span>SPOOF</button>
+              <div class="lay-low-group">
+                <select class="action-select" id="lay-low-turns" title="Turns to ghost the connection" aria-label="Lay low turns">
+                  <option value="1">1T</option>
+                  <option value="2">2T</option>
+                  <option value="3">3T</option>
+                </select>
+                <button class="action-btn dock-primary" id="btn-lay-low" title="Ghost the connection: +1 CPU per turn, the grid keeps moving"><span class="dock-key">L</span>LAY LOW</button>
+              </div>
+              <button class="action-btn dock-danger" id="btn-jackout" title="Bank loot and extract; high trace adds an ICE surge"><span class="dock-key">J</span>JACK OUT</button>
+            </div>
+            <div class="exploit-rack">
+              <span class="rack-title">CHIPS</span>
+              <div class="exploit-chips" id="exploit-chips-container">
+                <span class="empty-chips">EMPTY</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="console-drawer" id="console-panel">
+            <button class="console-bar" id="btn-console-toggle" aria-expanded="false">
+              <span class="console-tag">LIVE LOG</span>
+              <span class="console-latest" id="console-latest">Neural link synchronized.</span>
+              <span class="console-chevron">⌃</span>
+            </button>
+            <div class="terminal-stream" id="terminal-stream">
+              <div class="log-line info">&gt; Neural link synchronized to External Border Gateway.</div>
+              <div class="log-line success">&gt; Cyberspace node grid topology mapped. System ready.</div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- Center Panel: Cyberspace Network Matrix -->
-      <section class="panel panel-center">
+      <section class="intel">
         <div class="panel-header">
-          <span class="panel-title">CYBERSPACE NETWORK TOPOLOGY // NEURAL MATRIX</span>
-          <span class="matrix-coords" id="matrix-coords">GRID: 7 NODES ONLINE</span>
-        </div>
-        <div class="matrix-canvas-container">
-          <canvas id="matrix-canvas" width="800" height="560"></canvas>
-          <div class="canvas-legend">
-            <span class="legend-item"><span class="legend-dot dot-player"></span> Active Terminal</span>
-            <span class="legend-item"><span class="legend-dot dot-breached"></span> Breached Host</span>
-            <span class="legend-item"><span class="legend-dot dot-discovered"></span> Discovered Target</span>
-            <span class="legend-item"><span class="legend-dot dot-locked"></span> Encrypted / Locked</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- Right Panel: Target Intel & Active Mini-Game -->
-      <section class="panel panel-right">
-        <div class="panel-header">
-          <span class="panel-title">TARGET SUBSYSTEM INTEL & INTRUSION</span>
+          <span class="panel-title">TARGET // INTRUSION</span>
           <span class="target-badge" id="target-badge">NO SELECTION</span>
         </div>
 
-        <!-- Target Intel Card -->
-        <div class="target-card" id="target-card">
+        <div class="target-card is-empty" id="target-card">
           <div class="target-name" id="target-name">Select a node on the matrix</div>
           <div class="target-meta-grid">
-            <div class="meta-item"><span class="lbl">IPV4 ADDR:</span> <span class="val highlight-value" id="target-ip">--</span></div>
-            <div class="meta-item"><span class="lbl">HOSTNAME:</span> <span class="val" id="target-hostname">--</span></div>
-            <div class="meta-item"><span class="lbl">HOST TYPE:</span> <span class="val" id="target-type">--</span></div>
-            <div class="meta-item"><span class="lbl">SECURITY:</span> <span class="val" id="target-sec">--</span></div>
-            <div class="meta-item"><span class="lbl">FIREWALL:</span> <span class="val" id="target-firewall">--</span></div>
-            <div class="meta-item"><span class="lbl">ANTIVIRUS / EDR:</span> <span class="val" id="target-antivirus">--</span></div>
-            <div class="meta-item"><span class="lbl">RAM BUFFER:</span> <span class="val" id="target-ram">--</span></div>
-            <div class="meta-item"><span class="lbl">TRACE RISK:</span> <span class="val" id="target-trace">--</span></div>
+            <div class="meta-item"><span class="lbl">IP</span><span class="val highlight-value" id="target-ip">--</span></div>
+            <div class="meta-item"><span class="lbl">HOST</span><span class="val" id="target-hostname">--</span></div>
+            <div class="meta-item"><span class="lbl">TYPE</span><span class="val" id="target-type">--</span></div>
+            <div class="meta-item"><span class="lbl">SEC</span><span class="val" id="target-sec">--</span></div>
+            <div class="meta-item"><span class="lbl">FIREWALL</span><span class="val" id="target-firewall">--</span></div>
+            <div class="meta-item"><span class="lbl">EDR</span><span class="val" id="target-antivirus">--</span></div>
+            <div class="meta-item"><span class="lbl">BUFFER</span><span class="val" id="target-ram">--</span></div>
+            <div class="meta-item"><span class="lbl">TRACE</span><span class="val" id="target-trace">--</span></div>
           </div>
-          <div class="target-actions" id="target-actions">
-            <button class="hack-btn" id="btn-probe-node" disabled>📡 PROBE PORTS <span class="kbd-badge">[P]</span></button>
-            <button class="hack-btn" id="btn-init-hack" disabled>💥 EXPLOIT SERVICE <span class="kbd-badge">[E]</span></button>
-            <button class="action-btn" id="btn-bypass-fw" disabled title="Inject port-knocking or fragmentation to bypass blocked firewall ports">🛡️ BYPASS FW <span class="kbd-badge">[F]</span></button>
-            <button class="action-btn" id="btn-evade-av" disabled title="Deploy kernel rootkit or signature morphing to blind host Antivirus">👁️‍🗨️ EVADE AV <span class="kbd-badge">[A]</span></button>
-            <button class="action-btn" id="btn-social-eng" disabled title="Multi-vector social engineering against target employees">🎭 SOCIAL ENG</button>
-            <button class="move-btn" id="btn-move-node" disabled>🚀 JACK INTO NODE</button>
-            <button class="action-btn" id="btn-phish-node" style="display:none;" disabled></button>
-            <button class="action-btn" id="btn-keylogger-node" disabled title="Deploy passive keylogger daemon on breached host">👾 KEYLOGGER</button>
-            <button class="action-btn" id="btn-wipe-logs" disabled>🧹 WIPE LOGS</button>
+
+          <div class="target-actions">
+            <div class="action-row primary-row">
+              <button class="hack-btn" id="btn-probe-node" disabled><span class="dock-key">P</span> PROBE</button>
+              <button class="hack-btn" id="btn-init-hack" disabled><span class="dock-key">E</span> EXPLOIT</button>
+              <button class="action-btn quickhack-btn" id="btn-quickhack" disabled title="Instant breach on a tier 1-2 adjacent host at a steep CPU/trace cost">QH</button>
+            </div>
+            <div class="action-row utility-row">
+              <button class="action-btn" id="btn-bypass-fw" disabled title="Bypass a blocked firewall port">FW</button>
+              <button class="action-btn" id="btn-evade-av" disabled title="Blind host antivirus">AV</button>
+              <button class="action-btn" id="btn-social-eng" disabled title="Multi-vector social engineering">SOC</button>
+              <button class="action-btn" id="btn-keylogger-node" disabled title="Deploy passive keylogger">KEY</button>
+              <button class="action-btn" id="btn-wipe-logs" disabled title="Sanitize access logs">WIPE</button>
+              <button class="action-btn" id="btn-proxy-node" disabled title="Route telemetry through this breached host">PROXY</button>
+              <button class="move-btn" id="btn-move-node" disabled title="Jack into this breached host">JACK IN</button>
+            </div>
           </div>
         </div>
 
-        <!-- Dynamic Intrusion Bay / Filesystem Explorer -->
         <div class="puzzle-bay" id="puzzle-bay">
           <div class="puzzle-idle" id="puzzle-idle">
-            <div class="idle-icon">⚡</div>
-            <div class="idle-text">SELECT AN ADJACENT NODE AND PROBE PORTS OR EXPLOIT</div>
+            <div class="idle-icon">◎</div>
+            <div class="idle-text">Select an adjacent node to probe or exploit.</div>
+            <div class="idle-tips">
+              <div class="idle-tip"><span class="tip-key">P</span> Probe open services</div>
+              <div class="idle-tip"><span class="tip-key">E</span> Exploit a vulnerable port</div>
+              <div class="idle-tip"><span class="tip-key">H</span> Quickhack tier 1-2 hosts</div>
+              <div class="idle-tip"><span class="tip-key">J</span> Jack out and bank your loot</div>
+            </div>
           </div>
 
-          <!-- Probed Ports & Exploits Bay (Unbreached Target Intrusion) -->
           <div class="probed-ports-container hidden" id="probed-ports-container">
             <div class="probed-ports-header">
-              <span class="probed-title">🎯 ACTIVE SERVICE PORTS // EXPLOIT BAY</span>
+              <span class="probed-title">OPEN SERVICES</span>
               <span class="probed-badge" id="probed-target-host">127.0.0.1</span>
             </div>
             <div class="probed-ports-grid" id="probed-ports-grid"></div>
           </div>
 
-          <!-- Virtual Filesystem Container -->
           <div class="filesystem-container hidden" id="filesystem-container">
             <div class="fs-header">
-              <span class="fs-title">📂 VIRTUAL ROOT FILESYSTEM</span>
+              <span class="fs-title">REMOTE FILESYSTEM</span>
               <span class="fs-badge" id="fs-target-host">127.0.0.1</span>
             </div>
             <div class="ports-list" id="target-ports-list"></div>
@@ -240,53 +279,50 @@
             </div>
           </div>
 
-          <!-- Frequency Tuning Puzzle -->
           <div class="puzzle-container hidden" id="puzzle-frequency">
             <div class="puzzle-header">
-              <span class="p-title">📡 RESONANCE FREQUENCY ALIGNMENT</span>
-              <span class="p-tries" id="freq-tries">TRIES: 3</span>
+              <span class="p-title">RESONANCE ALIGNMENT</span>
+              <span class="p-tries" id="freq-tries">TRIES 3</span>
             </div>
-            <p class="puzzle-desc">Tune your cyberdeck oscillator harmonic until resonance wave locks onto the carrier.</p>
+            <p class="puzzle-desc">Tune the oscillator until the wave locks onto the carrier.</p>
             <div class="oscilloscope-wrap">
               <canvas id="osc-canvas" width="360" height="120"></canvas>
             </div>
             <div class="freq-controls">
               <input type="range" id="freq-slider" min="20.0" max="99.0" step="0.1" value="50.0">
               <div class="freq-readout">
-                <span class="freq-label">DIAL FREQ:</span>
+                <span class="freq-label">DIAL</span>
                 <span class="freq-val" id="freq-val">50.0 GHz</span>
               </div>
-              <button class="hack-btn" id="btn-tune-freq">LOCK FREQUENCY</button>
+              <button class="hack-btn" id="btn-tune-freq">LOCK</button>
             </div>
           </div>
 
-          <!-- Buffer Overflow Puzzle -->
           <div class="puzzle-container hidden" id="puzzle-buffer">
             <div class="puzzle-header">
-              <span class="p-title">💾 BUFFER OVERFLOW INJECTION</span>
-              <span class="p-tries" id="buf-tries">BLOCKS: 0/2</span>
+              <span class="p-title">BUFFER OVERFLOW</span>
+              <span class="p-tries" id="buf-tries">BLOCKS 0/2</span>
             </div>
-            <p class="puzzle-desc">Inject the memory buffer payload sequence into corrupted registers.</p>
+            <p class="puzzle-desc">Inject the payload sequence into the corrupted registers.</p>
             <div class="target-buffer-box">
-              <span class="buf-lbl">TARGET SEQUENCE:</span>
+              <span class="buf-lbl">TARGET</span>
               <div class="buf-blocks" id="buf-target-seq"></div>
             </div>
             <div class="buffer-matrix-grid" id="buf-matrix-grid"></div>
             <div class="buffer-input-status">
-              <span class="buf-lbl">INPUT PAYLOAD:</span>
+              <span class="buf-lbl">INPUT</span>
               <div class="buf-blocks" id="buf-player-seq"></div>
               <button class="icon-btn small-btn" id="btn-clear-buf">CLEAR</button>
-              <button class="hack-btn" id="btn-inject-buf">EXECUTE INJECTION</button>
+              <button class="hack-btn" id="btn-inject-buf">EXECUTE</button>
             </div>
           </div>
 
-          <!-- Cryptographic Hash Decryptor Puzzle -->
           <div class="puzzle-container hidden" id="puzzle-hash">
             <div class="puzzle-header">
-              <span class="p-title">🔑 CRYPTOGRAPHIC HASH CIPHER</span>
-              <span class="p-tries" id="hash-tries">TRIES: 4</span>
+              <span class="p-title">HASH CIPHER</span>
+              <span class="p-tries" id="hash-tries">TRIES 4</span>
             </div>
-            <p class="puzzle-desc">Decipher target keyword. Bulls & Cows feedback verifies matching characters.</p>
+            <p class="puzzle-desc">Crack the keyword. Bulls mark exact hits; cows mark displaced letters.</p>
             <div class="hash-word-pool" id="hash-word-pool"></div>
             <div class="hash-history" id="hash-history"></div>
           </div>
@@ -295,67 +331,63 @@
     </main>
   </div>
 
-  <!-- Modal: Black Market Cyber-Vendor -->
   <div class="modal-overlay hidden" id="modal-shop">
     <div class="modal-box">
       <div class="modal-header">
-        <span class="modal-title">>> BLACK MARKET CYBER-VENDOR <<</span>
+        <span class="modal-title">BLACK MARKET</span>
         <button class="modal-close" id="btn-close-shop">&times;</button>
       </div>
       <div class="modal-funds">
-        <span>AVAILABLE FUNDS: <strong id="shop-creds">100</strong> CRYPTOCREDS</span>
+        <span>AVAILABLE <strong id="shop-creds">100</strong> CR</span>
       </div>
       <div class="shop-grid" id="shop-items-grid"></div>
     </div>
   </div>
 
-  <!-- Modal: Hacker Career Dossier -->
   <div class="modal-overlay hidden" id="modal-career">
     <div class="modal-box">
       <div class="modal-header">
-        <span class="modal-title">>> OPERATIVE CAREER DOSSIER <<</span>
+        <span class="modal-title">CAREER DOSSIER</span>
         <button class="modal-close" id="btn-close-career">&times;</button>
       </div>
       <div class="dossier-card" id="dossier-card">
         <div class="dossier-badge">
-          <div class="badge-avatar">☣️</div>
+          <div class="badge-avatar">◇</div>
           <div class="badge-title" id="dossier-alias">ZeroCool</div>
           <div class="badge-rank">NETRUNNER SPECIALIST</div>
         </div>
         <div class="dossier-stats">
-          <div class="dossier-row"><span class="k">BANKED CRYPTOCREDS:</span> <span class="v" id="dossier-banked">0</span></div>
-          <div class="dossier-row"><span class="k">LIFETIME STOLEN:</span> <span class="v" id="dossier-lifetime">0</span></div>
-          <div class="dossier-row"><span class="k">SUCCESSFUL HEISTS:</span> <span class="v" id="dossier-wins">0</span></div>
-          <div class="dossier-row"><span class="k">TRACE SEVERANCES:</span> <span class="v" id="dossier-fails">0</span></div>
-          <div class="dossier-row"><span class="k">CURRENT RUN STREAK:</span> <span class="v" id="dossier-streak">0</span></div>
-          <div class="dossier-row"><span class="k">BEST RUN STREAK:</span> <span class="v" id="dossier-best">0</span></div>
-          <div class="dossier-row"><span class="k">BEST NEURAL COMBO:</span> <span class="v" id="dossier-combo">x0</span></div>
-          <div class="dossier-row"><span class="k">INSTALLED HARDWARE:</span> <span class="v" id="dossier-upgrades">None</span></div>
+          <div class="dossier-row"><span class="k">BANKED CR</span> <span class="v" id="dossier-banked">0</span></div>
+          <div class="dossier-row"><span class="k">LIFETIME STOLEN</span> <span class="v" id="dossier-lifetime">0</span></div>
+          <div class="dossier-row"><span class="k">HEISTS</span> <span class="v" id="dossier-wins">0</span></div>
+          <div class="dossier-row"><span class="k">SEVERANCES</span> <span class="v" id="dossier-fails">0</span></div>
+          <div class="dossier-row"><span class="k">RUN STREAK</span> <span class="v" id="dossier-streak">0</span></div>
+          <div class="dossier-row"><span class="k">BEST STREAK</span> <span class="v" id="dossier-best">0</span></div>
+          <div class="dossier-row"><span class="k">BEST COMBO</span> <span class="v" id="dossier-combo">x0</span></div>
+          <div class="dossier-row"><span class="k">HARDWARE</span> <span class="v" id="dossier-upgrades">None</span></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Local Rig & File System -->
   <div class="modal-overlay hidden" id="modal-rig">
     <div class="modal-box rig-modal-box">
       <div class="modal-header">
-        <span class="modal-title">&gt;&gt; VIRTUAL CYBERDECK RIG // LOCALHOST IDENTITY &lt;&lt;</span>
+        <span class="modal-title">LOCAL RIG</span>
         <button class="modal-close" id="btn-close-rig">&times;</button>
       </div>
       <div class="rig-identity-banner">
-        <div class="rig-meta-col"><span class="lbl">LOCAL IPV4:</span> <span class="val highlight-value" id="rig-ip">10.99.0.2</span></div>
-        <div class="rig-meta-col"><span class="lbl">HOSTNAME:</span> <span class="val" id="rig-hostname">rig.netrunner.local</span></div>
-        <div class="rig-meta-col"><span class="lbl">MODEL:</span> <span class="val" id="rig-model">CyberPulse MK-IV</span></div>
+        <div class="rig-meta-col"><span class="lbl">IP</span> <span class="val highlight-value" id="rig-ip">10.99.0.2</span></div>
+        <div class="rig-meta-col"><span class="lbl">HOST</span> <span class="val" id="rig-hostname">rig.netrunner.local</span></div>
+        <div class="rig-meta-col"><span class="lbl">MODEL</span> <span class="val" id="rig-model">CyberPulse MK-IV</span></div>
       </div>
-      
       <div class="rig-section">
-        <div class="rig-section-title">📁 LOCAL FILESYSTEM (/home/deck, /loot)</div>
+        <div class="rig-section-title">LOCAL FILESYSTEM</div>
         <div class="fs-table-wrap">
           <table class="fs-table">
             <thead>
               <tr>
-                <th>LOCAL PATH</th>
+                <th>PATH</th>
                 <th>SIZE</th>
                 <th>VALUE</th>
                 <th>ACTION</th>
@@ -365,95 +397,100 @@
           </table>
         </div>
       </div>
-
       <div class="rig-section">
-        <div class="rig-section-title">📡 ACTIVE BACKGROUND DAEMONS (PASSIVE LISTENERS)</div>
+        <div class="rig-section-title">BACKGROUND DAEMONS</div>
         <div class="daemons-grid" id="rig-daemons-grid">
-          <span class="empty-chips">No active daemons listening.</span>
+          <span class="empty-chips">NONE LISTENING</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Malware Synthesis Workshop -->
   <div class="modal-overlay hidden" id="modal-workshop">
     <div class="modal-box">
       <div class="modal-header">
-        <span class="modal-title">&gt;&gt; MALWARE SYNTHESIS LAB &amp; VIRUS WORKSHOP &lt;&lt;</span>
+        <span class="modal-title">MALWARE LAB</span>
         <button class="modal-close" id="btn-close-workshop">&times;</button>
       </div>
       <div class="modal-funds">
-        <span>AVAILABLE FUNDS: <strong id="workshop-creds">100</strong> CRYPTOCREDS</span>
+        <span>AVAILABLE <strong id="workshop-creds">100</strong> CR</span>
+      </div>
+      <div class="intel-forge">
+        <div class="intel-forge-head">
+          <span>THREAT INTEL FORGE</span>
+          <span class="intel-count" id="workshop-intel-count">0 FRAGMENTS</span>
+        </div>
+        <div class="intel-forge-row">
+          <button class="action-btn" id="btn-intel-reveal" title="Deep-scan a selected host with no trace">REVEAL HOST · 1 INTEL</button>
+          <button class="action-btn" id="btn-intel-forge" title="Mint a single-use zero-day chip">FORGE ZERO-DAY · 2 INTEL</button>
+        </div>
       </div>
       <div class="workshop-grid" id="workshop-recipes-grid"></div>
     </div>
   </div>
 
-  <!-- Modal: Weaponized CVE Exploit Arsenal -->
   <div class="modal-overlay hidden" id="modal-cves">
     <div class="modal-box cve-modal-box">
       <div class="modal-header">
-        <span class="modal-title">&gt;&gt; WEAPONIZED CVE ARSENAL // ZERO-DAY CATALOG &lt;&lt;</span>
+        <span class="modal-title">CVE ARSENAL</span>
         <button class="modal-close" id="btn-close-cves">&times;</button>
       </div>
       <div class="modal-funds">
-        <span>EXPLOIT PAYLOADS IN FIRMWARE: <strong id="cves-count">0</strong> LOADED</span>
+        <span>LOADED <strong id="cves-count">0</strong> PAYLOADS</span>
       </div>
       <div class="cves-grid" id="cves-grid"></div>
     </div>
   </div>
 
-  <!-- Modal: Multi-Vector Social Engineering Suite -->
   <div class="modal-overlay hidden" id="modal-social">
     <div class="modal-box social-modal-box">
       <div class="modal-header">
-        <span class="modal-title">&gt;&gt; MULTI-VECTOR SOCIAL ENGINEERING SUITE &lt;&lt;</span>
+        <span class="modal-title">SOCIAL ENGINEERING</span>
         <button class="modal-close" id="btn-close-social">&times;</button>
       </div>
       <div class="social-target-banner">
-        <div><span class="lbl">TARGET HOST:</span> <span class="val highlight-value" id="social-target-name">--</span></div>
-        <div><span class="lbl">IP ADDRESS:</span> <span class="val" id="social-target-ip">--</span></div>
+        <div><span class="lbl">TARGET</span> <span class="val highlight-value" id="social-target-name">--</span></div>
+        <div><span class="lbl">IP</span> <span class="val" id="social-target-ip">--</span></div>
       </div>
       <div class="social-section">
-        <div class="social-section-title">1. TARGET EMPLOYEE PERSONNEL</div>
+        <div class="social-section-title">PERSONNEL</div>
         <div class="employees-grid" id="social-employees-grid"></div>
       </div>
       <div class="social-section">
-        <div class="social-section-title">2. SOCIAL INTRUSION VECTOR</div>
+        <div class="social-section-title">VECTOR</div>
         <div class="vectors-grid" id="social-vectors-grid">
           <div class="vector-card selected" data-vector="spear_phish">
-            <div class="vector-icon">🎣</div>
+            <div class="vector-icon">⌖</div>
             <div class="vector-name">Spear-Phishing</div>
-            <div class="vector-desc">Targeted email credential lure. Cost: 1 CPU, Trace +6%.</div>
+            <div class="vector-desc">Targeted credential lure. 1 CPU, +6% trace.</div>
           </div>
           <div class="vector-card" data-vector="pretext">
-            <div class="vector-icon">🎭</div>
+            <div class="vector-icon">◈</div>
             <div class="vector-name">Pretexting</div>
-            <div class="vector-desc">Executive IT impersonation. High success vs Naive/Standard.</div>
+            <div class="vector-desc">IT impersonation. Strong vs Naive and Standard.</div>
           </div>
           <div class="vector-card" data-vector="bait">
-            <div class="vector-icon">💾</div>
+            <div class="vector-icon">▤</div>
             <div class="vector-name">Baiting Drop</div>
-            <div class="vector-desc">Drop infected USB key on premises. Exploits workplace curiosity.</div>
+            <div class="vector-desc">Infected USB on premises. Exploits curiosity.</div>
           </div>
           <div class="vector-card" data-vector="vishing">
-            <div class="vector-icon">📞</div>
+            <div class="vector-icon">◉</div>
             <div class="vector-name">Voice Vishing</div>
-            <div class="vector-desc">Urgent phone helpdesk spoofing to bypass physical verification.</div>
+            <div class="vector-desc">Urgent helpdesk spoof. Bypasses physical checks.</div>
           </div>
         </div>
       </div>
       <div class="social-action-row">
-        <button class="hack-btn" id="btn-execute-social">EXECUTE SOCIAL CAMPAIGN</button>
+        <button class="hack-btn" id="btn-execute-social">RUN CAMPAIGN</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Firewall Bypass Injection -->
   <div class="modal-overlay hidden" id="modal-bypass">
     <div class="modal-box bypass-modal-box">
       <div class="modal-header">
-        <span class="modal-title">&gt;&gt; FIREWALL INGRESS BYPASS // PACKET CRAFTING &lt;&lt;</span>
+        <span class="modal-title">FIREWALL BYPASS</span>
         <button class="modal-close" id="btn-close-bypass">&times;</button>
       </div>
       <div class="bypass-target-info" id="bypass-target-info"></div>
@@ -461,26 +498,24 @@
     </div>
   </div>
 
-  <!-- Modal: Story Log & Mission Board -->
   <div class="modal-overlay hidden" id="modal-quests">
     <div class="modal-box quest-modal-box">
       <div class="modal-header">
-        <span class="modal-title">&gt;&gt; STORY LOG // MISSION BOARD &lt;&lt;</span>
+        <span class="modal-title">STORY // MISSIONS</span>
         <button class="modal-close" id="btn-close-quests">&times;</button>
       </div>
       <div class="story-brief" id="story-brief"></div>
       <div class="story-log" id="story-log"></div>
-      <div class="story-brief-act">SYNDICATE JOB BOARD // CHOOSE YOUR NEXT CONTRACT</div>
+      <div class="story-brief-act">SYNDICATE JOB BOARD</div>
       <div class="quests-grid" id="job-board"></div>
       <div class="quests-grid" id="quests-grid"></div>
     </div>
   </div>
 
-  <!-- Modal: Operative Contacts -->
   <div class="modal-overlay hidden" id="modal-contacts">
     <div class="modal-box contacts-modal-box">
       <div class="modal-header">
-        <span class="modal-title">&gt;&gt; OPERATIVE CHANNELS // CHARACTERS &lt;&lt;</span>
+        <span class="modal-title">OPERATIVE CHANNELS</span>
         <button class="modal-close" id="btn-close-contacts">&times;</button>
       </div>
       <div class="contacts-intro">Every operative has a job and one favor. Trust grows as you work together and spend favors.</div>
@@ -488,11 +523,10 @@
     </div>
   </div>
 
-  <!-- Main Menu -->
   <div class="modal-overlay main-menu-overlay" id="modal-main-menu">
-    <div class="modal-box main-menu-box">
-      <div class="main-menu-kicker">CYBERPULSE // NEURAL INTRUSION HARNESS</div>
-      <h1 class="main-menu-title">THE SPRAWL IS LISTENING</h1>
+    <div class="main-menu-box">
+      <div class="main-menu-kicker">NEURAL INTRUSION HARNESS // MK-IV</div>
+      <h1 class="main-menu-title">CYBER<span>PULSE</span></h1>
       <p class="main-menu-sub" id="main-menu-sub">
         A dead courier left you a deck and one name: NEXUS. Jack in before someone else does.
       </p>
@@ -500,24 +534,25 @@
       <div class="main-menu-actions">
         <button class="hack-btn menu-primary" id="menu-jack-in">JACK IN</button>
         <button class="action-btn" id="menu-new-run">NEW RUN</button>
-        <button class="action-btn" id="menu-story">STORY &amp; MISSIONS</button>
+        <button class="action-btn" id="menu-story">STORY</button>
         <button class="action-btn" id="menu-contacts">OPERATIVES</button>
         <button class="action-btn" id="menu-career">CAREER</button>
         <button class="action-btn" id="menu-help">HOW TO PLAY</button>
       </div>
       <div class="main-menu-help hidden" id="main-menu-help">
-        Scan the grid, probe ports, exploit services, steal files, wipe logs, and jack out to bank loot.
-        Breach nodes without breaking your combo. Talk to operatives for jobs and one-time favors.
+        Scan the grid, probe ports, breach hosts, steal data, and jack out before trace hits 100%.
+        Shift stance for tactical edge. Quickhack low-tier hosts for tempo. Route proxies to dampen trace.
       </div>
     </div>
   </div>
 
-  <!-- Victory / Game Over Overlay -->
   <div class="announcement-banner hidden" id="announcement-banner">
     <div class="banner-box" id="banner-box">
+      <div class="banner-kicker" id="banner-kicker">RUN COMPLETE</div>
       <h1 class="banner-heading" id="banner-heading">MISSION ACCOMPLISHED</h1>
       <p class="banner-sub" id="banner-sub">System Supercore Breached Without Detection.</p>
-      <button class="hack-btn" id="btn-banner-action">INITIATE NEW RUN</button>
+      <div class="banner-stats" id="banner-stats"></div>
+      <button class="hack-btn banner-action" id="btn-banner-action">NEW RUN</button>
     </div>
   </div>
 
