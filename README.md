@@ -2,7 +2,9 @@
 
 [![Built with AIKit](https://img.shields.io/badge/built%20with-AIKit-6f42c1)](https://github.com/AegeanWorks/AIKit)
 
-CyberPulse is a retro-cyberpunk terminal hacking simulation game designed around empirical behavioral psychology, featuring procedural puzzle nodes, ICE defenses, push-your-luck extraction mechanics, variable-ratio reward schedules, near-miss striatal feedback, persistent career progression, a five-act story campaign, an operative relationship system, a dynamic quest board, combo/overdrive risk-reward mechanics, and a living-grid world simulation with an in-game clock, corporate alert, generated news, ambient events, host re-securing, a drifting black market, tactical shifts, lay-low downtime, and a deadline-bound Syndicate contract market.
+CyberPulse is a retro-cyberpunk terminal hacking simulation game designed around empirical behavioral psychology: procedural puzzle nodes, ICE defenses, push-your-luck extraction, persistent career progression and a five-act story campaign, played in the terminal or the Web Cyberdeck.
+
+It also features variable-ratio reward schedules, near-miss striatal feedback, an operative relationship system, a dynamic quest board, combo/overdrive risk-reward mechanics, and a living-grid world simulation with an in-game clock, corporate alert, generated news, ambient events, host re-securing, a drifting black market, tactical shifts, lay-low downtime, and a deadline-bound Syndicate contract market.
 
 ## ⚡ 30-Second Cold-Start Quick Reference
 
@@ -170,8 +172,6 @@ The full reference of 43 commands, with each one's action and simulation role, i
 - **NetWatch Active Hunters & Pursuit Simulation**: Alert 60%+ mobilizes autonomous ICE hunters that track player location across network graph hops, trigger connection clashes on interception (+15% trace, -2 CPU), quarantine unmonitored daemons, and react to scent scrambling (`spoof`/`wipe_logs`) and countermeasures (`logic_bomb`/`ghost_protocol`). Only one hunter can hold the sector at a time; an intercepted hunter still counts as active, preventing a second clamp from stacking onto the first.
 - **Tactical Shift Dynamics & Downtime**: The four in-game shifts (Late Night, Morning, Afternoon, Evening) apply distinct modifiers to alert decay, re-secure chance, market bias, hunter deployment thresholds, and social-engineering odds (staff answer lures differently at 03:00 than at 09:00), so the clock carries real tactical weight. `lay_low`/`wait` trades 1-3 turns of grid movement (with its patrol, hunter, and ambient risk) for CPU recovery, exposed in both the CLI and the Web Cyberdeck shift chip.
 - **Fast Test Shield**: 100% test pass rate across unit and integration suites in about a second via `python -m unittest discover`.
-
-> **License history:** versions up to and including `v0.1.0-agpl` remain available under GNU AGPL-3.0.
 
 ## 📜 License
 
