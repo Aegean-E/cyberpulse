@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "name": "cyberpulse",
+  "repo": "Cyberpulse",
+  "has_ui": true,
+  "ui_kind": "web",
+  "palette": [
+    "#07111f",
+    "#0e2a47",
+    "#f472b6",
+    "#e2f8ff"
+  ],
+  "assets": {
+    "logo": {
+      "path": "assets/logo.svg",
+      "status": "approved",
+      "commit": "",
+      "generated_at": "2026-10-28T08:02:24",
+      "review": {
+        "status": "approved",
+        "reviewer": "subagent:vision-review",
+        "method": "vision",
+        "notes": "CY monogram in pink, dark navy, subtitle readable, unclipped.",
+        "score": 93,
+        "reviewed_at": "2026-10-28T08:10:42"
+      }
+    },
+    "social_preview": {
+      "path": "assets/social-preview.svg",
+      "status": "approved",
+      "commit": "",
+      "generated_at": "2026-10-28T08:02:24",
+      "review": {
+        "status": "approved",
+        "reviewer": "subagent:vision-review",
+        "method": "vision",
+        "notes": "CY icon, title, retro-cyberpunk description, WEB tag, coherent.",
+        "score": 93,
+        "reviewed_at": "2026-10-28T08:10:42"
+      }
+    },
+    "social_preview_png": {
+      "path": "assets/social-preview.png",
+      "status": "pending_review",
+      "commit": "",
+      "generated_at": "2026-10-28T08:02:26",
+      "review": null
+    }
+  },
+  "screenshots": [
+    {
+      "path": "assets/screenshots/2026-10-28-index.png",
+      "alt": "Cyberpulse interface at 2026-10-28",
+      "caption": "Cyberpulse interface captured from C:\\Users\\Yunus-Emre\\Desktop\\portable_agent_kit\\projects\\cyberpulse\\cyberpulse\\static\\index.html",
+      "commit": "121587012de0179a2ba7f3bd73bec20b8f5666c9",
+      "taken_at": "2026-10-28",
+      "viewport": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "status": "approved",
+      "review": {
+        "status": "approved",
+        "reviewer": "subagent:vision-review",
+        "method": "vision",
+        "notes": "2026-10-28-index.png \u2014 real centered login/dashboard card UI 'CYBERPULSE', non-blank.",
+        "score": 90,
+        "reviewed_at": "2026-10-28T08:10:42"
+      }
+    }
+  ]
+}

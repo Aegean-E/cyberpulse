@@ -1,5 +1,10 @@
 # cyberpulse
 
+<!-- aegean:media:start -->
+<p align="center"><img src="assets/logo.svg" alt="Cyberpulse logo" width="96" height="96"></p>
+<p align="center"><img src="assets/social-preview.svg" alt="Cyberpulse social preview" width="100%"></p>
+<!-- aegean:media:end -->
+
 [![Built with AIKit](https://img.shields.io/badge/built%20with-AIKit-6f42c1)](https://github.com/AegeanWorks/AIKit)
 
 CyberPulse is a retro-cyberpunk terminal hacking simulation game designed around empirical behavioral psychology: procedural puzzle nodes, ICE defenses, push-your-luck extraction, persistent career progression and a five-act story campaign, played in the terminal or the Web Cyberdeck.
@@ -176,3 +181,11 @@ The full reference of 43 commands, with each one's action and simulation role, i
 ## 📜 License
 
 Free for personal play under the Aegean Game License 1.1 (AGL-1.1); see [LICENSE](LICENSE). It is DRM-free: Licensor ships no DRM and a distributor may not add it. Streaming, modding and free mods are allowed. Commercial use, paid mods and AI training need the Aegean Commercial License 1.0 (ACL-1.0); see [COMMERCIAL.md](COMMERCIAL.md).
+
+<!-- aegean:screenshots:start -->
+## Screenshots
+
+<a href="https://github.com/AegeanWorks/Cyberpulse/commit/1215870"><img src="assets/screenshots/2026-10-28-index.png" alt="Cyberpulse interface at 2026-10-28"></a>
+
+*Cyberpulse interface captured from C:\Users\Yunus-Emre\Desktop\portable_agent_kit\projects\cyberpulse\cyberpulse\static\index.html* · commit `1215870` · 2026-10-28
+<!-- aegean:screenshots:end -->
