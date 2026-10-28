@@ -13,6 +13,7 @@
   "ui_source": "detected",
   "topics": [
     "aikit",
+    "aikit-integrated",
     "source-available",
     "aegean-game-license",
     "drm-free",
@@ -30,8 +31,7 @@
     "terminal",
     "text-based-game",
     "user-interface",
-    "web-app",
-    "behavioral-psychology"
+    "web-app"
   ],
   "topics_source": "ai:kilo:2026-10-27",
   "topics_reviewed_at": "2026-10-28",
