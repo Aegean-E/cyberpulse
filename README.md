@@ -2,7 +2,6 @@
 
 <!-- aegean:media:start -->
 <p align="center"><img src="assets/social-preview.png" alt="Cyberpulse social preview" width="100%"></p>
-*The banner and logo are AI-generated brand assets. They are illustrative and may not literally depict every feature or the full project scope.*
 <!-- aegean:media:end -->
 
 [![Built with AIKit](https://img.shields.io/badge/built%20with-AIKit-6f42c1)](https://github.com/AegeanWorks/AIKit)
@@ -177,6 +176,12 @@ The full reference of 43 commands, with each one's action and simulation role, i
 - **NetWatch Active Hunters & Pursuit Simulation**: Alert 60%+ mobilizes autonomous ICE hunters that track player location across network graph hops, trigger connection clashes on interception (+15% trace, -2 CPU), quarantine unmonitored daemons, and react to scent scrambling (`spoof`/`wipe_logs`) and countermeasures (`logic_bomb`/`ghost_protocol`). Only one hunter can hold the sector at a time; an intercepted hunter still counts as active, preventing a second clamp from stacking onto the first.
 - **Tactical Shift Dynamics & Downtime**: The four in-game shifts (Late Night, Morning, Afternoon, Evening) apply distinct modifiers to alert decay, re-secure chance, market bias, hunter deployment thresholds, and social-engineering odds (staff answer lures differently at 03:00 than at 09:00), so the clock carries real tactical weight. `lay_low`/`wait` trades 1-3 turns of grid movement (with its patrol, hunter, and ambient risk) for CPU recovery, exposed in both the CLI and the Web Cyberdeck shift chip.
 - **Fast Test Shield**: 100% test pass rate across unit and integration suites in about a second via `python -m unittest discover`.
+
+<!-- aegean:brand-assets:start -->
+## 🎨 Brand Assets
+
+> **AI-Generated Brand Artwork.** The banner and logo are **AI-generated brand assets**. They are illustrative and may not literally depict every feature or the full project scope.
+<!-- aegean:brand-assets:end -->
 
 ## 📜 License
 

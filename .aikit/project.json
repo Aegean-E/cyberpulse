@@ -13,6 +13,10 @@
   "ui_source": "detected",
   "topics": [
     "aikit",
+    "source-available",
+    "aegean-game-license",
+    "drm-free",
+    "commercial-license",
     "cyberpunk",
     "hacking-game",
     "procedural",
@@ -20,17 +24,13 @@
     "retro",
     "simulation",
     "terminal-game",
-    "drm-free",
     "game",
-    "source-available",
     "aegeanworks",
     "retro-gaming",
-    "software",
     "terminal",
     "text-based-game",
     "user-interface",
     "web-app",
-    "terminal-emulator",
     "behavioral-psychology"
   ],
   "topics_source": "ai:kilo:2026-10-27",
@@ -47,5 +47,11 @@
   "topics_choice_round3": [
     "terminal-emulator",
     "behavioral-psychology"
+  ],
+  "license_topics": [
+    "source-available",
+    "aegean-game-license",
+    "drm-free",
+    "commercial-license"
   ]
 }
