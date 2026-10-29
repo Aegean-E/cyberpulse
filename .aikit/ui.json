@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "surfaces": {
+    "web": {
+      "paths": [
+        "cyberpulse/static/**"
+      ]
+    }
+  },
+  "protected": [
+    "tests/**"
+  ],
+  "commands": {
+    "fast": "python -m unittest discover",
+    "fast_timeout": 60
+  }
+}

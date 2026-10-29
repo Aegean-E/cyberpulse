@@ -3,6 +3,12 @@
   "name": "cyberpulse",
   "test_command": null,
   "gates": {},
+  "mechanics": {
+    "core": [
+      "cyberpulse/engine.py"
+    ],
+    "test": "python -m unittest discover"
+  },
   "created": "2026-10-17",
   "has_ui": true,
   "ui_kind": "web",
