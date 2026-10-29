@@ -332,6 +332,25 @@ class TestEngine(unittest.TestCase):
         later, _ = self.engine.drop_offer(self.engine.state.contract_offers[0].contract_id)
         self.assertTrue(later)
 
+    def test_player_contract_actions_clear_stale_tick_notice(self):
+        self.engine.state.contract_notice = "CONTRACT EXPIRED: old job"
+        ok, _ = self.engine.decline_contract()
+        self.assertTrue(ok)
+        self.assertEqual(self.engine.state.contract_notice, "")
+
+        self.engine.state.turns_elapsed = self.engine.state.contract_decline_until_turn
+        offer = self.engine.state.contract_offers[0]
+        self.engine.state.contract_notice = "CONTRACT EXPIRED: old job"
+        ok, _ = self.engine.accept_contract(offer.contract_id)
+        self.assertTrue(ok)
+        self.assertEqual(self.engine.state.contract_notice, "")
+
+        self.engine.state.contract_notice = "CONTRACT EXPIRED: old job"
+        self.engine.deck.cryptocreds = 100
+        ok, _ = self.engine.drop_offer(self.engine.state.contract_offers[0].contract_id)
+        self.assertTrue(ok)
+        self.assertEqual(self.engine.state.contract_notice, "")
+
     def test_offer_shelf_life_rotates_the_board(self):
         expired = self.engine.state.contract_offers[0]
         self.engine.state.turns_elapsed = expired.offer_expires_turn
@@ -1105,6 +1124,17 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(engine.state.seed, 42)
         self.assertTrue(engine.state.active_contract.contract_id.startswith("cnt_042"))
 
+    def test_lockout_summary_reports_lost_unbanked_credits(self):
+        self.engine.state.unbanked_creds = 137
+        self.engine.state.trace_percent = 99
+
+        self.engine.add_trace(10)
+        summary = self.engine.run_summary()
+
+        self.assertTrue(self.engine.state.is_game_over)
+        self.assertEqual(self.engine.state.unbanked_creds, 0)
+        self.assertEqual(summary["unbanked_credits_lost"], 137)
+
     def test_run_summary_reflects_legacy(self):
         self.engine.state.is_game_over = True
         self.engine.state.best_combo = 5
@@ -1695,6 +1725,14 @@ class TestDeckStanceProxyAndQuickhack(unittest.TestCase):
     def test_port_scan_chip_records_probed_node(self):
         self.engine.use_exploit("port_scan", "node_proxy_a")
         self.assertIn("node_proxy_a", self.engine.state.probed_nodes)
+
+    def test_port_scan_chip_refuses_breached_host_without_consuming_it(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.deck.exploits.append("port_scan")
+        ok, msg = self.engine.use_exploit("port_scan", "node_proxy_a")
+        self.assertFalse(ok)
+        self.assertIn("already breached", msg)
+        self.assertIn("port_scan", self.engine.deck.exploits)
 
 
 if __name__ == "__main__":

@@ -237,6 +237,25 @@ class TestStorage(unittest.TestCase):
             all(int(offer.contract_id.rsplit("_", 1)[1]) > 10000 for offer in loaded.state.contract_offers)
         )
 
+    def test_old_active_contract_save_without_sequence_gets_safe_migration(self):
+        import json
+
+        engine = GameEngine(seed=42)
+        self.assertIsNotNone(engine.state.active_contract)
+        engine.state.contract_offers = []
+        self.save_mgr.save(engine)
+        payload = json.loads(self.save_mgr.save_file.read_text(encoding="utf-8"))
+        payload["state"].pop("contract_seq", None)
+        self.save_mgr.save_file.write_text(json.dumps(payload), encoding="utf-8")
+
+        loaded = self.save_mgr.load()
+
+        self.assertIsNotNone(loaded)
+        self.assertGreaterEqual(loaded.state.contract_seq, 10000)
+        self.assertTrue(
+            all(int(offer.contract_id.rsplit("_", 1)[1]) > 10000 for offer in loaded.state.contract_offers)
+        )
+
     def test_contract_sequence_persists_and_prevents_id_collisions(self):
         engine = GameEngine(seed=42)
         old_ids = {offer.contract_id for offer in engine.state.contract_offers}

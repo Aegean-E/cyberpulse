@@ -10,3 +10,8 @@ __pycache__/
 
 # Local savegame data
 .cyberpulse/
+# AIKit transient state
+node_modules/
+
+# Reforge review packets are regenerable audit artifacts
+.aikit/reforge.reviews/

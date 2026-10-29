@@ -571,6 +571,7 @@ class GameState:
     is_victory: bool = False
     is_jacked_out: bool = False
     unbanked_creds: int = 0
+    lost_creds: int = 0
     looted_payloads: List[str] = field(default_factory=list)
     active_contract: Optional[BountyContract] = None
     contract_offers: List[BountyContract] = field(default_factory=list)
@@ -608,10 +609,12 @@ class GameState:
                 BountyContract.from_dict(offer) if isinstance(offer, dict) else offer
                 for offer in offers
             ]
-        if "contract_seq" not in data_clean and offers:
+        if "contract_seq" not in data_clean and (offers or contract):
             data_clean["contract_seq"] = 10000
         if "probed_nodes" not in data_clean:
             data_clean["probed_nodes"] = []
+        if "lost_creds" not in data_clean:
+            data_clean["lost_creds"] = 0
         quests = data_clean.get("quests")
         if isinstance(quests, list):
             data_clean["quests"] = [Quest.from_dict(q) if isinstance(q, dict) else q for q in quests]

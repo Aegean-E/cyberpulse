@@ -581,7 +581,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         method = "logic_bomb"
         if len(parts) >= 3 and parts[1].lower() in ("hunter", "ice", "aegis", "netwatch"):
             method = parts[2]
-        elif len(parts) >= 2:
+        elif len(parts) >= 2 and parts[1].lower() not in ("hunter", "ice", "aegis", "netwatch"):
             method = parts[1]
         ok, msg = engine.counter_hunter(method=method)
         print(msg)

@@ -9,8 +9,8 @@
 - **Total Python Modules**: `26`
 - **Total Classes**: `57`
 - **Total Top-Level Functions**: `67`
-- **Total Class Methods**: `507`
-- **Total Source Lines**: `11877`
+- **Total Class Methods**: `512`
+- **Total Source Lines**: `11957`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1041` lines (`49110` bytes)
+**Size**: `1041` lines (`49177` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -58,7 +58,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3411` lines (`159822` bytes)
+**Size**: `3419` lines (`160200` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -171,7 +171,7 @@
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `626` lines (`22252` bytes)
+**Size**: `629` lines (`22374` bytes)
 
 **Classes:**
 - `class NodeType`
@@ -441,7 +441,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `413` lines (`17333` bytes)
+**Size**: `418` lines (`17567` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -485,7 +485,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `1704` lines (`72251` bytes)
+**Size**: `1742` lines (`74012` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -512,6 +512,7 @@
   - Method `.test_accept_contract_starts_deadline_and_refills_board()`
   - Method `.test_decline_contract_costs_trust_without_alert()`
   - Method `.test_drop_offer_costs_broker_fee_and_refills()`
+  - Method `.test_player_contract_actions_clear_stale_tick_notice()`
   - Method `.test_offer_shelf_life_rotates_the_board()`
   - Method `.test_recon_fallback_jobs_fill_an_exhausted_grid()`
   - Method `.test_contract_payout_includes_trust_and_rush()`
@@ -564,6 +565,7 @@
   - Method `.test_settle_career_banks_victory_loot_once()`
   - Method `.test_exploit_lockout_does_not_claim_root_access()`
   - Method `.test_float_seed_is_coerced()`
+  - Method `.test_lockout_summary_reports_lost_unbanked_credits()`
   - Method `.test_run_summary_reflects_legacy()`
   - Method `.test_settle_career_records_best_combo_on_failure()`
   - Method `.test_run_summary_victory_marks_main_story_complete()`
@@ -613,6 +615,7 @@
   - Method `.test_spoof_ip_chip_sheds_trace_and_refuses_when_clean()`
   - Method `.test_probe_and_intel_reveal_record_probed_nodes()`
   - Method `.test_port_scan_chip_records_probed_node()`
+  - Method `.test_port_scan_chip_refuses_breached_host_without_consuming_it()`
 
 ---
 
@@ -662,7 +665,7 @@
 ### [`tests/test_models.py`](tests/test_models.py)
 > *Unit tests for CyberPulse domain models.*
 
-**Size**: `255` lines (`10266` bytes)
+**Size**: `262` lines (`10576` bytes)
 
 **Classes:**
 - `class TestModels`
@@ -671,6 +674,7 @@
   - Method `.test_deck_roundtrip()`
   - Method `.test_recipe_roundtrip()`
   - Method `.test_game_state_roundtrip()`
+  - Method `.test_game_state_backfills_missing_lost_creds()`
   - Method `.test_bounty_contract_objective_inference_and_deadline_roundtrip()`
   - Method `.test_career_profile_roundtrip()`
   - Method `.test_apply_career_profile()`
@@ -801,7 +805,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `272` lines (`10094` bytes)
+**Size**: `291` lines (`10872` bytes)
 
 **Classes:**
 - `class TestStorage`
@@ -822,6 +826,7 @@
   - Method `.test_save_preserves_pending_puzzle_attempts()`
   - Method `.test_save_preserves_contract_offer_board()`
   - Method `.test_old_offer_save_without_contract_sequence_gets_safe_migration()`
+  - Method `.test_old_active_contract_save_without_sequence_gets_safe_migration()`
   - Method `.test_contract_sequence_persists_and_prevents_id_collisions()`
   - Method `.test_failed_replace_reports_no_save()`
 

@@ -376,6 +376,11 @@ class TestCLI(unittest.TestCase):
         self.assertIn("NETWATCH COUNTER-INFILTRATION RADAR", out)
         self.assertIn("Radar Status: CLEAR", out)
 
+        code, out = self.run_cli("--seed", "1337", "--exec", "counter hunter")
+        self.assertEqual(code, 0)
+        self.assertNotIn("Unknown countermeasure method", out)
+        self.assertIn("No active NetWatch hunters", out)
+
     def test_unknown_command_reports_and_tactical_commands_run(self):
         code, out = self.run_cli("--seed", "1337", "--exec", "bogus_command")
         self.assertEqual(code, 0)

@@ -697,7 +697,7 @@ class GameEngine:
             "nodes_breached": sum(
                 1 for node in self.nodes.values() if node.status == NodeStatus.BREACHED
             ),
-            "unbanked_credits_lost": 0 if outcome != "lockout" else self.state.unbanked_creds,
+            "unbanked_credits_lost": 0 if outcome != "lockout" else self.state.lost_creds,
             "trace_percent": self.state.trace_percent,
             "quests_completed": [quest.title for quest in completed],
             "quests_completed_count": len(completed),
@@ -926,10 +926,13 @@ class GameEngine:
             )
 
         if self.state.trace_percent >= 100:
+            already_over = self.state.is_game_over
             self.state.is_game_over = True
             self.state.combo_streak = 0
             lost_loot = self.state.unbanked_creds
             self.state.unbanked_creds = 0
+            if not already_over:
+                self.state.lost_creds = lost_loot
             self.state.looted_payloads.clear()
             record_news(
                 self.state.world,
@@ -1718,6 +1721,7 @@ class GameEngine:
         self.state.contract_offers.remove(offer)
         self.state.active_contract = self._activate_contract(offer)
         self.state.contract_decline_until_turn = 0
+        self.state.contract_notice = ""
         message = (
             f"JOB ACCEPTED: {offer.title} — deadline turn {offer.expires_turn} "
             f"(rush by turn {offer.rush_turn})."
@@ -1747,6 +1751,7 @@ class GameEngine:
             broker_note = "Broker waives the fee; terms repost next turn."
         self.state.contract_offers.remove(offer)
         self._refresh_contract_offers({self._offer_signature(offer)})
+        self.state.contract_notice = ""
         message = (
             f"OFFER DROPPED: {offer.title}. {broker_note} The board is refreshed."
         )
@@ -1767,6 +1772,7 @@ class GameEngine:
         self.state.active_contract = None
         self.state.contract_decline_until_turn = self.state.turns_elapsed + 1
         self._refresh_contract_offers()
+        self.state.contract_notice = ""
         message = (
             f"CONTRACT DECLINED: {contract.title}. "
             f"{contact.name if contact else 'The Syndicate'} trust -1; the board is refreshed."
@@ -2086,6 +2092,8 @@ class GameEngine:
             curr = self.get_current_node()
             if target.node_id not in curr.connected_ids and target.node_id != curr.node_id:
                 return False, f"Target '{target.hostname}' is not in direct subnet range."
+            if target.status == NodeStatus.BREACHED:
+                return False, f"Node '{target.name}' is already breached."
             if target.status == NodeStatus.LOCKED:
                 target.status = NodeStatus.DISCOVERED
             self._mark_probed(target.node_id)

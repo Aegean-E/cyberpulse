@@ -99,6 +99,7 @@ class TestModels(unittest.TestCase):
             current_node_id="node_gateway",
             trace_percent=25,
             unbanked_creds=150,
+            lost_creds=42,
             active_contract=contract,
         )
         data = state.to_dict()
@@ -106,8 +107,14 @@ class TestModels(unittest.TestCase):
         self.assertEqual(restored.seed, 42)
         self.assertEqual(restored.trace_percent, 25)
         self.assertEqual(restored.unbanked_creds, 150)
+        self.assertEqual(restored.lost_creds, 42)
         self.assertIsNotNone(restored.active_contract)
         self.assertEqual(restored.active_contract.contract_id, "c1")
+
+    def test_game_state_backfills_missing_lost_creds(self):
+        data = GameState(seed=1, current_node_id="node_gateway").to_dict()
+        data.pop("lost_creds")
+        self.assertEqual(GameState.from_dict(data).lost_creds, 0)
 
     def test_bounty_contract_objective_inference_and_deadline_roundtrip(self):
         legacy = BountyContract(

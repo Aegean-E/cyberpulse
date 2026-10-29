@@ -46,7 +46,7 @@
     {
       "path": "assets/screenshots/2026-10-28-index.png",
       "alt": "Cyberpulse interface at 2026-10-28",
-      "caption": "Cyberpulse interface captured from C:\\Users\\Yunus-Emre\\Desktop\\portable_agent_kit\\projects\\cyberpulse\\cyberpulse\\static\\index.html",
+      "caption": "Cyberpulse interface captured from cyberpulse/static/index.html",
       "commit": "121587012de0179a2ba7f3bd73bec20b8f5666c9",
       "taken_at": "2026-10-28",
       "viewport": "1440x900",

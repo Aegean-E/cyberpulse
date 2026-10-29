@@ -43,6 +43,7 @@ cyberpulse/
 ├── REUSE.toml                <- Machine-readable SPDX metadata
 ├── ASSETS.md                 <- Asset/data manifest: what the license covers
 ├── README.md
+├── assets/
 ├── COMMANDS.md  <- in-game command reference
 ├── COMMERCIAL.md
 ├── pyproject.toml            <- build and package configuration
