@@ -731,6 +731,19 @@ class TestEngine(unittest.TestCase):
         self.assertTrue(len(msgs) >= 1)
         self.assertGreater(self.engine.state.unbanked_creds, unbanked_before)
 
+    def test_daemon_ids_stay_unique_after_a_removal(self):
+        self.engine.complete_breach("node_proxy_a")
+        self.engine.complete_breach("node_proxy_b")
+        self.engine.deck.cpu_cycles = 10
+        self.assertTrue(self.engine.deploy_daemon("node_proxy_a", "keylogger")[0])
+        self.assertTrue(self.engine.deploy_daemon("node_proxy_b", "keylogger")[0])
+
+        self.engine.deck.active_daemons.pop(0)
+        self.assertTrue(self.engine.deploy_daemon("node_proxy_a", "keylogger")[0])
+
+        ids = [daemon.daemon_id for daemon in self.engine.deck.active_daemons]
+        self.assertEqual(len(ids), len(set(ids)))
+
     def test_daemon_yield_scales_with_host_security(self):
         self.engine.complete_breach("node_ice_perimeter")  # security level 4
         self.engine.deck.cpu_cycles = 8

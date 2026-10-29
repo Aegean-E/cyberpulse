@@ -2819,7 +2819,12 @@ class GameEngine:
             return False, "Insufficient CPU cycles (need 2 CPU to initialize daemon listener)."
 
         self.deck.cpu_cycles -= 2
-        daemon_id = f"dmn_{len(self.deck.active_daemons) + 1:03d}"
+        existing_ids = [
+            int(d.daemon_id.rsplit("_", 1)[-1])
+            for d in self.deck.active_daemons
+            if d.daemon_id.startswith("dmn_") and d.daemon_id.rsplit("_", 1)[-1].isdigit()
+        ]
+        daemon_id = f"dmn_{max(existing_ids, default=0) + 1:03d}"
         # Deeper hosts carry richer traffic: siphoning the core pays more than a border router.
         daemon_yield = 15 + node.security_level * 5
         daemon = MalwareDaemon(
