@@ -6,7 +6,7 @@ import uuid
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from cyberpulse.achievements import achievement_names, evaluate_achievements
-from cyberpulse.daily import is_next_day
+from cyberpulse.daily import is_next_day, modifier_by_id
 from cyberpulse.difficulty import contract_multiplier, normalize_difficulty, trace_multiplier
 from cyberpulse.rivals import generate_rival
 from cyberpulse.scoring import score_run
@@ -230,9 +230,12 @@ class GameEngine:
         seed: int = 1337,
         career_profile: Optional[CareerProfile] = None,
         difficulty: str = "normal",
+        daily_modifier: str = "",
     ):
         self.seed = int(seed)
         self.difficulty = normalize_difficulty(difficulty)
+        modifier = modifier_by_id(daily_modifier)
+        self.daily_modifier = modifier.modifier_id if modifier else ""
         # Identity of this specific run; save slots use it to purge every checkpoint on settlement.
         self.run_id = uuid.uuid4().hex
         self.daily_key = ""
@@ -284,6 +287,13 @@ class GameEngine:
             self.deck.cpu_cycles = self.deck.max_cpu
         elif self.difficulty == "hard":
             self.state.world.alert_level = min(100, self.state.world.alert_level + 15)
+        if modifier:
+            if modifier.start_alert:
+                self.state.world.alert_level = min(
+                    100, self.state.world.alert_level + modifier.start_alert
+                )
+            if modifier.start_cpu:
+                self.deck.cpu_cycles = max(1, self.deck.cpu_cycles + modifier.start_cpu)
         self._sync_story_quests()
         self.pending_puzzles: Dict[str, Any] = {}
         self.run_settled: bool = False
@@ -751,6 +761,7 @@ class GameEngine:
             "daily_key": getattr(self, "daily_key", ""),
             "rival": self.rival_summary(),
             "difficulty": self.difficulty,
+            "daily_modifier": self.daily_modifier_summary(),
             "score": self.last_run_score,
             "score_breakdown": self.last_score_breakdown,
             "hall_rank": self.last_hall_rank,
@@ -914,7 +925,9 @@ class GameEngine:
             amount = max(1, int(raw * (1.0 - reduction)))
         else:
             amount = raw
-        return max(1, int(round(amount * trace_multiplier(self.difficulty))))
+        modifier = modifier_by_id(self.daily_modifier)
+        daily_factor = modifier.trace_multiplier if modifier else 1.0
+        return max(1, int(round(amount * trace_multiplier(self.difficulty) * daily_factor)))
 
     def extraction_surge(self) -> int:
         """Black ICE surge applied while pulling the jack, before the link is cut."""
@@ -1009,6 +1022,21 @@ class GameEngine:
             if self.state.turns_elapsed % 2 == 0:
                 self.regenerate_cpu(1)
         return messages
+
+    def daily_modifier_summary(self) -> Optional[Dict[str, Any]]:
+        """Return the active daily modifier for HUD and archive display."""
+        modifier = modifier_by_id(self.daily_modifier)
+        if modifier is None:
+            return None
+        return {
+            "modifier_id": modifier.modifier_id,
+            "name": modifier.name,
+            "description": modifier.description,
+            "start_alert": modifier.start_alert,
+            "start_cpu": modifier.start_cpu,
+            "trace_multiplier": modifier.trace_multiplier,
+            "contract_multiplier": modifier.contract_multiplier,
+        }
 
     def tutorial_progress(self) -> List[Dict[str, Any]]:
         """Return the first-run field manual with live completion flags."""
@@ -1965,9 +1993,12 @@ class GameEngine:
             if contract.rush_turn and self.state.turns_elapsed <= contract.rush_turn
             else 0
         )
+        modifier = modifier_by_id(self.daily_modifier)
+        daily_factor = modifier.contract_multiplier if modifier else 1.0
         total = int(round(
             (contract.reward_creds + trust_bonus + rush_bonus)
             * contract_multiplier(self.difficulty)
+            * daily_factor
         ))
         return total, trust_bonus, rush_bonus
 
@@ -2534,6 +2565,7 @@ class GameEngine:
             "contract_completed": bool(contract and contract.completed),
             "achievements": list(new_achievements),
             "daily_key": daily_key,
+            "daily_modifier": self.daily_modifier,
             "difficulty": self.difficulty,
             "score": score_info["score"],
             "score_breakdown": score_info["breakdown"],
@@ -2547,7 +2579,7 @@ class GameEngine:
             key: record[key]
             for key in (
                 "run_id", "score", "outcome", "seed", "turns", "creds",
-                "best_combo", "story_act", "daily_key", "difficulty", "finished_at",
+                "best_combo", "story_act", "daily_key", "daily_modifier", "difficulty", "finished_at",
             )
         }
         hall = profile.hall_of_fame if isinstance(profile.hall_of_fame, list) else []

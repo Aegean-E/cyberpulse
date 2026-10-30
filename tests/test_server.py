@@ -1012,6 +1012,7 @@ class TestCyberdeckSaveSlotsAPI(unittest.TestCase):
         self.assertTrue(res["ok"], res.get("message"))
         self.assertEqual(res["state"]["daily_key"], "2026-10-30")
         self.assertEqual(res["state"]["seed"], 20261030)
+        self.assertIsNotNone(res["state"]["daily_modifier"])
         self.assertIn("Daily run 2026-10-30", res["message"])
 
     def test_name_rename_and_delete_over_http(self):

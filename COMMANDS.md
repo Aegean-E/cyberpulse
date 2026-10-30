@@ -29,7 +29,7 @@
 | `overdrive` | Burn 2 CPU and 8% trace to stack +1 combo and +10 unbanked credits | Voluntary risk, combo priming & dopamine anticipation |
 | `stance <mode>` / `proxy <ip>` / `quickhack <ip>` / `intel <reveal\|forge>` | Shift deck stance, route a proxy hop, instant-breach a tier 1-2 host, or spend threat intel | Tactical resource & risk modulation |
 | `lay_low [1-3]` / `wait` | Ghost the connection for 1-3 turns: +1 CPU and up to -2% trace per turn while the grid keeps moving | Downtime recovery & shift-aware risk management |
-| `world` / `city` / `grid` | Show the in-game clock, shift doctrine, grid alert, market index, and latest headlines | Living world awareness & consequence telemetry |
+| `world` / `city` / `grid` | Show the in-game clock, shift doctrine, grid alert, market index, daily modifier, and latest headlines | Living world awareness & consequence telemetry |
 | `news` / `wire` | Read the generated grid news wire (`news 20` for a longer feed) | Diegetic feedback & attribution of events |
 | `hunter` / `radar` | Display active NetWatch Hunter threat assessment, location, distance, and scent | Counter-surveillance & proximity telemetry |
 | `counter [method]` | Deploy tactical countermeasures against hunter (`logic_bomb`, `ghost_protocol`, `cpu_burst`) | Active counter-defense & hunter neutralization |

@@ -13,7 +13,7 @@ if str(project_root) not in sys.path:
 from typing import List, Optional
 
 from cyberpulse.achievements import ACHIEVEMENTS, achievement_names
-from cyberpulse.daily import daily_run
+from cyberpulse.daily import daily_modifier, daily_run
 from cyberpulse.engine import GameEngine
 from cyberpulse.models import CareerProfile, CyberDeck, NodeStatus, NodeType
 from cyberpulse.puzzles import BufferPuzzle, FrequencyPuzzle, HashCrackPuzzle
@@ -85,6 +85,9 @@ def print_hud(engine: GameEngine) -> None:
     print(f"[*] Stance:     {engine.deck.operating_stance.upper()} | Proxies: {len(engine.deck.proxy_chain)}/3 | Threat Intel: {engine.deck.threat_intel_count}")
     insurance = " | Dead Man's Switch: ARMED" if engine.deck.extraction_insurance else ""
     print(f"[*] Upgrades:   ICE Dampener: Lvl {engine.deck.ice_dampener_level} | Overclock: Lvl {engine.deck.overclock_level}{insurance}")
+    daily_mod = engine.daily_modifier_summary()
+    if daily_mod:
+        print(f"[*] Daily Mod:  {daily_mod['name']} // {daily_mod['description']}")
     exploits_str = ', '.join(engine.deck.exploits) if engine.deck.exploits else "None"
     print(f"[*] Exploits:   {exploits_str}")
     if engine.deck.active_daemons:
@@ -1202,6 +1205,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = parser.parse_args(argv)
     data_dir = args.data_dir or get_default_data_dir()
     daily_key_value, seed_value = daily_run() if args.daily else ("", args.seed)
+    daily_mod = daily_modifier() if args.daily else None
+    daily_modifier_id = daily_mod.modifier_id if daily_mod else ""
 
     # Web Cyberdeck execution mode
     if args.web:
@@ -1214,16 +1219,24 @@ def main(argv: Optional[List[str]] = None) -> int:
             open_browser=not args.no_browser,
             daily_key=daily_key_value,
             difficulty=args.difficulty,
+            daily_modifier=daily_modifier_id,
         )
         return 0
 
     save_mgr = SaveManager(data_dir)
     career = save_mgr.load_career()
-    engine = GameEngine(seed=seed_value, career_profile=career, difficulty=args.difficulty)
+    engine = GameEngine(
+        seed=seed_value,
+        career_profile=career,
+        difficulty=args.difficulty,
+        daily_modifier=daily_modifier_id,
+    )
     engine.daily_key = daily_key_value
     save_mgr.mark_autosave_baseline(engine)
     if args.daily:
         print(f"DAILY RUN {daily_key_value} // seed {seed_value}")
+        if daily_mod:
+            print(f"DAILY MODIFIER: {daily_mod.name} // {daily_mod.description}")
 
     # Batch script execution mode
     if args.commands:
@@ -1252,11 +1265,18 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0
     if menu_action == "daily":
         daily_key_value, daily_seed = daily_run()
+        daily_mod = daily_modifier()
         career = save_mgr.load_career()
-        engine = GameEngine(seed=daily_seed, career_profile=career, difficulty=args.difficulty)
+        engine = GameEngine(
+            seed=daily_seed,
+            career_profile=career,
+            difficulty=args.difficulty,
+            daily_modifier=daily_mod.modifier_id,
+        )
         engine.daily_key = daily_key_value
         save_mgr.mark_autosave_baseline(engine)
         print(f"DAILY RUN {daily_key_value} // seed {daily_seed}")
+        print(f"DAILY MODIFIER: {daily_mod.name} // {daily_mod.description}")
     if menu_action == "load":
         slot = choose_load_slot(save_mgr)
         loaded = save_mgr.load(slot) if slot else None

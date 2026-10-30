@@ -494,4 +494,16 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. Cover fresh-run state, step transitions, successful scan marking, CLI rendering and the API payload.
 - **Consequences**: A new player gets a concrete path through the first run without new gameplay rules, while experienced careers never see the panel. The checklist is save-safe and cannot drift from actual progress. Test suite: 413 tests, 100% green.
 
+### ADR-038: Daily Rule Modifiers: Date-Selected Twists for Daily Runs
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: Daily runs already varied by seed, but the rules were identical to normal runs. The daily challenge had no distinct identity beyond a date and a best-gain record.
+- **Decision**:
+  1. Add a frozen `DailyModifier` table to `daily.py`: Hot Grid (+20 start alert), Blackout (-2 start CPU), Thin ICE (+15% trace), and Data Bloom (+20% contract pay). `daily_modifier(day)` selects deterministically by ordinal, and `modifier_by_id` resolves persisted ids.
+  2. Add `GameEngine.daily_modifier`; apply starting effects in construction and the trace/contract multipliers in the central mitigation and payout methods alongside difficulty.
+  3. Persist the modifier id in save payloads and run-history records; old saves and normal runs default to no modifier. Daily runs loaded from saves retain it.
+  4. Compute the modifier in CLI/server daily starts, pass it through `--web`, expose it in state and run summaries, and show it in the HUD chip and banner.
+  5. Cover deterministic selection, roster coverage, start conditions, trace/payout effects, save round-trip, CLI output and the API daily reset.
+- **Consequences**: Each date now has both a seed and a rule identity, giving players a reason to adapt rather than replay the same plan. Normal runs remain unchanged, and the modifier is visible and archive-safe. Test suite: 416 tests, 100% green.
+
 

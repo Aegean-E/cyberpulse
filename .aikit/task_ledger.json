@@ -1,56 +1,16 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-first-run-tutorial",
+    "task_id": "task-cyberpulse-daily-modifiers",
     "last_phase": "in_progress",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1793376529.5567415,
-    "owner": "opencode:tutorial-1",
-    "started_by": "opencode:tutorial-1",
-    "continuations": [],
-    "completed_at": 1793376571.7558758
+    "active_phase": 4,
+    "status": "in_progress",
+    "updated_at": 1793376908.93414,
+    "owner": "opencode:daily-modifiers-1",
+    "started_by": "opencode:daily-modifiers-1",
+    "continuations": []
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-dead-mans-switch",
-      "phase": "in_progress",
-      "phase_num": 2,
-      "description": "[1/3] Add a one-use Dead Man Switch shop item that banks half the unbanked loot on lockout",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793373983.9079196,
-      "timestamp_str": "2026-10-30 18:26:23",
-      "agent": "opencode:dead-mans-switch-1",
-      "impact_assessment": {
-        "why": "Lockout currently wipes all unbanked loot with no mid-run mitigation; the push-your-luck loop has no costly insurance decision.",
-        "benefits": "Players can trade banked credits for a partial safety net, creating a real risk-pricing choice and a new use for the Black Market.",
-        "risks": "contract: CyberDeck and shop catalog gain an additive field/item; dependency: none; concurrency: settlement remains one-shot; state: old saves default uninsured, and the consumable must not persist as a career upgrade.",
-        "mitigation": "Default the deck flag to false, consume it only on a lockout payout, exclude consumables from career persistence, and cover purchase, lockout, persistence and old-save behavior with tests."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-dead-mans-switch",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[2/3] Dead Man Switch purchase, lockout payout, save persistence and career exclusion green; 388 tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793374125.519952,
-      "timestamp_str": "2026-10-30 18:28:45",
-      "agent": "opencode:dead-mans-switch-1"
-    },
-    {
-      "task_id": "task-cyberpulse-dead-mans-switch",
-      "phase": "in_progress",
-      "phase_num": 4,
-      "description": "[3/3] Dead Man Switch complete; project gate 5/5, 388 tests; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793374160.1369112,
-      "timestamp_str": "2026-10-30 18:29:20",
-      "agent": "opencode:dead-mans-switch-1"
-    },
     {
       "task_id": "task-cyberpulse-dead-mans-switch",
       "phase": "completed",
@@ -256,6 +216,45 @@
       "timestamp": 1793376571.7558784,
       "timestamp_str": "2026-10-30 19:09:31",
       "agent": "opencode:tutorial-1"
+    },
+    {
+      "task_id": "task-cyberpulse-daily-modifiers",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/4] Give each daily run a deterministic rule modifier shown across both interfaces",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793376695.810201,
+      "timestamp_str": "2026-10-30 19:11:35",
+      "agent": "opencode:daily-modifiers-1",
+      "impact_assessment": {
+        "why": "Daily runs vary by seed but not by rules, so the daily challenge lacks a distinct identity or reason to compare strategies.",
+        "benefits": "A date-selected modifier changes the run constraints, makes daily results more memorable, and adds replay variety without affecting normal runs.",
+        "risks": "contract: engine/save/history gain a daily modifier id and daily starts accept it; dependency: none; concurrency: one modifier per run; state: old saves and normal runs must have no modifier, and daily runs loaded from saves must retain it.",
+        "mitigation": "Select from a fixed deterministic table by date, apply only in daily mode, persist the id through saves, keep normal defaults empty, and cover selection, effects, persistence, CLI and API paths with tests."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-daily-modifiers",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[3/4] Daily modifier selection, engine effects, persistence, CLI/API/Web display green; 416 tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793376831.3107526,
+      "timestamp_str": "2026-10-30 19:13:51",
+      "agent": "opencode:daily-modifiers-1"
+    },
+    {
+      "task_id": "task-cyberpulse-daily-modifiers",
+      "phase": "in_progress",
+      "phase_num": 4,
+      "description": "[4/4] Daily rule modifiers complete; project gate 5/5, 416 tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793376908.93414,
+      "timestamp_str": "2026-10-30 19:15:08",
+      "agent": "opencode:daily-modifiers-1"
     }
   ]
 }

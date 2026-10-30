@@ -7,10 +7,10 @@
 
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `38`
-- **Total Classes**: `70`
-- **Total Top-Level Functions**: `85`
-- **Total Class Methods**: `652`
-- **Total Source Lines**: `14846`
+- **Total Classes**: `71`
+- **Total Top-Level Functions**: `87`
+- **Total Class Methods**: `656`
+- **Total Source Lines**: `15018`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1290` lines (`60640` bytes)
+**Size**: `1310` lines (`61365` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -75,11 +75,16 @@
 ---
 
 ### [`cyberpulse/daily.py`](cyberpulse/daily.py)
-> *Deterministic daily-run keys and seeds.*
+> *Deterministic daily-run keys, seeds and rule modifiers.*
 
-**Size**: `30` lines (`1022` bytes)
+**Size**: `75` lines (`2366` bytes)
+
+**Classes:**
+- `class DailyModifier` - *A rule twist applied only to a daily run.*
 
 **Functions:**
+- `def daily_modifier(day)` - *Return the deterministic modifier for a date.*
+- `def modifier_by_id(modifier_id)` - *Return a modifier by id, or None for normal runs.*
 - `def daily_key(day)` - *Return the ISO date key for a daily run.*
 - `def daily_seed(day)` - *Return a stable numeric seed derived from the local date.*
 - `def daily_run(day)` - *Return the (key, seed) pair for a daily run.*
@@ -102,11 +107,11 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3656` lines (`170337` bytes)
+**Size**: `3688` lines (`171891` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
-  - Method `.__init__(seed, career_profile, difficulty)`
+  - Method `.__init__(seed, career_profile, difficulty, daily_modifier)`
   - Method `.get_current_node()`
   - Method `._mark_probed(node_id)` - *Record that the runner has mapped a host's services (survives save/load).*
   - Method `._find_quest(quest_id)`
@@ -141,6 +146,7 @@
   - Method `.add_trace(raw_amount)` - *Increase system trace, mitigated by ICE dampeners. 100% triggers lockout & loss of loot.*
   - Method `.regenerate_cpu(amount)` - *Cool down cyberdeck processing units and recover CPU cycles.*
   - Method `.advance_turn()` - *Advance the run clock one turn: daemons harvest, then the living grid reacts.*
+  - Method `.daily_modifier_summary()` - *Return the active daily modifier for HUD and archive display.*
   - Method `.tutorial_progress()` - *Return the first-run field manual with live completion flags.*
   - Method `.rival_summary()` - *Return the active rival's public status for HUD and dossier display.*
   - Method `.counter_rival()` - *Burn CPU to trace the rival and postpone their next contract grab.*
@@ -376,11 +382,11 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `870` lines (`39026` bytes)
+**Size**: `884` lines (`39487` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
-  - Method `.__init__(data_dir, seed, daily_key, difficulty)`
+  - Method `.__init__(data_dir, seed, daily_key, difficulty, daily_modifier)`
   - Method `.settle_run_if_finished()` - *Persist a victory/lockout exactly once as soon as the run reaches a terminal state.*
   - Method `.get_full_state()` - *Aggregate complete runtime state for frontend rendering.*
   - Method `.reset_game(seed, daily, difficulty)`
@@ -400,8 +406,8 @@
 
 **Functions:**
 - `def coerce_seed(value)` - *Convert API/CLI seed input to an integer, rejecting non-finite or non-numeric values.*
-- `def create_server(host, port, data_dir, seed, daily_key, difficulty)` - *Instantiate and configure the ThreadingHTTPServer for CyberPulse Web Cyberdeck.*
-- `def run_web(host, port, data_dir, seed, open_browser, daily_key, difficulty)` - *Launch the Web Cyberdeck server and optionally launch default system web browser.*
+- `def create_server(host, port, data_dir, seed, daily_key, difficulty, daily_modifier)` - *Instantiate and configure the ThreadingHTTPServer for CyberPulse Web Cyberdeck.*
+- `def run_web(host, port, data_dir, seed, open_browser, daily_key, difficulty, daily_modifier)` - *Launch the Web Cyberdeck server and optionally launch default system web browser.*
 
 ---
 
@@ -423,7 +429,7 @@
 ### [`cyberpulse/storage.py`](cyberpulse/storage.py)
 > *Crash-resilient savegame and career profile storage engine for CyberPulse.*
 
-**Size**: `381` lines (`16406` bytes)
+**Size**: `385` lines (`16666` bytes)
 
 **Classes:**
 - `class SaveManager` - *Manages atomic saving and loading of game states and career profiles.*
@@ -560,7 +566,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `567` lines (`23745` bytes)
+**Size**: `568` lines (`23791` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -620,12 +626,14 @@
 ### [`tests/test_daily.py`](tests/test_daily.py)
 > *Unit tests for deterministic daily-run keys and seeds.*
 
-**Size**: `33` lines (`1163` bytes)
+**Size**: `55` lines (`1811` bytes)
 
 **Classes:**
 - `class TestDailyRun`
   - Method `.test_key_and_seed_are_stable_for_a_date()`
   - Method `.test_different_days_produce_different_seeds()`
+  - Method `.test_daily_modifier_is_stable_and_from_the_table()`
+  - Method `.test_daily_modifier_changes_across_the_roster()`
   - Method `.test_next_day_detection_handles_gaps_and_bad_keys()`
 
 ---
@@ -646,7 +654,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `2014` lines (`84800` bytes)
+**Size**: `2045` lines (`86064` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -735,6 +743,7 @@
   - Method `.test_daily_streak_resets_after_a_gap()`
   - Method `.test_settle_career_banks_victory_loot_once()`
   - Method `.test_exploit_lockout_does_not_claim_root_access()`
+  - Method `.test_daily_modifiers_apply_starting_conditions_and_multipliers()`
   - Method `.test_difficulty_changes_trace_and_starting_state()`
   - Method `.test_difficulty_multiplies_contract_payout()`
   - Method `.test_float_seed_is_coerced()`
@@ -947,7 +956,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `1059` lines (`46302` bytes)
+**Size**: `1060` lines (`46363` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -1052,7 +1061,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `574` lines (`22116` bytes)
+**Size**: `576` lines (`22219` bytes)
 
 **Classes:**
 - `class TestStorage`

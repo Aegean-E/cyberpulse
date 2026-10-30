@@ -17,7 +17,7 @@ if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from cyberpulse.achievements import achievement_status
-from cyberpulse.daily import daily_run
+from cyberpulse.daily import daily_modifier, daily_run
 from cyberpulse.difficulty import normalize_difficulty
 from cyberpulse.engine import GameEngine
 from cyberpulse.models import NodeStatus, NodeType
@@ -50,13 +50,17 @@ class CyberdeckSession:
         seed: int = 1337,
         daily_key: str = "",
         difficulty: str = "normal",
+        daily_modifier: str = "",
     ):
         self.data_dir = data_dir or (Path.cwd() / ".cyberpulse")
         self.save_mgr = SaveManager(self.data_dir)
         self.shop = BlackMarketShop()
         self.career = self.save_mgr.load_career()
         self.engine = GameEngine(
-            seed=seed, career_profile=self.career, difficulty=difficulty
+            seed=seed,
+            career_profile=self.career,
+            difficulty=difficulty,
+            daily_modifier=daily_modifier,
         )
         self.engine.daily_key = str(daily_key or "")
         self.active_puzzle: Optional[Any] = None
@@ -90,6 +94,7 @@ class CyberdeckSession:
         return {
             "seed": self.engine.seed,
             "daily_key": getattr(self.engine, "daily_key", ""),
+            "daily_modifier": self.engine.daily_modifier_summary(),
             "difficulty": self.engine.difficulty,
             "state": self.engine.state.to_dict(),
             "deck": self.engine.deck.to_dict(),
@@ -125,8 +130,10 @@ class CyberdeckSession:
         difficulty: str = "normal",
     ) -> Dict[str, Any]:
         new_daily_key = ""
+        modifier_id = ""
         if daily:
             new_daily_key, new_seed = daily_run()
+            modifier_id = daily_modifier().modifier_id
         else:
             new_seed = coerce_seed(seed) if seed is not None else (self.engine.seed + 1)
         self.career = self.save_mgr.load_career()
@@ -134,6 +141,7 @@ class CyberdeckSession:
             seed=new_seed,
             career_profile=self.career,
             difficulty=normalize_difficulty(difficulty),
+            daily_modifier=modifier_id,
         )
         self.engine.daily_key = new_daily_key
         self.active_puzzle = None
@@ -815,10 +823,15 @@ def create_server(
     seed: int = 1337,
     daily_key: str = "",
     difficulty: str = "normal",
+    daily_modifier: str = "",
 ) -> ThreadingHTTPServer:
     """Instantiate and configure the ThreadingHTTPServer for CyberPulse Web Cyberdeck."""
     session = CyberdeckSession(
-        data_dir=data_dir, seed=seed, daily_key=daily_key, difficulty=difficulty
+        data_dir=data_dir,
+        seed=seed,
+        daily_key=daily_key,
+        difficulty=difficulty,
+        daily_modifier=daily_modifier,
     )
 
     class CustomHandler(CyberdeckHTTPHandler):
@@ -837,13 +850,14 @@ def run_web(
     open_browser: bool = True,
     daily_key: str = "",
     difficulty: str = "normal",
+    daily_modifier: str = "",
 ) -> None:
     """Launch the Web Cyberdeck server and optionally launch default system web browser."""
     import webbrowser
 
     server = create_server(
         host=host, port=port, data_dir=data_dir, seed=seed,
-        daily_key=daily_key, difficulty=difficulty,
+        daily_key=daily_key, difficulty=difficulty, daily_modifier=daily_modifier,
     )
     url = f"http://{host}:{port}"
     print(f"\n+==========================================================================+")

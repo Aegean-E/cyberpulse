@@ -278,6 +278,7 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("DAILY RUN 2026-10-30", out)
         self.assertIn("seed 20261030", out)
+        self.assertIn("DAILY MODIFIER:", out)
 
     def test_daily_career_dossier_shows_the_streak(self):
         with mock.patch("cyberpulse.cli.daily_run", return_value=("2026-10-30", 20261030)):

@@ -660,8 +660,12 @@ function renderHUD(data) {
     const dailyStreak = data.career && data.career.daily_streak
       ? ` · STREAK ${data.career.daily_streak}`
       : "";
-    dailyChip.textContent = dailyKey ? `DAILY ${dailyKey}${dailyStreak}` : "";
+    const dailyMod = data.daily_modifier && data.daily_modifier.name
+      ? ` · ${data.daily_modifier.name}`
+      : "";
+    dailyChip.textContent = dailyKey ? `DAILY ${dailyKey}${dailyStreak}${dailyMod}` : "";
     dailyChip.style.display = dailyKey ? "" : "none";
+    dailyChip.title = data.daily_modifier ? data.daily_modifier.description : "";
   }
 
   const difficultyChip = document.getElementById("grid-difficulty");
@@ -786,6 +790,9 @@ function buildRunStats(summary, gState) {
   }
   if (summary.difficulty) {
     stats.push({ label: "DIFFICULTY", value: String(summary.difficulty).toUpperCase() });
+  }
+  if (summary.daily_modifier && summary.daily_modifier.name) {
+    stats.push({ label: "DAILY MOD", value: summary.daily_modifier.name });
   }
   return stats;
 }

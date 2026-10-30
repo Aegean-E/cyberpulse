@@ -1288,6 +1288,37 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(self.engine.nodes["node_proxy_a"].status, NodeStatus.DISCOVERED)
         self.assertTrue(self.engine.state.is_game_over)
 
+    def test_daily_modifiers_apply_starting_conditions_and_multipliers(self):
+        hot = GameEngine(seed=1, daily_modifier="hot_grid")
+        blackout = GameEngine(seed=1, daily_modifier="blackout")
+        thin = GameEngine(seed=1, daily_modifier="thin_ice")
+        bloom = GameEngine(seed=1, daily_modifier="data_bloom")
+        normal = GameEngine(seed=1)
+
+        self.assertEqual(hot.state.world.alert_level, 30)
+        self.assertEqual(blackout.deck.cpu_cycles, 8)
+        thin.add_trace(10)
+        normal.add_trace(10)
+        self.assertEqual(thin.state.trace_percent, 12)
+        self.assertEqual(normal.state.trace_percent, 10)
+
+        contract = normal.state.active_contract
+        contract.bonus_creds = 0
+        contract.rush_turn = 0
+        contact = normal._find_contact(contract.giver)
+        if contact:
+            contact.trust = 0
+        bloom_contract = bloom.state.active_contract
+        bloom_contract.bonus_creds = 0
+        bloom_contract.rush_turn = 0
+        bloom_contact = bloom._find_contact(bloom_contract.giver)
+        if bloom_contact:
+            bloom_contact.trust = 0
+        self.assertGreater(
+            bloom._contract_payout(bloom_contract)[0],
+            normal._contract_payout(contract)[0],
+        )
+
     def test_difficulty_changes_trace_and_starting_state(self):
         easy = GameEngine(seed=1, difficulty="easy")
         normal = GameEngine(seed=1, difficulty="normal")
