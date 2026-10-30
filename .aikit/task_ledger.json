@@ -3,25 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-dead-mans-switch",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793374160.1369112,
     "owner": "opencode:dead-mans-switch-1",
     "started_by": "opencode:dead-mans-switch-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793374185.9534838
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-daily-run",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[2/4] Daily key/seed, save persistence and per-day best settlement green; 181 tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793372379.2557464,
-      "timestamp_str": "2026-10-30 17:59:39",
-      "agent": "opencode:daily-run-1"
-    },
     {
       "task_id": "task-cyberpulse-daily-run",
       "phase": "in_progress",
@@ -249,6 +239,16 @@
       "status": "in_progress",
       "timestamp": 1793374160.1369112,
       "timestamp_str": "2026-10-30 18:29:20",
+      "agent": "opencode:dead-mans-switch-1"
+    },
+    {
+      "task_id": "task-cyberpulse-dead-mans-switch",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-dead-mans-switch' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793374185.9534857,
+      "timestamp_str": "2026-10-30 18:29:45",
       "agent": "opencode:dead-mans-switch-1"
     }
   ]
