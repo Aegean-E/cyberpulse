@@ -3,31 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-daily-run",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793372632.4765494,
     "owner": "opencode:daily-run-1",
     "started_by": "opencode:daily-run-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793372664.217039
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-slot-manage",
-      "phase": "in_progress",
-      "phase_num": 2,
-      "description": "[1/4] Name, rename and delete save slots across the terminal and Web Cyberdeck",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793369772.2433226,
-      "timestamp_str": "2026-10-30 17:16:12",
-      "agent": "opencode:slot-manage-1",
-      "impact_assessment": {
-        "why": "Three slots shipped in ADR-025, but every checkpoint is still called SLOT 1/2/3 and stale runs cannot be cleared, so parallel runs are hard to tell apart.",
-        "benefits": "Players can label runs, rename an archive entry without replaying it, and delete stale checkpoints; the slot archive becomes a usable library.",
-        "risks": "contract: additive save meta and new API/CLI verbs; dependency: none; concurrency: single-user local files rewritten atomically; state: rename must preserve the checkpoint and saved_at, delete must not touch the live run or other slots.",
-        "mitigation": "Keep names in additive meta, rewrite the same atomic payload on rename, require an explicit slot for delete, and cover legacy saves, name trimming, cross-slot isolation and the HTTP/CLI paths with failing-first tests."
-      }
-    },
     {
       "task_id": "task-cyberpulse-slot-manage",
       "phase": "in_progress",
@@ -250,6 +234,16 @@
       "status": "in_progress",
       "timestamp": 1793372632.4765494,
       "timestamp_str": "2026-10-30 18:03:52",
+      "agent": "opencode:daily-run-1"
+    },
+    {
+      "task_id": "task-cyberpulse-daily-run",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-daily-run' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793372664.2170405,
+      "timestamp_str": "2026-10-30 18:04:24",
       "agent": "opencode:daily-run-1"
     }
   ]
