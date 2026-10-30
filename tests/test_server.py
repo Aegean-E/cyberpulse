@@ -1023,6 +1023,16 @@ class TestCyberdeckSaveSlotsAPI(unittest.TestCase):
         with urllib.request.urlopen(req, timeout=3.0) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
+    def test_reroll_contracts_action(self):
+        self._post({"action": "reset", "seed": 5})
+        self.server.RequestHandlerClass.server_session.engine.deck.cryptocreds = 100
+        res = self._post({"action": "reroll_contracts"})
+
+        self.assertTrue(res["ok"], res.get("message"))
+        self.assertIn("Rerolled", res["message"])
+        self.assertEqual(res["state"]["deck"]["cryptocreds"], 50)
+        self.assertEqual(len(res["state"]["state"]["contract_offers"]), 3)
+
     def test_reset_accepts_faction_allegiance(self):
         res = self._post({
             "action": "reset",

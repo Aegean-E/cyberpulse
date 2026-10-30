@@ -4209,3 +4209,4 @@ body {
   color: var(--c-accent);
   border-color: var(--c-accent-glow);
 }
+.contract-reroll { margin-top: 5px; padding: 4px 7px; font-size: 8px; }

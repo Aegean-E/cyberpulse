@@ -338,6 +338,13 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("[x] SCAN", out)
 
+    def test_reroll_command_spends_credits_and_refills_the_board(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "reroll")
+
+        self.assertEqual(code, 0)
+        self.assertIn("Rerolled the Syndicate board", out)
+        self.assertIn("50 CR", out)
+
     def test_allegiance_flag_reaches_the_hud(self):
         code, out = self.run_cli("--allegiance", "syndicate", "--exec", "status")
 

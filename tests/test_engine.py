@@ -1323,6 +1323,32 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(profile.faction_standing["street"], 11)
         self.assertEqual(engine.run_summary()["factions"]["syndicate"], 12)
 
+    def test_contract_board_reroll_charges_and_refills(self):
+        old_ids = {offer.contract_id for offer in self.engine.state.contract_offers}
+        self.engine.deck.cryptocreds = 200
+
+        ok, message = self.engine.reroll_contract_offers()
+
+        self.assertTrue(ok)
+        self.assertIn("Rerolled", message)
+        self.assertEqual(self.engine.deck.cryptocreds, 150)
+        self.assertEqual(len(self.engine.state.contract_offers), 3)
+        self.assertFalse(old_ids & {offer.contract_id for offer in self.engine.state.contract_offers})
+
+    def test_contract_board_reroll_requires_funds_and_an_active_run(self):
+        self.engine.deck.cryptocreds = 49
+        ok, message = self.engine.reroll_contract_offers()
+        self.assertFalse(ok)
+        self.assertIn("50", message)
+        self.assertEqual(self.engine.deck.cryptocreds, 49)
+
+        self.engine.deck.cryptocreds = 200
+        self.engine.state.is_victory = True
+        ok, message = self.engine.reroll_contract_offers()
+        self.assertFalse(ok)
+        self.assertIn("complete", message)
+        self.assertEqual(self.engine.deck.cryptocreds, 200)
+
     def test_faction_allegiance_changes_economics_and_standing_growth(self):
         from cyberpulse.models import CareerProfile
 

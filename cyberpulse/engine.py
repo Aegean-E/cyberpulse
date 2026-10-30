@@ -1739,6 +1739,28 @@ class GameEngine:
     def _offer_signature(self, contract: BountyContract) -> Tuple[str, str, str]:
         return (contract.objective_kind, contract.target_ip or "", contract.target_file or "")
 
+    def reroll_contract_offers(self, cost: int = 50) -> Tuple[bool, str]:
+        """Spend credits to replace the posted board with fresh offers."""
+        if self.state.is_game_over:
+            return False, "Cannot reroll: system lockout in effect."
+        if self.state.is_jacked_out:
+            return False, "Cannot reroll: terminal session jacked out."
+        if self.state.is_victory:
+            return False, "Cannot reroll: mission already complete."
+        if self.deck.cryptocreds < cost:
+            return False, f"Reroll needs {cost} CryptoCreds (have {self.deck.cryptocreds})."
+
+        previous = list(self.state.contract_offers)
+        self.state.contract_offers = []
+        added = self._refresh_contract_offers()
+        if not added:
+            self.state.contract_offers = previous
+            return False, "No fresh contract candidates are available on this grid."
+        self.deck.cryptocreds -= cost
+        message = f"Rerolled the Syndicate board for {cost} CR; {len(added)} fresh offer(s) posted."
+        self.state.message_log.append(message)
+        return True, message
+
     def _refresh_contract_offers(
         self, exclude_signatures: Optional[Set[Tuple[str, str, str]]] = None
     ) -> List[BountyContract]:

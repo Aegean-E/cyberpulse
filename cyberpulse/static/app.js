@@ -335,6 +335,7 @@ function initUIEvents() {
     });
   });
   document.getElementById("btn-reset-run").addEventListener("click", handleReset);
+  document.getElementById("btn-reroll-contracts").addEventListener("click", handleRerollContracts);
   document.getElementById("btn-quests-open").addEventListener("click", openQuestsModal);
   document.getElementById("btn-contacts-open").addEventListener("click", openContactsModal);
   document.getElementById("btn-overdrive").addEventListener("click", handleOverdrive);
@@ -812,6 +813,11 @@ function renderHUD(data) {
   if (saveBtn) {
     saveBtn.title = "Save or load a run from the slot archive";
   }
+  const rerollBtn = document.getElementById("btn-reroll-contracts");
+  if (rerollBtn) {
+    const terminal = Boolean(gState.is_victory || gState.is_game_over || gState.is_jacked_out);
+    rerollBtn.disabled = terminal || (data.deck && data.deck.cryptocreds < 50);
+  }
 
   // Syndicate Bounty Contract
   const contract = gState.active_contract;
@@ -1272,6 +1278,21 @@ async function handleDailyReset() {
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || res.error || "Daily run could not start.", "warn");
+  }
+}
+
+async function handleRerollContracts() {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "reroll_contracts" });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message || "Contract board rerolled.", "success");
+    state.data = res.state;
+    renderHUD(res.state);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || res.error || "Reroll failed.", "warn");
+    applyStateSnapshot(res);
   }
 }
 

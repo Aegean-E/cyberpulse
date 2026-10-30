@@ -588,7 +588,7 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
         if choice in ("6", "help", "how"):
             print("Commands: status, contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
             print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
-            print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, tutorial, career, hall, alias, reset_career,")
+            print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, contract, reroll, rival, counter_rival, tutorial, career, hall, alias, reset_career,")
             print("          save [1-3] [name], load [1-3|auto], saves, rename, delete, replay, quit")
             print("Daily challenge: run `python -m cyberpulse.cli --daily` or choose 7.")
             continue
@@ -1116,6 +1116,11 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("❌ Alias could not be saved.")
         return True
 
+    if action in ("reroll", "contract_reroll"):
+        ok, msg = engine.reroll_contract_offers()
+        print(msg)
+        return True
+
     if action in ("hall", "leaderboard"):
         difficulty = parts[1].lower() if len(parts) > 1 else "all"
         if difficulty not in ("all", "easy", "normal", "hard"):
@@ -1250,7 +1255,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print(f"No checkpoint in {label}.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, tutorial, career, hall, alias, reset_career, status, save, load, saves, rename, delete, replay, quit")
+    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, reroll, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, tutorial, career, hall, alias, reset_career, status, save, load, saves, rename, delete, replay, quit")
     return True
 
 

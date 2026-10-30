@@ -609,4 +609,15 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. Cover normalization, economics, standing growth, save/load, CLI and reset API.
 - **Consequences**: Each run now has a faction identity and a start-of-run tradeoff, while old saves default to Independent and the existing standing caps stay intact. Test suite: 443 tests, 100% green.
 
+### ADR-048: Paid Contract-Board Reroll
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: A three-offer Syndicate board could roll completely unusable jobs. The only options were waiting for expiry, paying a drop fee one offer at a time, or accepting a bad contract, with no direct paid reroll.
+- **Decision**:
+  1. Add `GameEngine.reroll_contract_offers(cost=50)`: refuse in terminal states or with insufficient credits, build a fresh candidate board while excluding the active contract, and only charge after a non-empty board is produced.
+  2. Preserve the previous board and leave credits untouched when no candidates exist.
+  3. Expose `reroll` in the terminal, `reroll_contracts` in the API and a REROLL 50 CR button on the Web contract card (disabled for terminal runs or under 50 credits).
+  4. Cover success, credit deduction, board replacement, insufficient funds, terminal refusal and the HTTP action.
+- **Consequences**: Players can buy their way out of a dead board, creating a small credit sink without adding save-schema fields or changing ordinary contract generation. Test suite: 447 tests, 100% green.
+
 

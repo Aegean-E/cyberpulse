@@ -635,6 +635,11 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 
+            if action in ("reroll_contracts", "reroll"):
+                ok, msg = engine.reroll_contract_offers()
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
             if action == "shop_buy":
                 item_id = payload.get("item_id")
                 item = shop.catalog.get(item_id)

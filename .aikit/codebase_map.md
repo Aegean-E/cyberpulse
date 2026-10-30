@@ -9,8 +9,8 @@
 - **Total Python Modules**: `41`
 - **Total Classes**: `73`
 - **Total Top-Level Functions**: `97`
-- **Total Class Methods**: `690`
-- **Total Source Lines**: `15796`
+- **Total Class Methods**: `695`
+- **Total Source Lines**: `15871`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1407` lines (`65131` bytes)
+**Size**: `1412` lines (`65295` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -108,7 +108,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3751` lines (`174822` bytes)
+**Size**: `3773` lines (`175936` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -178,6 +178,7 @@
   - Method `._contract_deadline(objective, node, risk, trust, rng)`
   - Method `._activate_contract(contract)` - *Start an accepted job's clock and clear its board shelf life.*
   - Method `._offer_signature(contract)`
+  - Method `.reroll_contract_offers(cost)` - *Spend credits to replace the posted board with fresh offers.*
   - Method `._refresh_contract_offers(exclude_signatures)` - *Expire stale board entries and fill the board with distinct concrete jobs.*
   - Method `._build_contract()` - *Generate a concrete, deadline-bound job from the live grid state.*
   - Method `.dispatch_next_contract()` - *Dispatch and immediately accept a concrete job (legacy/test helper).*
@@ -403,7 +404,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `949` lines (`42264` bytes)
+**Size**: `954` lines (`42518` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -595,7 +596,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `647` lines (`27054` bytes)
+**Size**: `654` lines (`27328` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -631,6 +632,7 @@
   - Method `.test_alias_command_persists_and_shows_in_the_dossier()`
   - Method `.test_hall_command_filters_by_difficulty()`
   - Method `.test_tutorial_command_lists_the_first_run_steps()`
+  - Method `.test_reroll_command_spends_credits_and_refills_the_board()`
   - Method `.test_allegiance_flag_reaches_the_hud()`
   - Method `.test_difficulty_flag_reaches_the_hud()`
   - Method `.test_daily_flag_uses_the_date_seed()`
@@ -688,7 +690,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `2139` lines (`90265` bytes)
+**Size**: `2165` lines (`91400` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -778,6 +780,8 @@
   - Method `.test_settle_career_banks_victory_loot_once()`
   - Method `.test_exploit_lockout_does_not_claim_root_access()`
   - Method `.test_faction_standing_applies_bonuses_and_grows_on_settlement()`
+  - Method `.test_contract_board_reroll_charges_and_refills()`
+  - Method `.test_contract_board_reroll_requires_funds_and_an_active_run()`
   - Method `.test_faction_allegiance_changes_economics_and_standing_growth()`
   - Method `.test_settle_career_awards_faction_rank_promotions_once()`
   - Method `.test_daily_modifiers_apply_starting_conditions_and_multipliers()`
@@ -1009,7 +1013,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `1102` lines (`48117` bytes)
+**Size**: `1112` lines (`48602` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -1086,6 +1090,7 @@
   - Method `.setUpClass()`
   - Method `.tearDownClass()`
   - Method `._post(payload)`
+  - Method `.test_reroll_contracts_action()`
   - Method `.test_reset_accepts_faction_allegiance()`
   - Method `.test_invalid_or_named_difficulty_reset()`
   - Method `.test_daily_reset_over_http()`
