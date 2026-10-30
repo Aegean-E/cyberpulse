@@ -161,6 +161,51 @@ class TestCLI(unittest.TestCase):
         self.assertIn("Loaded saved infiltration session", out_load)
         self.assertIn("Subnet Router Alpha", out_load)
 
+    def test_batch_named_slot_round_trip(self):
+        batch_cmds = "scan;hack node_proxy_a;move node_proxy_a;save 2"
+        code, out = self.run_cli("--seed", "1337", "--auto-solve", "--exec", batch_cmds)
+
+        self.assertEqual(code, 0)
+        self.assertIn("SLOT 2", out)
+        self.assertTrue((self.temp_dir / "savegame_slot2.json").exists())
+
+        code, out_load = self.run_cli("--seed", "999", "--exec", "load 2;status")
+
+        self.assertEqual(code, 0)
+        self.assertIn("Loaded saved infiltration session", out_load)
+        self.assertIn("SLOT 2", out_load)
+        self.assertIn("Subnet Router Alpha", out_load)
+
+    def test_saves_command_lists_manual_slots(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "save 1;save 3;saves")
+
+        self.assertEqual(code, 0)
+        self.assertIn("SAVED RUNS", out)
+        self.assertIn("SLOT 1", out)
+        self.assertIn("SLOT 3", out)
+
+    def test_batch_commands_autosave_state_changes(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "scan")
+
+        self.assertEqual(code, 0)
+        self.assertTrue((self.temp_dir / "autosave.json").exists())
+
+    def test_invalid_save_slot_reports_usage(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "save 9")
+
+        self.assertEqual(code, 0)
+        self.assertIn("Usage: save [1|2|3]", out)
+        self.assertFalse((self.temp_dir / "savegame.json").exists())
+
+    def test_jackout_purges_owned_slots_and_autosave(self):
+        batch_cmds = "hack node_proxy_a;move node_proxy_a;save 2;scan;jackout"
+        code, out = self.run_cli("--seed", "1337", "--auto-solve", "--exec", batch_cmds)
+
+        self.assertEqual(code, 0)
+        self.assertIn("SAFE EXTRACTION", out)
+        self.assertFalse((self.temp_dir / "savegame_slot2.json").exists())
+        self.assertFalse((self.temp_dir / "autosave.json").exists())
+
     def test_jackout_command(self):
         # Hack proxy a, then jack out safely
         batch_cmds = "hack node_proxy_a;jackout;career"

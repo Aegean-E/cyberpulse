@@ -3922,3 +3922,47 @@ body {
 @media (max-width: 560px) {
   .main-menu-actions .action-btn:last-child { grid-column: span 1; }
 }
+
+/* Save slots ------------------------------------------------------------- */
+
+.saves-modal-box { max-width: 760px; }
+.saves-hint {
+  margin: 0 0 12px;
+  font-size: 9px;
+  line-height: 1.5;
+  letter-spacing: 0.6px;
+  color: var(--c-text-dim);
+}
+.saves-list { display: flex; flex-direction: column; gap: 10px; }
+.save-slot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  background: hsla(185, 30%, 8%, 0.62);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+}
+.save-slot-row.empty { opacity: 0.62; }
+.save-slot-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.save-slot-name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  color: var(--c-text-bright);
+}
+.save-slot-meta {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--c-primary);
+}
+.save-slot-time { font-size: 8px; letter-spacing: 0.8px; color: var(--c-text-dim); }
+.save-slot-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.save-slot-actions .action-btn { min-width: 64px; padding: 8px 10px; font-size: 9px; }
+@media (max-width: 640px) {
+  .save-slot-row { flex-direction: column; align-items: stretch; }
+  .save-slot-actions .action-btn { flex: 1; }
+}
+#modal-saves { z-index: 1001; }

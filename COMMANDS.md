@@ -44,6 +44,7 @@
 | `buy <item_id>` | Purchase permanent cyberdeck upgrades with banked career credits | Long-term investment & competence scaling |
 | `career` | View lifetime operative dossier, breach stats, best neural combo, and installed cyberware | Identity, pride & meta-game mastery |
 | `status` | Display cyberdeck specs, unbanked credits, and active syndicate contract | HUD awareness & contract progress tracking |
-| `save` | Atomically persist your current infiltration state to disk | Power-loss protection & player security |
-| `load` | Restore previous saved game state | Resumption fidelity |
+| `save [1\|2\|3]` | Atomically persist the live run to a manual slot (default slot 1) | Power-loss protection & parallel runs |
+| `load [1\|2\|3\|auto]` | Restore a manual slot or the autosave checkpoint | Resumption fidelity |
+| `saves` | List every checkpoint with turn, credits, trace, act and timestamp | Save-slot awareness & recovery choice |
 | `quit` | Sever connection and terminate terminal link | Clean exit |

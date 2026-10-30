@@ -117,7 +117,7 @@ CyberPulse's mechanics are grounded in cognitive neuroscience and behavioral gam
 ## 🎮 How to Play
 
 ### 1. Web Cyberdeck (Visual CRT & Web Audio)
-Launch the browser cyberdeck: main menu, story/mission board, operative channels, interactive 2D node matrix, tactical stance/proxy dock, visual mini-games, a living-grid ticker (clock, alert, market, headlines), and synthesized 8-bit FX. The header **SAVE** button writes the run through the same atomic store as the terminal, and **CONTINUE RUN** on the main menu restores it after a restart (the save file is interchangeable between both interfaces):
+Launch the browser cyberdeck: main menu, story/mission board, operative channels, interactive 2D node matrix, tactical stance/proxy dock, visual mini-games, a living-grid ticker (clock, alert, market, headlines), and synthesized 8-bit FX. The header **SAVE** button opens the slot archive: three manual slots hold independent runs, and **AUTOSAVE** follows the active run after every change. **CONTINUE RUN** on the main menu restores any slot after a restart, and the files are interchangeable with the terminal:
 
 ```bash
 # Launch interactive Web Cyberdeck (auto-opens browser at http://127.0.0.1:8420)
@@ -128,7 +128,7 @@ python -m cyberpulse.cli --web --port 9000 --seed 42069
 ```
 
 ### 2. Interactive Terminal CLI
-Or operate purely in the retro terminal REPL harness. Both interfaces open with a main menu for a new run, story briefing, operative channels, career dossier, and help; the terminal also offers save continuation:
+Or operate purely in the retro terminal REPL harness. Both interfaces open with a main menu for a new run, story briefing, operative channels, career dossier, and help; the terminal also offers slot continuation with `save [1|2|3]`, `load [1|2|3|auto]`, and `saves`, while autosave runs after every command:
 
 ```bash
 # Launch interactive terminal game with default seed
@@ -140,7 +140,7 @@ python -m cyberpulse.cli --seed 42069
 
 ### In-Game Commands (Authentic Simulation & Tactical Netrunning)
 
-The full reference of 43 commands, with each one's action and simulation role, is in [COMMANDS.md](COMMANDS.md).
+The full reference of 45 commands, with each one's action and simulation role, is in [COMMANDS.md](COMMANDS.md).
 
 ### 🕹️ Authentic Cyber Warfare Infiltration Workflow
 1. **Network Reconnaissance**: Discover network topology with `scan` or read host configuration files with `cat /etc/hosts`. Scan active network ports using `probe 192.168.1.10`.
@@ -159,7 +159,9 @@ The full reference of 43 commands, with each one's action and simulation role, i
 - **Zero Undeclared Dependencies**: Built with 100% pure Python standard library modules (`random`, `json`, `dataclasses`, `pathlib`, `argparse`).
 - **Deterministic State Engine**: Every network grid and puzzle sequence can be reproduced using `--seed <int>`.
 - **Seeded Side-Subnet Layer**: The seven-host campaign spine (gateway, proxies, vaults, Black ICE, supercore) is fixed so story targets stay honest, while every seed grows two or three extra `DATA_VAULT` hosts beside it. Template, security level, puzzle type, payout, trace rate and anchors vary, so scans, routes, loot and contract targets differ between runs; the Web matrix places them in three reserved slots with their real names.
-- **Cross-Interface Save Parity**: The Web Cyberdeck's **SAVE** action uses the terminal's atomic `SaveManager`, so the saved run — including RNG state and pending puzzles — restores exactly through **CONTINUE RUN** and can be continued in either interface. A finished run cannot be saved, and the menu button appears only while a save (or its shadow backup) exists; the browser removes only a save it saved or loaded.
+- **Cross-Interface Save Slots**: Both interfaces use the terminal's atomic `SaveManager` across three manual slots plus a separate autosave file. Slot 1 remains the legacy `savegame.json`, so existing saves keep loading; the slot archive lists turn, credits, trace, act and timestamp for each checkpoint, and **CONTINUE RUN** restores any of them in either interface.
+- **Autosave by State Change**: A signature of run state, deck, node status and pending puzzles triggers one autosave per real change, so a crash or closed browser never costs more than the last action. New runs and freshly loaded slots are baselined first, so autosave never overwrites another run's checkpoint just because a page opened.
+- **Run-Scoped Settlement Purge**: Every save carries a run identity. When a run settles, only that run's owned checkpoints and its autosave are removed; saves from other runs, or a save this interface never touched, survive. A finished run cannot be saved or replayed from its own checkpoints.
 - **Power-Loss Safe Savegames & Shadow Backup**: Uses atomic temporary file writes, `fsync`, `.bak` shadow recovery, and corruption quarantine to eliminate state loss risk.
 - **Deterministic Save Integrity**: The reward RNG state and in-progress puzzle attempts/near-miss state are persisted, so save/load continues the exact seeded sequence instead of rerolling rewards or resetting attempts. Legacy saves without these fields fall back to the prior reseed behavior.
 - **Deterministic Run Settlement**: Victory and `jackout` both bank all unbanked loot; trace lockout records a failed run. CLI and Web Cyberdeck share the same one-shot career lifecycle, so rewards are never double-counted or silently lost.
@@ -178,7 +180,7 @@ The full reference of 43 commands, with each one's action and simulation role, i
 - **Backward-Compatible World State**: Old saves without a world clock load with a fresh Day 1 world; the new fields are additive and atomic with the existing savegame.
 - **NetWatch Active Hunters & Pursuit Simulation**: Alert 60%+ mobilizes autonomous ICE hunters that track player location across network graph hops, trigger connection clashes on interception (+15% trace, -2 CPU), quarantine unmonitored daemons, and react to scent scrambling (`spoof`/`wipe_logs`) and countermeasures (`logic_bomb`/`ghost_protocol`). Only one hunter can hold the sector at a time; an intercepted hunter still counts as active, preventing a second clamp from stacking onto the first.
 - **Tactical Shift Dynamics & Downtime**: The four in-game shifts (Late Night, Morning, Afternoon, Evening) apply distinct modifiers to alert decay, re-secure chance, market bias, hunter deployment thresholds, and social-engineering odds (staff answer lures differently at 03:00 than at 09:00), so the clock carries real tactical weight. `lay_low`/`wait` trades 1-3 turns of grid movement (with its patrol, hunter, and ambient risk) for CPU recovery, exposed in both the CLI and the Web Cyberdeck shift chip.
-- **Fast Test Shield**: 100% test pass rate across unit and integration suites in about a second via `python -m unittest discover`.
+- **Fast Test Shield**: 100% test pass rate across 341 unit and integration tests in about four seconds via `python -m unittest discover`.
 
 <!-- aegean:brand-assets:start -->
 ## 🎨 Brand Assets

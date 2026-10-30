@@ -399,6 +399,41 @@ def print_contacts(engine: GameEngine) -> None:
     print("+==========================================================================+")
 
 
+def print_save_slots(saves: List[dict]) -> None:
+    """Render a compact list of restorable save slots."""
+    if not saves:
+        print("No saved runs found.")
+        return
+    print("\n+-------------------------------- SAVED RUNS --------------------------------+")
+    for entry in saves:
+        print(
+            f"  [{entry['slot']}] {entry['label']:<9} TURN {entry['turns']:<3} "
+            f"{entry['creds']} CR  TRACE {entry['trace']}%  ACT {entry['act']}  "
+            f"{entry['saved_at_display']}"
+        )
+    print("+----------------------------------------------------------------------------+")
+
+
+def choose_load_slot(save_mgr: SaveManager) -> Optional[str]:
+    """Prompt for a save slot to continue; returns None when the player cancels."""
+    saves = save_mgr.list_saves()
+    if not saves:
+        print("No saved runs found.")
+        return None
+    print_save_slots(saves)
+    try:
+        raw = input("load-slot [auto/1-3] (blank cancels)> ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        return None
+    if not raw or raw in ("q", "quit", "cancel"):
+        return None
+    try:
+        return save_mgr.normalize_slot(raw)
+    except ValueError:
+        print("Invalid slot. Choose auto, 1, 2, or 3.")
+        return None
+
+
 def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
     """Render the interactive main menu and return 'start', 'load', or 'quit'."""
     print("\n+==========================================================================+")
@@ -435,7 +470,8 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
         if choice in ("6", "help", "how"):
             print("Commands: status, contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
             print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
-            print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career, save, load, quit")
+            print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career,")
+            print("          save [1-3], load [1-3|auto], saves, quit")
             continue
         if choice in ("q", "quit", "exit"):
             print("👋 Neural link closed.")
@@ -796,7 +832,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             profile = save_mgr.load_career()
             engine.settle_career(profile)
             if save_mgr.save_career(profile):
-                save_mgr.delete_save()
+                save_mgr.delete_run(engine.run_id)
                 print("📂 Career progression profile updated.")
             else:
                 print("❌ Career update failed: progress is NOT persisted.")
@@ -917,23 +953,43 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         return True
 
     if action == "save":
-        path = save_mgr.save(engine)
+        raw_slot = parts[1] if len(parts) > 1 else 1
+        try:
+            slot = save_mgr.normalize_slot(raw_slot)
+        except ValueError:
+            print("Usage: save [1|2|3]")
+            return True
+        if slot == "auto":
+            print("AUTOSAVE is automatic; choose manual slot 1, 2, or 3.")
+            return True
+        path = save_mgr.save(engine, slot)
         if path:
-            print(f"💾 Infiltration progress saved to {path}.")
+            save_mgr.claim_slot(slot)
+            print(f"💾 Infiltration progress saved to {save_mgr.slot_label(slot)} ({path}).")
         else:
             print("❌ Save failed: the file could not be replaced after 5 attempts; progress is NOT persisted.")
         return True
 
     if action == "load":
-        loaded = save_mgr.load()
+        raw_slot = parts[1] if len(parts) > 1 else 1
+        try:
+            slot = save_mgr.normalize_slot(raw_slot)
+        except ValueError:
+            print("Usage: load [1|2|3|auto]")
+            return True
+        loaded = save_mgr.load(slot)
         if loaded:
             engine.__dict__.update(loaded.__dict__)
-            print("📂 Loaded saved infiltration session.")
+            print(f"📂 Loaded saved infiltration session from {save_mgr.slot_label(slot)}.")
         else:
-            print("No saved game found.")
+            print(f"No saved game found in {save_mgr.slot_label(slot)}.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career, status, save, load, quit")
+    if action == "saves":
+        print_save_slots(save_mgr.list_saves())
+        return True
+
+    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career, status, save, load, saves, quit")
     return True
 
 
@@ -950,7 +1006,7 @@ def handle_run_completion(engine: GameEngine, save_mgr: SaveManager) -> Optional
 
     engine.settle_career(profile)
     if save_mgr.save_career(profile):
-        save_mgr.delete_save()
+        save_mgr.delete_run(engine.run_id)
     else:
         safe_print("❌ Career update failed: progress is NOT persisted.")
     print_run_summary(engine)
@@ -987,6 +1043,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     save_mgr = SaveManager(data_dir)
     career = save_mgr.load_career()
     engine = GameEngine(seed=args.seed, career_profile=career)
+    save_mgr.mark_autosave_baseline(engine)
 
     # Batch script execution mode
     if args.commands:
@@ -996,6 +1053,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             try:
                 if not run_command(c, engine, save_mgr, auto_solve=args.auto_solve):
                     break
+                save_mgr.autosave(engine)
                 if engine.state.contract_notice and engine.state.contract_notice != notice_seen:
                     print(f"\n[!] {engine.state.contract_notice}")
                 notice_seen = engine.state.contract_notice
@@ -1013,12 +1071,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     if menu_action == "quit":
         return 0
     if menu_action == "load":
-        loaded = save_mgr.load()
+        slot = choose_load_slot(save_mgr)
+        loaded = save_mgr.load(slot) if slot else None
         if loaded:
             engine.__dict__.update(loaded.__dict__)
-            print("📂 Loaded saved infiltration session.")
+            print(f"📂 Loaded saved infiltration session from {save_mgr.slot_label(slot)}.")
         else:
-            print("No saved infiltration found. Starting a new run.")
+            print("No saved infiltration loaded. Starting a new run.")
     print_hud(engine)
     notice_seen = engine.state.contract_notice
     while not engine.state.is_game_over and not engine.state.is_victory and not engine.state.is_jacked_out:
@@ -1026,6 +1085,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             line = input("\ncyberpulse> ")
             if not run_command(line, engine, save_mgr, auto_solve=args.auto_solve):
                 break
+            save_mgr.autosave(engine)
             if engine.state.contract_notice and engine.state.contract_notice != notice_seen:
                 print(f"\n[!] {engine.state.contract_notice}")
             notice_seen = engine.state.contract_notice

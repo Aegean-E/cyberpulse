@@ -307,6 +307,10 @@ function initUIEvents() {
     document.getElementById("modal-career").classList.add("hidden");
     sfx.click();
   });
+  document.getElementById("btn-close-saves").addEventListener("click", () => {
+    document.getElementById("modal-saves").classList.add("hidden");
+    sfx.click();
+  });
   document.getElementById("btn-close-rig").addEventListener("click", () => {
     document.getElementById("modal-rig").classList.add("hidden");
     sfx.click();
@@ -617,8 +621,7 @@ function renderHUD(data) {
   if (loadBtn) loadBtn.classList.toggle("hidden", !data.has_save);
   const saveBtn = document.getElementById("btn-save-run");
   if (saveBtn) {
-    saveBtn.disabled = Boolean(gState.is_victory || gState.is_game_over || gState.is_jacked_out);
-    saveBtn.title = saveBtn.disabled ? "Run is over; nothing to save" : "Save this run to disk";
+    saveBtn.title = "Save or load a run from the slot archive";
   }
 
   // Syndicate Bounty Contract
@@ -1004,22 +1007,102 @@ async function handleReset() {
 
 async function handleSave() {
   sfx.click();
-  const res = await apiPost("/api/action", { action: "save" });
+  await openSavesModal();
+}
+
+async function handleLoad() {
+  sfx.click();
+  await openSavesModal();
+}
+
+async function openSavesModal() {
+  if (!state.data) {
+    await refreshFullState();
+  }
+  renderSavesModal();
+}
+
+function saveSlotRow(slot, label, entry, terminal) {
+  const row = document.createElement("div");
+  row.className = `save-slot-row${entry ? "" : " empty"}`;
+
+  const copy = document.createElement("div");
+  copy.className = "save-slot-copy";
+  const name = document.createElement("span");
+  name.className = "save-slot-name";
+  name.textContent = label;
+  const meta = document.createElement("span");
+  meta.className = "save-slot-meta";
+  meta.textContent = entry
+    ? `TURN ${entry.turns} · ${entry.creds} CR · TRACE ${entry.trace}% · ACT ${entry.act}`
+    : "EMPTY";
+  const time = document.createElement("span");
+  time.className = "save-slot-time";
+  time.textContent = entry ? entry.saved_at_display : "No checkpoint stored";
+  copy.append(name, meta, time);
+  row.appendChild(copy);
+
+  const actions = document.createElement("div");
+  actions.className = "save-slot-actions";
+  if (slot !== "auto") {
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "action-btn";
+    saveBtn.textContent = "SAVE";
+    saveBtn.disabled = terminal;
+    saveBtn.title = terminal ? "This run is over" : `Write the live run to ${label}`;
+    saveBtn.addEventListener("click", () => handleSaveSlot(slot));
+    actions.appendChild(saveBtn);
+  }
+  const loadBtn = document.createElement("button");
+  loadBtn.className = "action-btn";
+  loadBtn.textContent = "LOAD";
+  loadBtn.disabled = !entry || entry.terminal;
+  loadBtn.title = !entry ? `No checkpoint in ${label}` : `Restore ${label}`;
+  loadBtn.addEventListener("click", () => handleLoadSlot(slot));
+  actions.appendChild(loadBtn);
+
+  row.appendChild(actions);
+  return row;
+}
+
+function renderSavesModal() {
+  const container = document.getElementById("saves-list");
+  if (!container) return;
+  const data = state.data || {};
+  const bySlot = {};
+  (data.saves || []).forEach((entry) => {
+    bySlot[entry.slot] = entry;
+  });
+  const runState = data.state || {};
+  const terminal = Boolean(runState.is_victory || runState.is_game_over || runState.is_jacked_out);
+
+  container.innerHTML = "";
+  container.appendChild(saveSlotRow("auto", "AUTOSAVE", bySlot.auto, terminal));
+  ["1", "2", "3"].forEach((slot) => {
+    container.appendChild(saveSlotRow(slot, `SLOT ${slot}`, bySlot[slot], terminal));
+  });
+  document.getElementById("modal-saves").classList.remove("hidden");
+}
+
+async function handleSaveSlot(slot) {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "save", slot });
   if (res && res.ok) {
     sfx.success();
     addTerminalLog(res.message || "Infiltration progress saved.", "success");
     state.data = res.state;
     renderHUD(res.state);
+    renderSavesModal();
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || res.error || "Save failed.", "warn");
-    applyStateSnapshot(res);
+    if (applyStateSnapshot(res)) renderSavesModal();
   }
 }
 
-async function handleLoad() {
+async function handleLoadSlot(slot) {
   sfx.click();
-  const res = await apiPost("/api/action", { action: "load" });
+  const res = await apiPost("/api/action", { action: "load", slot });
   if (res && res.ok) {
     state.selectedNodeId = null;
     closePuzzleBay();
@@ -1027,6 +1110,7 @@ async function handleLoad() {
     addTerminalLog(res.message || "Loaded saved infiltration session.", "success");
     state.data = res.state;
     renderHUD(res.state);
+    document.getElementById("modal-saves").classList.add("hidden");
     document.getElementById("modal-main-menu").classList.add("hidden");
     sfx.success();
   } else if (res) {

@@ -1,6 +1,7 @@
 """Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback."""
 
 import random
+import uuid
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from cyberpulse.models import (
@@ -218,6 +219,8 @@ class GameEngine:
 
     def __init__(self, seed: int = 1337, career_profile: Optional[CareerProfile] = None):
         self.seed = int(seed)
+        # Identity of this specific run; save slots use it to purge every checkpoint on settlement.
+        self.run_id = uuid.uuid4().hex
         self.rng = random.Random(self.seed)
         self.nodes: Dict[str, Node] = generate_network(self.seed)
         self.deck: CyberDeck = CyberDeck()

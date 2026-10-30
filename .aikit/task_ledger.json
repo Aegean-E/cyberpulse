@@ -1,95 +1,16 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-web-save-load",
-    "last_phase": "phase 4",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1793356754.7576659,
-    "owner": "opencode:save-load-1",
-    "started_by": "opencode:save-load-1",
-    "continuations": [],
-    "completed_at": 1793356762.9413836
+    "task_id": "task-cyberpulse-autosave-slots",
+    "last_phase": "in_progress",
+    "active_phase": 4,
+    "status": "in_progress",
+    "updated_at": 1793364712.5691192,
+    "owner": "opencode:autosave-slots-1",
+    "started_by": "opencode:autosave-slots-1",
+    "continuations": []
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-reforge-audit-5",
-      "phase": "phase 4",
-      "phase_num": 4,
-      "description": "[3/3] Audit batch complete at Reforge stop 87. Source is pushed at 5f46efb; only audit memory is uncommitted. checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793286225.2223117,
-      "timestamp_str": "2026-10-29 18:03:45",
-      "agent": "opencode:reforge-audit-5",
-      "handoff": {
-        "state": "clean source, dirty audit memory",
-        "next": "continue Reforge at stage 30 (window 90) or commit audit memory",
-        "evidence": "313 tests, 4-of-4 gates"
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-reforge-audit-5",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-reforge-audit-5' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793286225.5403998,
-      "timestamp_str": "2026-10-29 18:03:45",
-      "agent": "opencode:reforge-audit-5"
-    },
-    {
-      "task_id": "task-cyberpulse-reforge-audit-6",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/3] Continue Reforge run-1 through stages 30-32 and repair only validated findings",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793287186.3558753,
-      "timestamp_str": "2026-10-29 18:19:46",
-      "agent": "opencode:reforge-audit-6",
-      "impact_assessment": {
-        "why": "The audit has reached 87 commits; the user asked to continue through the older simulation and web-client history.",
-        "benefits": "More coverage of the remaining legacy systems while keeping the pushed tree clean unless a finding is proven.",
-        "risks": "contract: a repair could touch published code; dependency: none; concurrency: one Reforge run lock and ledger; state: audit memory grows while source remains pushed at 5f46efb.",
-        "mitigation": "Review each packet against current files, apply only exact validated patches, add failing-first tests for code changes, run the full project gate, and keep push off unless separately authorized."
-      }
-    },
-    {
-      "task_id": "reforge:run-1",
-      "phase": "reforge stage 30",
-      "phase_num": 3,
-      "description": "Reforge stage 30: window 90, 3 commit(s), 8 file(s) reviewed (unreviewed), 0 finding(s), 0 repaired",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793287215.3844242,
-      "timestamp_str": "2026-10-29 18:20:15",
-      "agent": "opencode"
-    },
-    {
-      "task_id": "reforge:run-1",
-      "phase": "reforge stage 31",
-      "phase_num": 3,
-      "description": "Reforge stage 31: window 93, 3 commit(s), 7 file(s) reviewed (unreviewed), 0 finding(s), 0 repaired",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793287274.0555623,
-      "timestamp_str": "2026-10-29 18:21:14",
-      "agent": "opencode"
-    },
-    {
-      "task_id": "reforge:run-1",
-      "phase": "reforge stage 32",
-      "phase_num": 3,
-      "description": "Reforge stage 32: window 96, 3 commit(s), 7 file(s) reviewed (unreviewed), 2 finding(s), 0 repaired (regression=2)",
-      "files_affected": [
-        "cyberpulse/storage.py"
-      ],
-      "status": "completed",
-      "timestamp": 1793287325.6414442,
-      "timestamp_str": "2026-10-29 18:22:05",
-      "agent": "opencode"
-    },
     {
       "task_id": "task-cyberpulse-reforge-audit-6",
       "phase": "phase 3",
@@ -282,6 +203,78 @@
       "timestamp": 1793356762.9413853,
       "timestamp_str": "2026-10-30 13:39:22",
       "agent": "opencode:save-load-1"
+    },
+    {
+      "task_id": "task-cyberpulse-autosave-slots",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/6] Add autosave and three named save slots across terminal and Web Cyberdeck",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793363781.8923187,
+      "timestamp_str": "2026-10-30 15:36:21",
+      "agent": "opencode:autosave-slots-1",
+      "impact_assessment": {
+        "why": "ADR-024 gave both interfaces one manual save file; players still lose progress if they forget to save and cannot keep more than one run.",
+        "benefits": "Crash-safe progress recovery, parallel runs, and a load menu that works in both interfaces without changing the campaign.",
+        "risks": "contract: save schema and load semantics shared by CLI, web and storage; dependency: none; concurrency: single-user local files with atomic writes; state: existing single savegame.json must keep loading and terminal anti-replay must survive.",
+        "mitigation": "Keep slot 1 mapped to the legacy files, add explicit auto/manual ownership metadata, migrate on read, and cover legacy load, slot isolation and settlement cleanup with failing-first tests."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-autosave-slots",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[2/6] Storage slots green: legacy slot 1, slots 2-3, auto slot, run-id purge, 25 storage tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793364126.898283,
+      "timestamp_str": "2026-10-30 15:42:06",
+      "agent": "opencode:autosave-slots-1"
+    },
+    {
+      "task_id": "task-cyberpulse-autosave-slots",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[3/6] CLI slots green: save/load 1-3, saves picker, autosave after commands, 36 CLI tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793364209.6260436,
+      "timestamp_str": "2026-10-30 15:43:29",
+      "agent": "opencode:autosave-slots-1"
+    },
+    {
+      "task_id": "task-cyberpulse-autosave-slots",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[4/6] Session/API slots green: slot param, saves payload, autosave, settlement purge, 49 server tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793364321.945436,
+      "timestamp_str": "2026-10-30 15:45:21",
+      "agent": "opencode:autosave-slots-1"
+    },
+    {
+      "task_id": "task-cyberpulse-autosave-slots",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[5/6] Web slot panel added; full suite green at 337 tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793364440.8072405,
+      "timestamp_str": "2026-10-30 15:47:20",
+      "agent": "opencode:autosave-slots-1"
+    },
+    {
+      "task_id": "task-cyberpulse-autosave-slots",
+      "phase": "in_progress",
+      "phase_num": 4,
+      "description": "[6/6] Autosave and three manual slots complete; project gate 5/5, 341 tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793364712.5691192,
+      "timestamp_str": "2026-10-30 15:51:52",
+      "agent": "opencode:autosave-slots-1"
     }
   ]
 }

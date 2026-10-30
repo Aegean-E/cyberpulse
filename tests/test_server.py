@@ -780,6 +780,67 @@ class TestCyberdeckSaveLoadSession(unittest.TestCase):
         self.assertFalse(state["has_save"])
         self.assertTrue(self.session.engine.run_settled)
 
+    def test_save_run_accepts_a_named_slot(self):
+        self.session.engine.state.trace_percent = 21
+
+        saved, message = self.session.save_run(2)
+        self.assertTrue(saved, message)
+        self.assertIn("SLOT 2", message)
+
+        self.session.engine.state.trace_percent = 80
+        loaded, message = self.session.load_run(2)
+
+        self.assertTrue(loaded, message)
+        self.assertIn("SLOT 2", message)
+        self.assertEqual(self.session.engine.state.trace_percent, 21)
+
+    def test_autosave_starts_after_baseline_and_tracks_changes(self):
+        self.assertEqual(self.session.get_full_state()["saves"], [])
+
+        self.session.engine.state.trace_percent = 17
+        state = self.session.get_full_state()
+
+        auto = [entry for entry in state["saves"] if entry["slot"] == "auto"]
+        self.assertEqual(len(auto), 1)
+        self.assertEqual(auto[0]["trace"], 17)
+        self.assertTrue(self.session.save_mgr.autosave_file.exists())
+
+    def test_manual_save_refuses_the_auto_slot(self):
+        saved, message = self.session.save_run("auto")
+
+        self.assertFalse(saved)
+        self.assertIn("automatic", message)
+        self.assertFalse(self.session.save_mgr.autosave_file.exists())
+
+    def test_autosave_can_be_loaded_from_its_slot(self):
+        self.session.engine.state.trace_percent = 33
+        self.assertIsNotNone(self.session.save_mgr.autosave(self.session.engine))
+
+        loaded, message = self.session.load_run("auto")
+
+        self.assertTrue(loaded, message)
+        self.assertIn("AUTOSAVE", message)
+        self.assertEqual(self.session.engine.state.trace_percent, 33)
+
+    def test_invalid_slot_is_rejected(self):
+        with self.assertRaises(ValueError):
+            self.session.save_run(9)
+
+    def test_settlement_deletes_every_checkpoint_of_the_run(self):
+        self.session.engine.state.trace_percent = 5
+        self.assertTrue(self.session.save_run(1)[0])
+        self.session.engine.state.trace_percent = 6
+        self.assertTrue(self.session.save_run(3)[0])
+        self.session.engine.state.trace_percent = 7
+        self.assertIsNotNone(self.session.save_mgr.autosave(self.session.engine))
+
+        self.session.engine.state.is_victory = True
+        state = self.session.get_full_state()
+
+        self.assertTrue(self.session.engine.run_settled)
+        self.assertFalse(state["has_save"])
+        self.assertEqual(state["saves"], [])
+
 
 class TestCyberdeckSaveLoadAPI(unittest.TestCase):
     @classmethod
@@ -831,6 +892,53 @@ class TestCyberdeckSaveLoadAPI(unittest.TestCase):
         self.assertEqual(second_scan["state"]["state"]["trace_percent"], 10)
 
         loaded = self._post({"action": "load"})
+        self.assertTrue(loaded["ok"], loaded.get("message"))
+        self.assertEqual(loaded["state"]["state"]["trace_percent"], 5)
+        self.assertEqual(loaded["state"]["state"]["turns_elapsed"], 1)
+
+
+class TestCyberdeckSaveSlotsAPI(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = Path(tempfile.mkdtemp())
+        cls.server = create_server(host="127.0.0.1", port=0, data_dir=cls.temp_dir, seed=15)
+        cls.port = cls.server.server_address[1]
+        cls.base_url = f"http://127.0.0.1:{cls.port}"
+        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
+        cls.thread.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+        shutil.rmtree(cls.temp_dir, ignore_errors=True)
+
+    def _post(self, payload: dict):
+        body = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            f"{self.base_url}/api/action",
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    def test_named_slot_round_trip_and_autosave_payload(self):
+        scanned = self._post({"action": "scan"})
+        self.assertEqual(scanned["state"]["state"]["trace_percent"], 5)
+        auto_slots = [entry for entry in scanned["state"]["saves"] if entry["slot"] == "auto"]
+        self.assertEqual(len(auto_slots), 1)
+        self.assertEqual(auto_slots[0]["trace"], 5)
+
+        saved = self._post({"action": "save", "slot": 2})
+        self.assertTrue(saved["ok"], saved.get("message"))
+        self.assertIn("SLOT 2", saved["message"])
+        self.assertIn("2", {entry["slot"] for entry in saved["state"]["saves"]})
+
+        self._post({"action": "scan"})
+        loaded = self._post({"action": "load", "slot": 2})
+
         self.assertTrue(loaded["ok"], loaded.get("message"))
         self.assertEqual(loaded["state"]["state"]["trace_percent"], 5)
         self.assertEqual(loaded["state"]["state"]["turns_elapsed"], 1)

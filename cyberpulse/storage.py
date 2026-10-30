@@ -1,17 +1,22 @@
 """Crash-resilient savegame and career profile storage engine for CyberPulse."""
 
+import hashlib
 import json
 import os
 import random
 import shutil
 import tempfile
 import time
+import uuid
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from cyberpulse.engine import GameEngine
 from cyberpulse.models import CareerProfile, CyberDeck, GameState, Node
 from cyberpulse.puzzles import puzzle_from_dict
+
+AUTO_SLOT = "auto"
+SLOT_KEYS = ("1", "2", "3", AUTO_SLOT)
 
 
 def encode_rng_state(state: Any) -> Dict[str, Any]:
@@ -40,7 +45,48 @@ class SaveManager:
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.save_file = self.data_dir / "savegame.json"
+        self.autosave_file = self.data_dir / "autosave.json"
         self.career_file = self.data_dir / "career.json"
+        self._owned_slots: Set[str] = set()
+        self._last_autosave_signature: Optional[str] = None
+
+    @staticmethod
+    def normalize_slot(slot: Any = 1) -> str:
+        """Return a canonical slot key: '1', '2', '3' or 'auto'."""
+        if slot is None:
+            return "1"
+        if isinstance(slot, bool):
+            raise ValueError("slot must be 1, 2, 3 or 'auto'")
+        if isinstance(slot, int):
+            key = str(slot)
+        elif isinstance(slot, str):
+            key = slot.strip().lower()
+        else:
+            raise ValueError("slot must be 1, 2, 3 or 'auto'")
+        if key in ("auto", "autosave"):
+            return AUTO_SLOT
+        if key in ("1", "2", "3"):
+            return key
+        raise ValueError("slot must be 1, 2, 3 or 'auto'")
+
+    def slot_path(self, slot: Any = 1) -> Path:
+        """Map a slot key to its atomic save file, keeping slot 1 backward compatible."""
+        key = self.normalize_slot(slot)
+        if key == "1":
+            return self.save_file
+        if key == AUTO_SLOT:
+            return self.autosave_file
+        return self.data_dir / f"savegame_slot{key}.json"
+
+    @classmethod
+    def slot_label(cls, slot: Any = 1) -> str:
+        """Return a human-readable label for a slot."""
+        key = cls.normalize_slot(slot)
+        return "AUTOSAVE" if key == AUTO_SLOT else f"SLOT {key}"
+
+    def _slot_exists(self, key: str) -> bool:
+        path = self.slot_path(key)
+        return path.exists() or path.with_suffix(".bak").exists()
 
     def _write_atomic(self, target_path: Path, data: Any) -> Optional[Path]:
         """Write JSON payload to target_path atomically; returns None when the replace never lands."""
@@ -68,7 +114,7 @@ class SaveManager:
         finally:
             temp_path.unlink(missing_ok=True)
 
-    def _read_json_with_backup(self, target_path: Path) -> Optional[Any]:
+    def _read_json_with_backup(self, target_path: Path, quarantine: bool = True) -> Optional[Any]:
         """Read JSON from target_path, falling back to shadow .bak if corrupted or missing."""
         backup_path = target_path.with_suffix(".bak")
 
@@ -77,12 +123,13 @@ class SaveManager:
                 with open(target_path, "r", encoding="utf-8") as f:
                     return json.load(f)
             except (json.JSONDecodeError, OSError):
-                # Quarantine corrupted file
-                corrupt_path = self.data_dir / f"{target_path.name}.corrupt_{int(time.time())}"
-                try:
-                    shutil.move(target_path, corrupt_path)
-                except OSError:  # hygiene: allow quarantine best-effort; backup recovery follows
-                    pass
+                if quarantine:
+                    # Quarantine corrupted file
+                    corrupt_path = self.data_dir / f"{target_path.name}.corrupt_{int(time.time())}"
+                    try:
+                        shutil.move(target_path, corrupt_path)
+                    except OSError:  # hygiene: allow quarantine best-effort; backup recovery follows
+                        pass
 
         # Attempt recovery from shadow backup
         if backup_path.exists():
@@ -94,14 +141,22 @@ class SaveManager:
 
         return None
 
-    def has_save(self) -> bool:
-        """Return True when a savegame or its shadow backup exists on disk."""
-        return self.save_file.exists() or self.save_file.with_suffix(".bak").exists()
+    def _read_slot_payload(self, key: str, quarantine: bool = False) -> Optional[Any]:
+        return self._read_json_with_backup(self.slot_path(key), quarantine=quarantine)
 
-    def save(self, engine: GameEngine) -> Optional[Path]:
-        """Atomically persist engine state to disk."""
+    def has_save(self, slot: Any = None) -> bool:
+        """Return True when any slot (or the requested slot) has a save or shadow backup."""
+        if slot is None:
+            return any(self._slot_exists(key) for key in SLOT_KEYS)
+        return self._slot_exists(self.normalize_slot(slot))
+
+    def save(self, engine: GameEngine, slot: Any = 1) -> Optional[Path]:
+        """Atomically persist engine state to a manual slot or the autosave slot."""
+        key = self.normalize_slot(slot)
+        target = self.slot_path(key)
         data = {
             "seed": engine.seed,
+            "run_id": getattr(engine, "run_id", uuid.uuid4().hex),
             "deck": engine.deck.to_dict(),
             "state": engine.state.to_dict(),
             "nodes": {nid: n.to_dict() for nid, n in engine.nodes.items()},
@@ -111,17 +166,28 @@ class SaveManager:
                 for nid, puzzle in engine.pending_puzzles.items()
                 if hasattr(puzzle, "to_dict")
             },
+            "meta": {
+                "slot": key,
+                "kind": "auto" if key == AUTO_SLOT else "manual",
+                "saved_at": time.time(),
+            },
         }
-        return self._write_atomic(self.save_file, data)
+        return self._write_atomic(target, data)
 
-    def load(self) -> Optional[GameEngine]:
-        """Load and restore engine state from savegame with backup recovery."""
-        data = self._read_json_with_backup(self.save_file)
+    def claim_slot(self, slot: Any = 1) -> None:
+        """Record that this interface owns a slot and may purge it when the run settles."""
+        self._owned_slots.add(self.normalize_slot(slot))
+
+    def load(self, slot: Any = 1) -> Optional[GameEngine]:
+        """Load and restore engine state from a slot with backup recovery."""
+        key = self.normalize_slot(slot)
+        data = self._read_json_with_backup(self.slot_path(key))
         if not data or not isinstance(data, dict):
             return None
 
         try:
             engine = GameEngine(seed=data["seed"])
+            engine.run_id = str(data.get("run_id") or getattr(engine, "run_id", uuid.uuid4().hex))
             engine.deck = CyberDeck.from_dict(data["deck"])
             engine.state = GameState.from_dict(data["state"])
             engine.nodes = {nid: Node.from_dict(ndata) for nid, ndata in data["nodes"].items()}
@@ -143,14 +209,111 @@ class SaveManager:
                     puzzle = puzzle_from_dict(payload)
                     if puzzle is not None:
                         engine.pending_puzzles[nid] = puzzle
+            self._owned_slots.add(key)
+            self._last_autosave_signature = self._signature(engine)
             return engine
         except (KeyError, TypeError):
             return None
 
-    def delete_save(self) -> None:
-        """Remove savegame and its shadow backup after completed or failed run."""
-        self.save_file.unlink(missing_ok=True)
-        self.save_file.with_suffix(".bak").unlink(missing_ok=True)
+    def _signature(self, engine: GameEngine) -> str:
+        """Hash the parts of a run that autosave should notice without rewriting unchanged state."""
+        payload = {
+            "run_id": getattr(engine, "run_id", ""),
+            "state": engine.state.to_dict(),
+            "deck": engine.deck.to_dict(),
+            "nodes": {
+                nid: [
+                    str(getattr(node.status, "value", node.status)),
+                    bool(node.reward_claimed),
+                    int(getattr(node, "lockdown_until_turn", 0) or 0),
+                ]
+                for nid, node in engine.nodes.items()
+            },
+            "puzzles": {
+                nid: puzzle.to_dict() if hasattr(puzzle, "to_dict") else str(puzzle)
+                for nid, puzzle in engine.pending_puzzles.items()
+            },
+        }
+        serialized = json.dumps(payload, sort_keys=True, default=str)
+        return hashlib.sha1(serialized.encode("utf-8")).hexdigest()
+
+    def mark_autosave_baseline(self, engine: GameEngine) -> None:
+        """Remember the current state so a new or freshly loaded run is not written before it changes."""
+        self._last_autosave_signature = self._signature(engine)
+
+    def autosave(self, engine: GameEngine) -> Optional[Path]:
+        """Write the autosave slot once per state change; terminal runs are never saved."""
+        if engine.state.is_victory or engine.state.is_game_over or engine.state.is_jacked_out:
+            return None
+        signature = self._signature(engine)
+        if signature == self._last_autosave_signature:
+            return None
+        path = self.save(engine, AUTO_SLOT)
+        if path is not None:
+            self.claim_slot(AUTO_SLOT)
+            self._last_autosave_signature = signature
+        return path
+
+    def list_saves(self) -> List[Dict[str, Any]]:
+        """Return metadata for every restorable slot, newest first."""
+        saves: List[Dict[str, Any]] = []
+        for key in SLOT_KEYS:
+            if not self._slot_exists(key):
+                continue
+            data = self._read_slot_payload(key)
+            if not isinstance(data, dict):
+                continue
+            meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
+            state = data.get("state") if isinstance(data.get("state"), dict) else {}
+            deck = data.get("deck") if isinstance(data.get("deck"), dict) else {}
+            saved_at = meta.get("saved_at")
+            if not isinstance(saved_at, (int, float)):
+                path = self.slot_path(key)
+                candidates = [p for p in (path, path.with_suffix(".bak")) if p.exists()]
+                saved_at = max(p.stat().st_mtime for p in candidates) if candidates else 0.0
+            saves.append({
+                "slot": key,
+                "label": self.slot_label(key),
+                "kind": "auto" if key == AUTO_SLOT else "manual",
+                "saved_at": float(saved_at),
+                "saved_at_display": time.strftime("%Y-%m-%d %H:%M", time.localtime(float(saved_at))),
+                "turns": int(state.get("turns_elapsed", 0) or 0),
+                "creds": int(deck.get("cryptocreds", 0) or 0),
+                "trace": int(state.get("trace_percent", 0) or 0),
+                "act": int(state.get("story_act", 1) or 1),
+                "seed": int(data.get("seed", 0) or 0),
+                "terminal": bool(
+                    state.get("is_victory") or state.get("is_game_over") or state.get("is_jacked_out")
+                ),
+            })
+        order = {key: index for index, key in enumerate(SLOT_KEYS)}
+        saves.sort(key=lambda entry: (-entry["saved_at"], order.get(entry["slot"], 99)))
+        return saves
+
+    def delete_save(self, slot: Any = 1) -> None:
+        """Remove a slot's savegame and its shadow backup."""
+        key = self.normalize_slot(slot)
+        path = self.slot_path(key)
+        path.unlink(missing_ok=True)
+        path.with_suffix(".bak").unlink(missing_ok=True)
+        self._owned_slots.discard(key)
+        if key == AUTO_SLOT:
+            self._last_autosave_signature = None
+
+    def delete_run(self, run_id: str) -> None:
+        """Purge this interface's owned checkpoints of a settled run, leaving other runs untouched."""
+        for key in SLOT_KEYS:
+            if key not in self._owned_slots:
+                continue
+            data = self._read_slot_payload(key)
+            if not isinstance(data, dict):
+                self.delete_save(key)
+                continue
+            file_run = data.get("run_id")
+            if file_run in (None, "", run_id):
+                self.delete_save(key)
+        self._owned_slots.clear()
+        self._last_autosave_signature = None
 
     def save_career(self, profile: CareerProfile) -> Optional[Path]:
         """Atomically persist career meta-progression profile."""

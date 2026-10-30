@@ -7,10 +7,10 @@
 
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `26`
-- **Total Classes**: `61`
-- **Total Top-Level Functions**: `68`
-- **Total Class Methods**: `534`
-- **Total Source Lines**: `12415`
+- **Total Classes**: `62`
+- **Total Top-Level Functions**: `70`
+- **Total Class Methods**: `566`
+- **Total Source Lines**: `12912`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1041` lines (`49177` bytes)
+**Size**: `1101` lines (`51556` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -47,6 +47,8 @@
 - `def print_run_summary(engine)`
 - `def print_quests(engine)`
 - `def print_contacts(engine)`
+- `def print_save_slots(saves)` - *Render a compact list of restorable save slots.*
+- `def choose_load_slot(save_mgr)` - *Prompt for a save slot to continue; returns None when the player cancels.*
 - `def show_main_menu(engine, save_mgr)` - *Render the interactive main menu and return 'start', 'load', or 'quit'.*
 - `def execute_hack_puzzle(engine, target_id, auto_solve)`
 - `def run_command(cmd_line, engine, save_mgr, auto_solve)` - *Execute a single command string. Returns False to quit.*
@@ -58,7 +60,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3424` lines (`160419` bytes)
+**Size**: `3427` lines (`160570` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -305,7 +307,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `747` lines (`33938` bytes)
+**Size**: `760` lines (`34802` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -313,8 +315,8 @@
   - Method `.settle_run_if_finished()` - *Persist a victory/lockout exactly once as soon as the run reaches a terminal state.*
   - Method `.get_full_state()` - *Aggregate complete runtime state for frontend rendering.*
   - Method `.reset_game(seed)`
-  - Method `.save_run()` - *Persist the live run with the same atomic manager the terminal uses.*
-  - Method `.load_run()` - *Replace the live engine with the saved run, if one can be restored.*
+  - Method `.save_run(slot)` - *Persist the live run to a manual slot with the terminal's atomic manager.*
+  - Method `.load_run(slot)` - *Replace the live engine with a saved run from the requested slot.*
 - `class CyberdeckHTTPHandler` - *HTTP request handler providing REST API endpoints and static cyberdeck assets.*
   - Method `.log_message(format, *args)` - *Route cyberdeck request logs without cluttering console.*
   - Method `.send_json_response(data, status)`
@@ -350,17 +352,28 @@
 ### [`cyberpulse/storage.py`](cyberpulse/storage.py)
 > *Crash-resilient savegame and career profile storage engine for CyberPulse.*
 
-**Size**: `168` lines (`6623` bytes)
+**Size**: `331` lines (`13966` bytes)
 
 **Classes:**
 - `class SaveManager` - *Manages atomic saving and loading of game states and career profiles.*
   - Method `.__init__(data_dir)`
+  - Method `.normalize_slot(slot)` - *Return a canonical slot key: '1', '2', '3' or 'auto'.*
+  - Method `.slot_path(slot)` - *Map a slot key to its atomic save file, keeping slot 1 backward compatible.*
+  - Method `.slot_label(slot)` - *Return a human-readable label for a slot.*
+  - Method `._slot_exists(key)`
   - Method `._write_atomic(target_path, data)` - *Write JSON payload to target_path atomically; returns None when the replace never lands.*
-  - Method `._read_json_with_backup(target_path)` - *Read JSON from target_path, falling back to shadow .bak if corrupted or missing.*
-  - Method `.has_save()` - *Return True when a savegame or its shadow backup exists on disk.*
-  - Method `.save(engine)` - *Atomically persist engine state to disk.*
-  - Method `.load()` - *Load and restore engine state from savegame with backup recovery.*
-  - Method `.delete_save()` - *Remove savegame and its shadow backup after completed or failed run.*
+  - Method `._read_json_with_backup(target_path, quarantine)` - *Read JSON from target_path, falling back to shadow .bak if corrupted or missing.*
+  - Method `._read_slot_payload(key, quarantine)`
+  - Method `.has_save(slot)` - *Return True when any slot (or the requested slot) has a save or shadow backup.*
+  - Method `.save(engine, slot)` - *Atomically persist engine state to a manual slot or the autosave slot.*
+  - Method `.claim_slot(slot)` - *Record that this interface owns a slot and may purge it when the run settles.*
+  - Method `.load(slot)` - *Load and restore engine state from a slot with backup recovery.*
+  - Method `._signature(engine)` - *Hash the parts of a run that autosave should notice without rewriting unchanged state.*
+  - Method `.mark_autosave_baseline(engine)` - *Remember the current state so a new or freshly loaded run is not written before it changes.*
+  - Method `.autosave(engine)` - *Write the autosave slot once per state change; terminal runs are never saved.*
+  - Method `.list_saves()` - *Return metadata for every restorable slot, newest first.*
+  - Method `.delete_save(slot)` - *Remove a slot's savegame and its shadow backup.*
+  - Method `.delete_run(run_id)` - *Purge this interface's owned checkpoints of a settled run, leaving other runs untouched.*
   - Method `.save_career(profile)` - *Atomically persist career meta-progression profile.*
   - Method `.load_career()` - *Load persistent career profile with backup recovery or return fresh profile.*
 
@@ -445,7 +458,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `418` lines (`17567` bytes)
+**Size**: `463` lines (`19457` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -466,6 +479,11 @@
   - Method `.test_jackout_records_best_combo_in_career()`
   - Method `.test_contact_job_and_favor_commands()`
   - Method `.test_batch_infiltration_playthrough()`
+  - Method `.test_batch_named_slot_round_trip()`
+  - Method `.test_saves_command_lists_manual_slots()`
+  - Method `.test_batch_commands_autosave_state_changes()`
+  - Method `.test_invalid_save_slot_reports_usage()`
+  - Method `.test_jackout_purges_owned_slots_and_autosave()`
   - Method `.test_jackout_command()`
   - Method `.test_shop_and_buy_command()`
   - Method `.test_career_progression_across_sessions()`
@@ -747,7 +765,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `842` lines (`36613` bytes)
+**Size**: `950` lines (`40984` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -801,12 +819,23 @@
   - Method `.test_load_without_a_save_reports_a_missing_run()`
   - Method `.test_terminal_run_is_not_saved()`
   - Method `.test_finishing_a_run_deletes_an_earlier_save()`
+  - Method `.test_save_run_accepts_a_named_slot()`
+  - Method `.test_autosave_starts_after_baseline_and_tracks_changes()`
+  - Method `.test_manual_save_refuses_the_auto_slot()`
+  - Method `.test_autosave_can_be_loaded_from_its_slot()`
+  - Method `.test_invalid_slot_is_rejected()`
+  - Method `.test_settlement_deletes_every_checkpoint_of_the_run()`
 - `class TestCyberdeckSaveLoadAPI`
   - Method `.setUpClass()`
   - Method `.tearDownClass()`
   - Method `._post(payload)`
   - Method `._state()`
   - Method `.test_save_and_continue_round_trip()`
+- `class TestCyberdeckSaveSlotsAPI`
+  - Method `.setUpClass()`
+  - Method `.tearDownClass()`
+  - Method `._post(payload)`
+  - Method `.test_named_slot_round_trip_and_autosave_payload()`
 
 ---
 
@@ -832,7 +861,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `291` lines (`10872` bytes)
+**Size**: `396` lines (`14934` bytes)
 
 **Classes:**
 - `class TestStorage`
@@ -856,6 +885,12 @@
   - Method `.test_old_active_contract_save_without_sequence_gets_safe_migration()`
   - Method `.test_contract_sequence_persists_and_prevents_id_collisions()`
   - Method `.test_failed_replace_reports_no_save()`
+  - Method `.test_slots_are_isolated_and_listed_with_progress()`
+  - Method `.test_autosave_writes_once_per_state_change()`
+  - Method `.test_autosave_refuses_a_finished_run()`
+  - Method `.test_delete_run_removes_every_checkpoint_of_that_run_only()`
+  - Method `.test_legacy_save_without_run_id_is_still_slot_one()`
+  - Method `.test_invalid_slot_is_rejected()`
 
 ---
 

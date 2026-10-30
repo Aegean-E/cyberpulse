@@ -337,4 +337,18 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. Test the session semantics (round trip with a pending puzzle, missing save, terminal refusal) and the HTTP round trip (no save, scan, save, diverge, load restores trace/turn).
 - **Consequences**: Browser runs now survive a server restart, and the same save can move between the Web Cyberdeck and the terminal because both use the identical file and schema. Finishing a run removes the mid-run save after the career write, so the terminal's anti-replay behavior is preserved. No storage schema, CLI behavior or career settlement changes. Test suite: 323 tests, 100% green.
 
+### ADR-025: Save Slots & Autosave: Three Manual Checkpoints, Change-Tracked Autosave, and Run-Scoped Purge
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: ADR-024 gave both interfaces one manual save file. Players still lost progress if they forgot to save, could not keep parallel runs apart, and had no way to see what a save contained before loading it. Slot 1 also had to keep loading existing `savegame.json` files, and the ADR-024 ownership rule had to survive: a browser run must not delete a save another interface owns.
+- **Decision**:
+  1. Keep slot 1 mapped to the legacy `savegame.json` (and `savegame.bak`), add `savegame_slot2.json` and `savegame_slot3.json`, and give autosave its own `autosave.json`. `SaveManager.normalize_slot` accepts `1`, `2`, `3`, `auto`/`autosave`, and rejects everything else with a clear error.
+  2. Extend the atomic store with `slot_path`, `has_save(slot)`, `list_saves`, `claim_slot`, `mark_autosave_baseline`, `autosave`, and `delete_run`. Save payloads gain additive `run_id` and `meta` fields; old payloads without them still load as slot 1.
+  3. Give each `GameEngine` a `run_id`. `delete_run` removes only checkpoints this interface claimed and whose file belongs to the settled run (or has no run identity, for legacy files), preserving ADR-024's cross-interface ownership guard while purging every owned slot and the autosave at settlement.
+  4. Autosave hashes run state, deck, node status and pending puzzles. It writes once per real change to the autosave file only, never to a manual slot. New runs and loaded slots are baselined first, so opening a page or loading an older run cannot overwrite another run's autosave.
+  5. Terminal: `save 1|2|3`, `load 1|2|3|auto`, and `saves`; `CONTINUE` opens a slot picker; autosave runs after each command in interactive and batch mode.
+  6. Web Cyberdeck: expose `saves` in every state payload, accept a `slot` on `save`/`load`, and replace the single header action with a slot archive modal listing turn, credits, trace, act and timestamp for each checkpoint, with per-slot SAVE and LOAD controls.
+  7. Cover slot isolation, legacy loading, listing metadata, autosave deduplication and terminal refusal, run-scoped purge, CLI commands, session semantics and the HTTP round trip with tests.
+- **Consequences**: Players can keep three independent runs and recover from a crash without saving manually. The legacy save file and schema remain readable, the Web and terminal archives are interchangeable, and finishing a run still cannot be replayed from any checkpoint this interface created. Test suite: 341 tests, 100% green.
+
 

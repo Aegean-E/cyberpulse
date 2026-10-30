@@ -49,7 +49,7 @@ class CyberdeckSession:
         self.engine = GameEngine(seed=seed, career_profile=self.career)
         self.active_puzzle: Optional[Any] = None
         self.active_puzzle_node_id: Optional[str] = None
-        self.save_owned = False
+        self.save_mgr.mark_autosave_baseline(self.engine)
         self.lock = threading.RLock()
 
     def settle_run_if_finished(self) -> Optional[Any]:
@@ -64,14 +64,14 @@ class CyberdeckSession:
         engine.settle_career(profile)
         if not self.save_mgr.save_career(profile):
             engine.run_settled = False
-        elif self.save_owned:
-            self.save_mgr.delete_save()
-            self.save_owned = False
+        else:
+            self.save_mgr.delete_run(engine.run_id)
         return profile
 
     def get_full_state(self) -> Dict[str, Any]:
         """Aggregate complete runtime state for frontend rendering."""
         self.settle_run_if_finished()
+        self.save_mgr.autosave(self.engine)
         curr = self.engine.get_current_node()
         career = self.save_mgr.load_career()
         world = self.engine.world_summary()
@@ -92,6 +92,7 @@ class CyberdeckSession:
             "workshop_recipes": self.engine.list_crafting_recipes(),
             "known_cves": self.engine.list_cves(),
             "has_save": self.save_mgr.has_save(),
+            "saves": self.save_mgr.list_saves(),
             "local_rig": {
                 "ip": self.engine.deck.local_ip,
                 "hostname": self.engine.deck.local_hostname,
@@ -107,30 +108,34 @@ class CyberdeckSession:
         self.engine = GameEngine(seed=new_seed, career_profile=self.career)
         self.active_puzzle = None
         self.active_puzzle_node_id = None
-        self.save_owned = False
+        self.save_mgr.mark_autosave_baseline(self.engine)
         return self.get_full_state()
 
-    def save_run(self) -> Tuple[bool, str]:
-        """Persist the live run with the same atomic manager the terminal uses."""
+    def save_run(self, slot: Any = 1) -> Tuple[bool, str]:
+        """Persist the live run to a manual slot with the terminal's atomic manager."""
+        key = self.save_mgr.normalize_slot(slot)
+        if key == "auto":
+            return False, "AUTOSAVE is automatic; choose manual slot 1, 2, or 3."
         engine = self.engine
         if engine.state.is_victory or engine.state.is_game_over or engine.state.is_jacked_out:
             return False, "This run is already over; there is nothing left to save."
-        path = self.save_mgr.save(engine)
+        path = self.save_mgr.save(engine, key)
         if path is None:
             return False, "Save failed: the save file could not be replaced after 5 attempts."
-        self.save_owned = True
-        return True, "Infiltration progress saved. CONTINUE RUN will restore this exact state."
+        self.save_mgr.claim_slot(key)
+        return True, f"Infiltration progress saved to {self.save_mgr.slot_label(key)}. LOAD will restore this exact state."
 
-    def load_run(self) -> Tuple[bool, str]:
-        """Replace the live engine with the saved run, if one can be restored."""
-        loaded = self.save_mgr.load()
+    def load_run(self, slot: Any = 1) -> Tuple[bool, str]:
+        """Replace the live engine with a saved run from the requested slot."""
+        key = self.save_mgr.normalize_slot(slot)
+        label = self.save_mgr.slot_label(key)
+        loaded = self.save_mgr.load(key)
         if loaded is None:
-            return False, "No saved run found. Save a run before trying to continue."
+            return False, f"No saved run found in {label}. Save a run before trying to continue."
         self.engine = loaded
         self.active_puzzle = None
         self.active_puzzle_node_id = None
-        self.save_owned = True
-        return True, "Loaded saved infiltration session."
+        return True, f"Loaded saved infiltration session from {label}."
 
 
 class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
@@ -354,12 +359,20 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 return
 
             if action == "save":
-                ok, msg = self.server_session.save_run()
+                try:
+                    ok, msg = self.server_session.save_run(payload.get("slot", 1))
+                except ValueError as exc:
+                    self.send_json_response({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                    return
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 
             if action == "load":
-                ok, msg = self.server_session.load_run()
+                try:
+                    ok, msg = self.server_session.load_run(payload.get("slot", 1))
+                except ValueError as exc:
+                    self.send_json_response({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                    return
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 

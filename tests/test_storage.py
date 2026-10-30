@@ -285,6 +285,111 @@ class TestStorage(unittest.TestCase):
         self.assertFalse(self.save_mgr.save_file.exists())
         self.assertEqual(list(self.temp_dir.glob(".tmp_*")), [])
 
+    def test_slots_are_isolated_and_listed_with_progress(self):
+        engine = GameEngine(seed=42)
+        engine.deck.cryptocreds = 100
+        engine.state.turns_elapsed = 7
+        engine.state.trace_percent = 14
+        self.save_mgr.save(engine, 1)
+
+        engine.deck.cryptocreds = 250
+        engine.state.turns_elapsed = 12
+        engine.state.trace_percent = 31
+        self.save_mgr.save(engine, 2)
+
+        slot_one = self.save_mgr.load(1)
+        slot_two = self.save_mgr.load(2)
+
+        self.assertIsNotNone(slot_one)
+        self.assertIsNotNone(slot_two)
+        self.assertEqual(slot_one.deck.cryptocreds, 100)
+        self.assertEqual(slot_two.deck.cryptocreds, 250)
+        self.assertNotEqual(self.save_mgr.slot_path(1), self.save_mgr.slot_path(2))
+
+        saves = {entry["slot"]: entry for entry in self.save_mgr.list_saves()}
+        self.assertEqual(set(saves), {"1", "2"})
+        self.assertEqual(saves["2"]["label"], "SLOT 2")
+        self.assertEqual(saves["2"]["kind"], "manual")
+        self.assertEqual(saves["2"]["turns"], 12)
+        self.assertEqual(saves["2"]["creds"], 250)
+        self.assertEqual(saves["2"]["trace"], 31)
+
+    def test_autosave_writes_once_per_state_change(self):
+        engine = GameEngine(seed=7)
+        self.save_mgr.mark_autosave_baseline(engine)
+
+        self.assertIsNone(self.save_mgr.autosave(engine))
+        self.assertFalse(self.save_mgr.autosave_file.exists())
+
+        engine.state.trace_percent = 12
+        first = self.save_mgr.autosave(engine)
+        self.assertIsNotNone(first)
+        self.assertTrue(self.save_mgr.autosave_file.exists())
+        self.assertIsNone(self.save_mgr.autosave(engine))
+
+        engine.state.trace_percent = 20
+        self.assertIsNotNone(self.save_mgr.autosave(engine))
+        saves = {entry["slot"]: entry for entry in self.save_mgr.list_saves()}
+        self.assertEqual(saves["auto"]["kind"], "auto")
+        self.assertEqual(saves["auto"]["label"], "AUTOSAVE")
+        self.assertEqual(saves["auto"]["trace"], 20)
+
+    def test_autosave_refuses_a_finished_run(self):
+        engine = GameEngine(seed=8)
+        engine.state.is_victory = True
+
+        self.assertIsNone(self.save_mgr.autosave(engine))
+        self.assertFalse(self.save_mgr.autosave_file.exists())
+
+    def test_delete_run_removes_every_checkpoint_of_that_run_only(self):
+        first = GameEngine(seed=11)
+        self.save_mgr.save(first, 1)
+        self.save_mgr.claim_slot(1)
+        self.save_mgr.save(first, 2)
+        self.save_mgr.claim_slot(2)
+        first.state.trace_percent = 9
+        self.save_mgr.autosave(first)
+
+        second = GameEngine(seed=12)
+        self.save_mgr.save(second, 3)
+        self.save_mgr.claim_slot(3)
+
+        self.save_mgr.delete_run(first.run_id)
+
+        self.assertFalse(self.save_mgr.slot_path(1).exists())
+        self.assertFalse(self.save_mgr.slot_path(2).exists())
+        self.assertFalse(self.save_mgr.autosave_file.exists())
+        self.assertTrue(self.save_mgr.slot_path(3).exists())
+        self.assertTrue(self.save_mgr.load(3))
+
+    def test_legacy_save_without_run_id_is_still_slot_one(self):
+        import json
+
+        engine = GameEngine(seed=13)
+        self.save_mgr.save(engine, 1)
+        payload = json.loads(self.save_mgr.save_file.read_text(encoding="utf-8"))
+        payload.pop("run_id", None)
+        payload.pop("meta", None)
+        self.save_mgr.save_file.write_text(json.dumps(payload), encoding="utf-8")
+
+        loaded = self.save_mgr.load(1)
+
+        self.assertIsNotNone(loaded)
+        saves = self.save_mgr.list_saves()
+        self.assertEqual([entry["slot"] for entry in saves], ["1"])
+        self.assertTrue(self.save_mgr.has_save())
+
+        self.save_mgr.delete_run(loaded.run_id)
+        self.assertFalse(self.save_mgr.has_save(1))
+
+    def test_invalid_slot_is_rejected(self):
+        engine = GameEngine(seed=14)
+
+        with self.assertRaises(ValueError):
+            self.save_mgr.save(engine, 9)
+        with self.assertRaises(ValueError):
+            self.save_mgr.load("nightmare")
+
 
 if __name__ == "__main__":
     unittest.main()
