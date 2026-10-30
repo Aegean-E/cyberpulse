@@ -3,25 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-daily-streak",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793373699.7839267,
     "owner": "opencode:daily-streak-1",
     "started_by": "opencode:daily-streak-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793373734.5747113
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-milestones",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[3/4] Milestone catalog, settlement unlocks, CLI dossier/run legacy and Web badges green; 366 tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793371859.9577355,
-      "timestamp_str": "2026-10-30 17:50:59",
-      "agent": "opencode:milestones-1"
-    },
     {
       "task_id": "task-cyberpulse-milestones",
       "phase": "in_progress",
@@ -249,6 +239,16 @@
       "status": "in_progress",
       "timestamp": 1793373699.7839267,
       "timestamp_str": "2026-10-30 18:21:39",
+      "agent": "opencode:daily-streak-1"
+    },
+    {
+      "task_id": "task-cyberpulse-daily-streak",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-daily-streak' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793373734.5747125,
+      "timestamp_str": "2026-10-30 18:22:14",
       "agent": "opencode:daily-streak-1"
     }
   ]
