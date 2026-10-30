@@ -6,7 +6,7 @@
 <!-- aegean:media:end -->
 
 
-CyberPulse is a retro-cyberpunk terminal hacking simulation game designed around empirical behavioral psychology: procedural puzzle nodes, ICE defenses, push-your-luck extraction, persistent career progression and a five-act story campaign, played in the terminal or the Web Cyberdeck.
+CyberPulse is a retro-cyberpunk terminal hacking simulation game designed around empirical behavioral psychology: procedural puzzle nodes, seeded side-subnet hosts, ICE defenses, push-your-luck extraction, persistent career progression and a five-act story campaign, played in the terminal or the Web Cyberdeck.
 
 It also features variable-ratio reward schedules, near-miss striatal feedback, an operative relationship system, a dynamic quest board, combo/overdrive risk-reward mechanics, and a living-grid world simulation with an in-game clock, corporate alert, generated news, ambient events, host re-securing, a drifting black market, tactical shifts, lay-low downtime, and a deadline-bound Syndicate contract market.
 
@@ -158,6 +158,7 @@ The full reference of 43 commands, with each one's action and simulation role, i
 
 - **Zero Undeclared Dependencies**: Built with 100% pure Python standard library modules (`random`, `json`, `dataclasses`, `pathlib`, `argparse`).
 - **Deterministic State Engine**: Every network grid and puzzle sequence can be reproduced using `--seed <int>`.
+- **Seeded Side-Subnet Layer**: The seven-host campaign spine (gateway, proxies, vaults, Black ICE, supercore) is fixed so story targets stay honest, while every seed grows two or three extra `DATA_VAULT` hosts beside it. Template, security level, puzzle type, payout, trace rate and anchors vary, so scans, routes, loot and contract targets differ between runs; the Web matrix places them in three reserved slots with their real names.
 - **Power-Loss Safe Savegames & Shadow Backup**: Uses atomic temporary file writes, `fsync`, `.bak` shadow recovery, and corruption quarantine to eliminate state loss risk.
 - **Deterministic Save Integrity**: The reward RNG state and in-progress puzzle attempts/near-miss state are persisted, so save/load continues the exact seeded sequence instead of rerolling rewards or resetting attempts. Legacy saves without these fields fall back to the prior reseed behavior.
 - **Deterministic Run Settlement**: Victory and `jackout` both bank all unbanked loot; trace lockout records a failed run. CLI and Web Cyberdeck share the same one-shot career lifecycle, so rewards are never double-counted or silently lost.

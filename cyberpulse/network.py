@@ -1,7 +1,7 @@
 """Procedural cyberspace network generator with deterministic topology."""
 
 import random
-from typing import Dict
+from typing import Any, Dict, List
 
 from cyberpulse.models import (
     EmployeeProfile,
@@ -16,6 +16,100 @@ from cyberpulse.models import (
     SecurityAwarenessLevel,
     VirtualFile,
 )
+
+# Side-subnet hosts sit beside the fixed campaign spine. The seed chooses which
+# templates appear, their security, puzzle, payout and which spine hosts they hang
+# from, so two runs scan different routes and the contract board draws from a
+# wider pool without disturbing the story targets.
+SIDE_HOST_TEMPLATES: List[Dict[str, Any]] = [
+    {
+        "name": "Cold Storage Depository",
+        "hostname": "coldstore.sprawl.internal",
+        "payload": "Escrowed corporate bearer bonds",
+        "file_path": "/data/escrow_ledger.dat",
+        "file_size_kb": 48,
+        "content": "ESCROW_ID,BOND_OWNER,AMOUNT\nESC-7712,OmniCorp Holdings,$880000",
+        "port": 445,
+        "service": "smb",
+        "version": "Samba 4.6",
+        "exploit_tool": "smb_relay",
+        "employee": ("Nadia Rho", "Vault Custodian", "nrho@coldstore.sprawl", "smb_share_token=COLD-7712"),
+        "antivirus": ("DefenderBasic", "v1.4", 10, 2),
+    },
+    {
+        "name": "Clinic Records Node",
+        "hostname": "clinic.sprawl.internal",
+        "payload": "Cortex-implant patient index",
+        "file_path": "/records/neural_patient_index.db",
+        "file_size_kb": 72,
+        "content": "PATIENT_ID,IMPLANT,INSURER\nPX-118,Chimera-Cortex,OmniHealth",
+        "port": 5432,
+        "service": "postgres",
+        "version": "PostgreSQL 13",
+        "exploit_tool": "sql_inject",
+        "employee": ("Dr. Ilya Sen", "Clinic Administrator", "isen@clinic.sprawl", "db_ro_token=CLINIC-418"),
+        "antivirus": ("SentinelCore EDR", "v3.1", 15, 3),
+    },
+    {
+        "name": "Media Archive Relay",
+        "hostname": "relay.sprawl.internal",
+        "payload": "Unreleased blackmail footage",
+        "file_path": "/archive/blackmail_reel.mkv",
+        "file_size_kb": 256,
+        "content": "REEL 09: OmniCorp board meeting, off-record transfer.",
+        "port": 80,
+        "service": "http",
+        "version": "StreamServe 2.0",
+        "exploit_tool": "web_shell",
+        "employee": ("Tomas Vale", "Broadcast Engineer", "tvale@relay.sprawl", "relay_admin=MEDIA-902"),
+        "antivirus": None,
+    },
+    {
+        "name": "Logistics Dispatch Hub",
+        "hostname": "dispatch.sprawl.internal",
+        "payload": "Encrypted freight manifests",
+        "file_path": "/shipping/manifest_encrypted.csv",
+        "file_size_kb": 36,
+        "content": "LANE,CARGO,DEST\nL-17,Unmarked crates,Dockside 4",
+        "port": 22,
+        "service": "ssh",
+        "version": "OpenSSH 8.2",
+        "exploit_tool": "ssh_overflow",
+        "employee": ("Greta Moss", "Dispatch Lead", "gmoss@dispatch.sprawl", "ssh_dispatch_key=DISPATCH-55"),
+        "antivirus": ("AegisAI Sentinel", "v5.0", 20, 3),
+    },
+    {
+        "name": "Orbital Telemetry Cache",
+        "hostname": "telemetry.sprawl.internal",
+        "payload": "Orbital mirror sync telemetry",
+        "file_path": "/telemetry/orbital_sync.bin",
+        "file_size_kb": 160,
+        "content": "SYNC WINDOW 04:00-04:12 // mirror array drift 0.003deg",
+        "port": 8080,
+        "service": "http",
+        "version": "Telemetry API v1.3",
+        "exploit_tool": "web_shell",
+        "employee": ("Rune Okafor", "Orbital Analyst", "rokafor@telemetry.sprawl", "orbit_api_token=SKY-3301"),
+        "antivirus": ("CyberShield Corp", "v4.2", 15, 4),
+    },
+    {
+        "name": "Courier Dead-Drop Node",
+        "hostname": "drop.sprawl.internal",
+        "payload": "Dead courier's final message",
+        "file_path": "/drops/dead_courier.msg",
+        "file_size_kb": 8,
+        "content": "If you are reading this, the name is NEXUS. Trust the Archivist.",
+        "port": 21,
+        "service": "ftp",
+        "version": "vsftpd 3.0",
+        "exploit_tool": "ftp_bounce",
+        "employee": ("Sal Kore", "Drop Warden", "skore@drop.sprawl", "ftp_drop_pass=COURIER-13"),
+        "antivirus": None,
+    },
+]
+
+SIDE_HOST_ANCHORS = ("node_proxy_a", "node_proxy_b", "node_ice_perimeter")
+SIDE_HOST_PUZZLES = ("frequency", "buffer", "hash")
 
 
 def generate_network(seed: int) -> Dict[str, Node]:
@@ -206,4 +300,93 @@ def generate_network(seed: int) -> Dict[str, Node]:
         ),
     }
 
+    _generate_side_hosts(rng, nodes)
     return nodes
+
+
+def _generate_side_hosts(rng: random.Random, nodes: Dict[str, Node]) -> None:
+    """Attach 2-3 seeded side hosts to the fixed campaign spine.
+
+    The campaign hosts, their IDs, IPs and story files stay untouched. Side hosts
+    are ordinary LOCKED nodes wired to early anchors, so breaching an anchor
+    reveals them for exploration, contracts and loot.
+    """
+    count = rng.randint(2, 3)
+    templates = rng.sample(SIDE_HOST_TEMPLATES, count)
+    for index, template in enumerate(templates, start=1):
+        security = rng.randint(1, 3)
+        reward = 60 + security * 20 + rng.randrange(0, 31)
+        trace_rate = 10 + security * 5 + rng.randrange(0, 6)
+        puzzle_type = rng.choice(SIDE_HOST_PUZZLES)
+        node_id = f"node_side_{index:02d}"
+
+        anchors = [rng.choice(("node_proxy_a", "node_proxy_b"))]
+        extra_anchor = rng.choice(SIDE_HOST_ANCHORS)
+        if extra_anchor not in anchors:
+            anchors.append(extra_anchor)
+
+        employee_name, role, email, leaked_credential = template["employee"]
+        firewall = HostFirewall(
+            rules=[FirewallRule(rule_id=f"fw_{node_id}_1", port=template["port"], action="BLOCK")]
+        )
+        antivirus = None
+        if template["antivirus"]:
+            av_name, av_version, alert_level, sensitivity = template["antivirus"]
+            antivirus = HostAntivirus(
+                name=av_name,
+                version=av_version,
+                alert_level=alert_level,
+                heuristic_sensitivity=sensitivity,
+            )
+
+        node = Node(
+            node_id=node_id,
+            name=template["name"],
+            node_type=NodeType.DATA_VAULT,
+            security_level=security,
+            status=NodeStatus.LOCKED,
+            connected_ids=list(anchors),
+            trace_rate=trace_rate,
+            credits_reward=reward,
+            data_payload=template["payload"],
+            puzzle_type=puzzle_type,
+            ip_address=f"10.0.9.{20 + index}",
+            hostname=template["hostname"],
+            ports=[
+                PortService(
+                    port=template["port"],
+                    service=template["service"],
+                    version=template["version"],
+                    vulnerable=True,
+                    exploit_tool=template["exploit_tool"],
+                )
+            ],
+            filesystem=[
+                VirtualFile(
+                    path=template["file_path"],
+                    size_kb=template["file_size_kb"],
+                    content=template["content"],
+                    is_target_data=True,
+                    value_creds=reward,
+                ),
+                VirtualFile(
+                    path="/var/log/access.log",
+                    size_kb=2,
+                    content="[INFO] Remote session opened by unknown operator.",
+                ),
+            ],
+            firewall=firewall,
+            antivirus=antivirus,
+            employees=[
+                EmployeeProfile(
+                    name=employee_name,
+                    role=role,
+                    email=email,
+                    awareness_level=SecurityAwarenessLevel.STANDARD,
+                    leaked_credential=leaked_credential,
+                )
+            ],
+        )
+        nodes[node_id] = node
+        for anchor in anchors:
+            nodes[anchor].connected_ids.append(node_id)

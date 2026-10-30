@@ -153,6 +153,14 @@ const NODE_POSITIONS = {
   node_central_core:  { x: 700, y: 280, label: "SUPERCORE" },
 };
 
+// Seeded side-subnet hosts reuse these three canvas slots; the label and
+// presence come from the current run's snapshot.
+const SIDE_NODE_SLOTS = {
+  node_side_01: { x: 370, y: 200 },
+  node_side_02: { x: 370, y: 360 },
+  node_side_03: { x: 620, y: 440 },
+};
+
 // ==========================================================================
 // 3. API Communication Layer
 // ==========================================================================
@@ -536,6 +544,7 @@ function renderGridTicker(world) {
 
 function renderHUD(data) {
   const { deck, state: gState, current_node, career } = data;
+  if (data.nodes) syncSideNodePositions(data.nodes);
 
   // CPU Gauge
   const cpuPercent = (deck.cpu_cycles / deck.max_cpu) * 100;
@@ -680,6 +689,23 @@ function applyStateSnapshot(res) {
   state.data = res.state;
   renderHUD(res.state);
   return true;
+}
+
+function sideNodeLabel(name) {
+  const upper = String(name || "SIDE HOST").toUpperCase();
+  return upper.length > 16 ? `${upper.slice(0, 15)}...` : upper;
+}
+
+function syncSideNodePositions(nodes) {
+  if (!nodes) return;
+  for (const nid of Object.keys(SIDE_NODE_SLOTS)) {
+    delete NODE_POSITIONS[nid];
+  }
+  for (const [nid, node] of Object.entries(nodes)) {
+    const slot = SIDE_NODE_SLOTS[nid];
+    if (!slot) continue;
+    NODE_POSITIONS[nid] = { x: slot.x, y: slot.y, label: sideNodeLabel(node.name) };
+  }
 }
 
 function updateExploitChips(exploits) {
@@ -1000,6 +1026,7 @@ function initMatrixCanvas() {
 
     // Hit test against nodes
     for (const [nid, pos] of Object.entries(NODE_POSITIONS)) {
+      if (!state.data || !state.data.nodes[nid]) continue;
       const dist = Math.hypot(pt.x - pos.x, pt.y - pos.y);
       if (dist <= 28) {
         selectNode(nid);

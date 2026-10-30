@@ -313,3 +313,15 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
 ## License notice cleanup (2026-10-26)
 
 - The license-history notes were removed from README.md and COMMERCIAL.md: the project is offered only under the Aegean Game License 1.1 (AGL-1.1), with commercial use under ACL-1.0.
+
+### ADR-023: Procedural Side-Subnet Layer: Seeded Contract Hosts Beside the Fixed Campaign Spine
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: `generate_network(seed)` documented a deterministic network generated from the seed but never consumed its `random.Random` stream, so every run produced the same seven hosts with the same edges, security, puzzles and payouts. Scans, routes, loot and contract-generation candidates therefore repeated exactly, contradicting the README's reproducibility-by-seed promise and flattening replay value. The campaign spine cannot simply be randomized: the opening contract, story quests, tests and the Web matrix all depend on the canonical gateway/proxy/vault/ICE/core hosts and their IPs and files.
+- **Decision**:
+  1. Keep the seven campaign hosts, their IDs, IPs, files, security and edges exactly as they are. Add an additive layer of two or three side hosts built from six thematic `DATA_VAULT` templates after the spine exists.
+  2. Seed the selection: the generator's existing `rng` chooses the template subset, each host's security level (1-3), puzzle type (`frequency`/`buffer`/`hash`), payout (60 + 20 per security level + 0-30) and trace rate. Side hosts use `node_side_NN` IDs and reserved `10.0.9.20-22` IPs, and each carries one target-data file with `value_creds` equal to its breach payout plus a log file.
+  3. Wire every side host to an early proxy anchor (and optionally the Black ICE cluster) with reciprocal `connected_ids`, so breaching an anchor reveals it naturally and no story gate is bypassed. Side hosts stay `LOCKED` at generation and need no engine changes: existing reveal, hacking, reward, contract, daemon and re-secure paths already treat them as ordinary vaults.
+  4. Surface them in the Web Cyberdeck with three reserved canvas slots, per-run labels taken from the host name, and a hit test that ignores absent hosts. Document the layer in the README guarantees and cover determinism, cross-seed variation, spine invariants, reveal/hack/contract eligibility and `/api/state` serialization with tests.
+- **Consequences**: Two runs with different seeds now differ in which side hosts exist, how hard they are, what they hold and where they hang, while the campaign path and its targets remain stable. Contract offers draw from a wider target pool, giving the job board more variety without changing payouts or deadlines. Same-seed runs and save/load remain deterministic because generation uses its own local RNG stream; old saves keep their saved node map. Test suite: 318 tests, 100% green.
+

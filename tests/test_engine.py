@@ -1748,6 +1748,31 @@ class TestDeckStanceProxyAndQuickhack(unittest.TestCase):
         self.assertIn("port_scan", self.engine.deck.exploits)
 
 
+class TestSideSubnetIntegration(unittest.TestCase):
+    def setUp(self):
+        self.engine = GameEngine(seed=42)
+
+    def test_side_host_is_revealed_hacked_and_contract_ready(self):
+        side = next(
+            node for node in self.engine.nodes.values() if node.node_id.startswith("node_side_")
+        )
+        anchor = side.connected_ids[0]
+
+        self.engine.complete_breach(anchor)
+        self.assertEqual(side.status, NodeStatus.DISCOVERED)
+        moved, reason = self.engine.move_to(anchor)
+        self.assertTrue(moved, reason)
+
+        allowed, reason = self.engine.can_hack_node(side.node_id)
+        self.assertTrue(allowed, reason)
+        hacked, message = self.engine.complete_breach(side.node_id)
+        self.assertTrue(hacked, message)
+        self.assertEqual(side.status, NodeStatus.BREACHED)
+
+        extract_targets = {node.node_id for node in self.engine._contract_candidates("extract")}
+        self.assertIn(side.node_id, extract_targets)
+
+
 if __name__ == "__main__":
     unittest.main()
 

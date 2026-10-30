@@ -7,10 +7,10 @@
 
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `26`
-- **Total Classes**: `57`
-- **Total Top-Level Functions**: `67`
-- **Total Class Methods**: `513`
-- **Total Source Lines**: `11975`
+- **Total Classes**: `59`
+- **Total Top-Level Functions**: `68`
+- **Total Class Methods**: `521`
+- **Total Source Lines**: `12261`
 
 ---
 
@@ -251,10 +251,11 @@
 ### [`cyberpulse/network.py`](cyberpulse/network.py)
 > *Procedural cyberspace network generator with deterministic topology.*
 
-**Size**: `209` lines (`11110` bytes)
+**Size**: `392` lines (`18541` bytes)
 
 **Functions:**
 - `def generate_network(seed)` - *Generate a deterministic cyberspace infiltration network grid from seed.*
+- `def _generate_side_hosts(rng, nodes)` - *Attach 2-3 seeded side hosts to the fixed campaign spine.*
 
 ---
 
@@ -485,7 +486,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `1755` lines (`74644` bytes)
+**Size**: `1780` lines (`75621` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -617,6 +618,9 @@
   - Method `.test_probe_and_intel_reveal_record_probed_nodes()`
   - Method `.test_port_scan_chip_records_probed_node()`
   - Method `.test_port_scan_chip_refuses_breached_host_without_consuming_it()`
+- `class TestSideSubnetIntegration`
+  - Method `.setUp()`
+  - Method `.test_side_host_is_revealed_hacked_and_contract_ready()`
 
 ---
 
@@ -689,13 +693,20 @@
 ### [`tests/test_network.py`](tests/test_network.py)
 > *Unit tests for procedural network generation.*
 
-**Size**: `49` lines (`2084` bytes)
+**Size**: `121` lines (`4798` bytes)
 
 **Classes:**
 - `class TestNetwork`
   - Method `.test_network_topology()`
   - Method `.test_deterministic_generation()`
   - Method `.test_network_simulation_topology()`
+- `class TestProceduralSideHosts`
+  - Method `._side_hosts(nodes)`
+  - Method `._fingerprint(nodes)`
+  - Method `.test_same_seed_builds_the_same_side_subnet()`
+  - Method `.test_different_seeds_change_the_side_subnet()`
+  - Method `.test_side_hosts_are_wired_into_the_spine()`
+  - Method `.test_campaign_spine_stays_fixed()`
 
 ---
 
@@ -733,7 +744,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `724` lines (`31963` bytes)
+**Size**: `730` lines (`32317` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`

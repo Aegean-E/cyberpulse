@@ -60,6 +60,12 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertGreater(contract["expires_turn"], 0)
         self.assertGreater(contract["bonus_creds"], 0)
         self.assertEqual(len(data["state"]["contract_offers"]), 3)
+        side_nodes = [
+            node for nid, node in data["nodes"].items() if nid.startswith("node_side_")
+        ]
+        self.assertGreaterEqual(len(side_nodes), 2)
+        self.assertTrue(all(node["node_type"] == "DATA_VAULT" for node in side_nodes))
+        self.assertTrue(all(node["ip_address"].startswith("10.0.9.") for node in side_nodes))
 
     def test_get_shop(self):
         status, data = self._get("/api/shop")
