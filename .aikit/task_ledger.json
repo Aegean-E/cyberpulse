@@ -3,24 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-faction-standing",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793377966.90793,
     "owner": "opencode:faction-standing-1",
     "started_by": "opencode:faction-standing-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793378004.6254416
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-difficulty",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-difficulty' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793376170.78414,
-      "timestamp_str": "2026-10-30 19:02:50",
-      "agent": "opencode:difficulty-1"
-    },
     {
       "task_id": "task-cyberpulse-first-run-tutorial",
       "phase": "in_progress",
@@ -254,6 +245,16 @@
       "status": "in_progress",
       "timestamp": 1793377966.90793,
       "timestamp_str": "2026-10-30 19:32:46",
+      "agent": "opencode:faction-standing-1"
+    },
+    {
+      "task_id": "task-cyberpulse-faction-standing",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-faction-standing' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793378004.6254437,
+      "timestamp_str": "2026-10-30 19:33:24",
       "agent": "opencode:faction-standing-1"
     }
   ]
