@@ -1,56 +1,16 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-contract-reroll",
+    "task_id": "task-cyberpulse-reset-backup-guard",
     "last_phase": "in_progress",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1793380041.838927,
-    "owner": "opencode:contract-reroll-1",
-    "started_by": "opencode:contract-reroll-1",
-    "continuations": [],
-    "completed_at": 1793380080.6434705
+    "active_phase": 2,
+    "status": "in_progress",
+    "updated_at": 1793380249.846914,
+    "owner": "opencode:reset-backup-guard-1",
+    "started_by": "opencode:reset-backup-guard-1",
+    "continuations": []
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-milestone-expansion",
-      "phase": "in_progress",
-      "phase_num": 2,
-      "description": "[1/3] Add Hard Clear, daily streak and faction standing milestones",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793378689.0491793,
-      "timestamp_str": "2026-10-30 19:44:49",
-      "agent": "opencode:milestone-expansion-1",
-      "impact_assessment": {
-        "why": "The milestone catalog predates difficulty, daily streaks and faction standing, so the new progression systems have no permanent recognition.",
-        "benefits": "Hard clears, long daily streaks and faction investment now feed the dossier mastery ladder, giving the newer systems long-term goals.",
-        "risks": "contract: catalog grows from 12 to 16 and settlement evaluates four new conditions; dependency: none; concurrency: one-shot settlement; state: old careers simply unlock new milestones on their next settlement and duplicate settlement must stay idempotent.",
-        "mitigation": "Add the conditions to the existing settlement-time evaluator, keep IDs unique, update catalog-count assertions, and cover each new threshold plus deduplication."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-milestone-expansion",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[3/3] Hard, daily-streak and faction milestones green; 434 tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793378730.2793875,
-      "timestamp_str": "2026-10-30 19:45:30",
-      "agent": "opencode:milestone-expansion-1"
-    },
-    {
-      "task_id": "task-cyberpulse-milestone-expansion",
-      "phase": "in_progress",
-      "phase_num": 4,
-      "description": "[3/3] Milestone expansion complete; project gate 5/5, 434 tests; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793378774.0882869,
-      "timestamp_str": "2026-10-30 19:46:14",
-      "agent": "opencode:milestone-expansion-1"
-    },
     {
       "task_id": "task-cyberpulse-milestone-expansion",
       "phase": "completed",
@@ -256,6 +216,45 @@
       "timestamp": 1793380080.643473,
       "timestamp_str": "2026-10-30 20:08:00",
       "agent": "opencode:contract-reroll-1"
+    },
+    {
+      "task_id": "task-cyberpulse-reset-backup-guard",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/2] Abort career reset when the pre-reset backup cannot be written",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793380175.4451735,
+      "timestamp_str": "2026-10-30 20:09:35",
+      "agent": "opencode:reset-backup-guard-1",
+      "impact_assessment": {
+        "why": "reset_career treats a failed backup write the same as no prior career, so a disk error can still delete the profile the backup was meant to protect.",
+        "benefits": "The destructive path now fails closed: a career is only removed after a verified backup exists, and the user is told why the reset stopped.",
+        "risks": "contract: reset CLI/API behavior around backup failure; dependency: none; concurrency: single-user; state: successful resets and empty-career resets must keep working.",
+        "mitigation": "Distinguish an absent career from a failed backup write, abort before deletion, return a clear error over the API, and cover the failure and success paths."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-reset-backup-guard",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[2/2] Reset backup guard green; abort paths preserve the profile and successful reset still works",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793380199.6795554,
+      "timestamp_str": "2026-10-30 20:09:59",
+      "agent": "opencode:reset-backup-guard-1"
+    },
+    {
+      "task_id": "task-cyberpulse-reset-backup-guard",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[2/2] Reset backup guard complete; project gate 5/5, 449 tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793380249.846914,
+      "timestamp_str": "2026-10-30 20:10:49",
+      "agent": "opencode:reset-backup-guard-1"
     }
   ]
 }

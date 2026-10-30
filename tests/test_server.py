@@ -1023,6 +1023,20 @@ class TestCyberdeckSaveSlotsAPI(unittest.TestCase):
         with urllib.request.urlopen(req, timeout=3.0) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
+    def test_reset_career_aborts_when_backup_fails(self):
+        session = self.server.RequestHandlerClass.server_session
+        profile = session.save_mgr.load_career()
+        profile.alias = "KeepMe"
+        session.save_mgr.save_career(profile)
+        with mock.patch.object(session.save_mgr, "_write_atomic", return_value=None):
+            try:
+                self._post({"action": "reset_career", "confirm": "RESET"})
+            except urllib.error.HTTPError as exc:
+                self.assertEqual(exc.code, 500)
+            else:
+                self.fail("reset_career should fail when the backup cannot be written")
+        self.assertEqual(session.save_mgr.load_career().alias, "KeepMe")
+
     def test_reroll_contracts_action(self):
         self._post({"action": "reset", "seed": 5})
         self.server.RequestHandlerClass.server_session.engine.deck.cryptocreds = 100

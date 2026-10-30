@@ -620,4 +620,16 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   4. Cover success, credit deduction, board replacement, insufficient funds, terminal refusal and the HTTP action.
 - **Consequences**: Players can buy their way out of a dead board, creating a small credit sink without adding save-schema fields or changing ordinary contract generation. Test suite: 447 tests, 100% green.
 
+### ADR-049: Career Reset Fails Closed on Backup Failure
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: ADR-043 promised a backup before career deletion, but both reset paths ignored a failed backup write. Because a missing career and a failed backup both returned `None`, a disk error could still delete the profile the backup was meant to protect.
+- **Decision**:
+  1. Distinguish "no career existed" from "backup write failed" by checking for the career file or its shadow before calling `backup_career`.
+  2. If a career exists and the backup returns `None`, abort before deleting the profile, saves or engine.
+  3. The terminal reports the abort and preserves the profile; the API returns HTTP 500 with a clear error and leaves state untouched.
+  4. Keep empty-career resets and successful backup paths unchanged.
+  5. Cover CLI and HTTP failure paths plus the existing success path.
+- **Consequences**: The destructive reset now fails closed, so a backup failure cannot become data loss. Successful resets behave exactly as before. Test suite: 449 tests, 100% green.
+
 

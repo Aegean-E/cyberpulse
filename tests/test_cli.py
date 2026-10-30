@@ -262,6 +262,22 @@ class TestCLI(unittest.TestCase):
         self.assertIn("Associate", out)
         self.assertIn("Lookout", out)
 
+    def test_reset_career_aborts_if_the_backup_write_fails(self):
+        from cyberpulse.models import CareerProfile
+        from cyberpulse.storage import SaveManager
+
+        manager = SaveManager(self.temp_dir)
+        manager.save_career(CareerProfile(alias="KeepMe", banked_creds=900))
+
+        with mock.patch.object(SaveManager, "_write_atomic", return_value=None):
+            code, out = self.run_cli("--exec", "reset_career CONFIRM")
+
+        self.assertEqual(code, 0)
+        self.assertIn("backup failed", out.lower())
+        self.assertIn("aborted", out.lower())
+        self.assertEqual(manager.load_career().alias, "KeepMe")
+        self.assertEqual(manager.load_career().banked_creds, 900)
+
     def test_reset_career_requires_confirmation_and_backs_up(self):
         from cyberpulse.engine import GameEngine
         from cyberpulse.models import CareerProfile

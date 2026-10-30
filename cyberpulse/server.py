@@ -186,9 +186,15 @@ class CyberdeckSession:
         suffix = f" to '{clean}'" if clean else " (label cleared)"
         return True, f"Renamed {label}{suffix}."
 
-    def reset_career(self) -> Dict[str, Any]:
+    def reset_career(self) -> Optional[Dict[str, Any]]:
         """Back up and delete the career plus all saves, then start a fresh run."""
-        self.save_mgr.backup_career()
+        had_career = (
+            self.save_mgr.career_file.exists()
+            or self.save_mgr.career_file.with_suffix(".bak").exists()
+        )
+        backup = self.save_mgr.backup_career()
+        if had_career and backup is None:
+            return None
         self.save_mgr.delete_career()
         self.save_mgr.delete_all_saves()
         self.career = CareerProfile()
@@ -503,6 +509,12 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                     )
                     return
                 state = self.server_session.reset_career()
+                if state is None:
+                    self.send_json_response(
+                        {"ok": False, "error": "Career backup failed; reset aborted."},
+                        HTTPStatus.INTERNAL_SERVER_ERROR,
+                    )
+                    return
                 self.send_json_response({"ok": True, "message": "Career reset.", "state": state})
                 return
 

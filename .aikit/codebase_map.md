@@ -9,8 +9,8 @@
 - **Total Python Modules**: `41`
 - **Total Classes**: `73`
 - **Total Top-Level Functions**: `97`
-- **Total Class Methods**: `695`
-- **Total Source Lines**: `15871`
+- **Total Class Methods**: `697`
+- **Total Source Lines**: `15917`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1412` lines (`65295` bytes)
+**Size**: `1416` lines (`65557` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -404,7 +404,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `954` lines (`42518` bytes)
+**Size**: `966` lines (`43027` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -596,7 +596,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `654` lines (`27328` bytes)
+**Size**: `670` lines (`28037` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -628,6 +628,7 @@
   - Method `.test_replay_rejects_an_out_of_range_index()`
   - Method `.test_rival_commands_inspect_and_counter()`
   - Method `.test_career_dossier_shows_faction_standing()`
+  - Method `.test_reset_career_aborts_if_the_backup_write_fails()`
   - Method `.test_reset_career_requires_confirmation_and_backs_up()`
   - Method `.test_alias_command_persists_and_shows_in_the_dossier()`
   - Method `.test_hall_command_filters_by_difficulty()`
@@ -1013,7 +1014,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `1112` lines (`48602` bytes)
+**Size**: `1126` lines (`49309` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -1090,6 +1091,7 @@
   - Method `.setUpClass()`
   - Method `.tearDownClass()`
   - Method `._post(payload)`
+  - Method `.test_reset_career_aborts_when_backup_fails()`
   - Method `.test_reroll_contracts_action()`
   - Method `.test_reset_accepts_faction_allegiance()`
   - Method `.test_invalid_or_named_difficulty_reset()`

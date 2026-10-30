@@ -1083,7 +1083,11 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         if len(parts) < 2 or parts[1].upper() != "CONFIRM":
             print("Usage: reset_career CONFIRM")
             return True
+        had_career = save_mgr.career_file.exists() or save_mgr.career_file.with_suffix(".bak").exists()
         backup = save_mgr.backup_career()
+        if had_career and backup is None:
+            print("❌ Career backup failed; reset aborted. Your profile was not changed.")
+            return True
         save_mgr.delete_career()
         save_mgr.delete_all_saves()
         fresh = CareerProfile()
