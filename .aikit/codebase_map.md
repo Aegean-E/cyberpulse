@@ -6,11 +6,11 @@
 ---
 
 ## 📊 Codebase Metrics
-- **Total Python Modules**: `32`
-- **Total Classes**: `67`
-- **Total Top-Level Functions**: `79`
-- **Total Class Methods**: `632`
-- **Total Source Lines**: `14333`
+- **Total Python Modules**: `34`
+- **Total Classes**: `68`
+- **Total Top-Level Functions**: `80`
+- **Total Class Methods**: `638`
+- **Total Source Lines**: `14563`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1250` lines (`58460` bytes)
+**Size**: `1264` lines (`59229` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -89,7 +89,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3578` lines (`167168` bytes)
+**Size**: `3630` lines (`169304` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -205,7 +205,7 @@
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `706` lines (`25537` bytes)
+**Size**: `727` lines (`26391` bytes)
 
 **Classes:**
 - `class NodeType`
@@ -346,6 +346,16 @@
 
 **Functions:**
 - `def generate_rival(seed)` - *Create the run's rival from a deterministic seed stream.*
+
+---
+
+### [`cyberpulse/scoring.py`](cyberpulse/scoring.py)
+> *Transparent run scoring for legacy and Hall of Fame rankings.*
+
+**Size**: `26` lines (`861` bytes)
+
+**Functions:**
+- `def score_run(*, gained, best_combo, quests_done, nodes_breached, outcome, contract_completed, main_story_complete)` - *Return a score and its itemized breakdown for one settled run.*
 
 ---
 
@@ -526,7 +536,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `547` lines (`23033` bytes)
+**Size**: `549` lines (`23113` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -597,7 +607,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `1947` lines (`82072` bytes)
+**Size**: `1984` lines (`83608` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -679,6 +689,8 @@
   - Method `.test_settle_career_history_is_capped_and_records_lockout()`
   - Method `.test_settle_career_records_daily_best_and_history_tag()`
   - Method `.test_settle_career_keeps_the_best_daily_gain()`
+  - Method `.test_settle_career_scores_and_ranks_the_run()`
+  - Method `.test_settle_career_hall_dedupes_and_caps_at_ten()`
   - Method `.test_daily_streak_increments_on_consecutive_days()`
   - Method `.test_daily_streak_same_day_repeat_does_not_increment()`
   - Method `.test_daily_streak_resets_after_a_gap()`
@@ -792,7 +804,7 @@
 ### [`tests/test_models.py`](tests/test_models.py)
 > *Unit tests for CyberPulse domain models.*
 
-**Size**: `296` lines (`12023` bytes)
+**Size**: `297` lines (`12075` bytes)
 
 **Classes:**
 - `class TestModels`
@@ -875,6 +887,19 @@
 - `class TestRivalGeneration`
   - Method `.test_rival_is_deterministic_for_a_seed()`
   - Method `.test_rival_fields_are_within_design_bounds()`
+
+---
+
+### [`tests/test_scoring.py`](tests/test_scoring.py)
+> *Unit tests for the transparent run score formula.*
+
+**Size**: `64` lines (`1814` bytes)
+
+**Classes:**
+- `class TestScoring`
+  - Method `.test_score_breakdown_uses_documented_weights()`
+  - Method `.test_lockout_has_no_outcome_bonus()`
+  - Method `.test_negative_inputs_are_clamped()`
 
 ---
 
@@ -985,7 +1010,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `559` lines (`21451` bytes)
+**Size**: `572` lines (`22029` bytes)
 
 **Classes:**
 - `class TestStorage`
@@ -1001,6 +1026,7 @@
   - Method `.test_corrupt_primary_does_not_overwrite_a_good_backup()`
   - Method `.test_list_saves_falls_back_when_timestamp_is_not_finite()`
   - Method `.test_career_run_history_round_trips()`
+  - Method `.test_career_hall_of_fame_round_trips()`
   - Method `.test_career_default_fallback()`
   - Method `.test_old_career_payload_uses_best_combo_default()`
   - Method `.test_load_corrupted_save_with_backup_recovery()`

@@ -457,4 +457,16 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. Cover seeded generation, board theft, scheduling, counter cost/delay, save persistence, old-save backfill, CLI inspection/counter, and the HTTP action.
 - **Consequences**: The job board now has a visible peer antagonist and a CPU-priced counterplay loop, while existing saves gain a rival without losing progress. Test suite: 396 tests, 100% green.
 
+### ADR-035: Transparent Run Scoring and Top-10 Hall of Fame
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: Run history recorded outcomes but gave no single comparable performance number. The dossier had milestones and recent runs but no all-time ranking, so two victories could not be compared at a glance.
+- **Decision**:
+  1. Add `scoring.py` with a fixed, itemized formula: net credits, combo ×75, quests ×150, breaches ×25, contract +200, victory +500 or jackout +250, story completion +100. Negative inputs clamp to zero.
+  2. Compute the score inside `settle_career` after stats update, store it and its breakdown in the run-history record, and expose it through the run summary.
+  3. Maintain `CareerProfile.hall_of_fame` as the top ten records by score, deduplicated by `run_id`. Old or malformed halls sanitize to at most ten dict entries; duplicate settlement cannot add another entry.
+  4. Show the score and rank in the terminal `RUN LEGACY`, the score in the Web banner, and the top five in both dossier leaderboards.
+  5. Cover formula weights, clamping, ranking, cap/deduplication, persistence, career defaults, CLI display and the Web payload.
+- **Consequences**: Every settled run now has a comparable result and a place on a persistent leaderboard, while old careers remain valid and the formula is visible in one module. Test suite: 402 tests, 100% green.
+
 

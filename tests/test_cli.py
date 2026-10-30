@@ -289,6 +289,8 @@ class TestCLI(unittest.TestCase):
         self.assertIn("COMBO x1", out)
         self.assertIn("Milestones", out)
         self.assertIn("First Extraction", out)
+        self.assertIn("HALL OF FAME", out)
+        self.assertIn("Score:", out)
 
     def test_jackout_command(self):
         # Hack proxy a, then jack out safely

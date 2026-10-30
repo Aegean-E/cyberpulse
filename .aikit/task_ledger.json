@@ -1,50 +1,16 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-rival-netrunner",
+    "task_id": "task-cyberpulse-run-score",
     "last_phase": "in_progress",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1793374685.2516258,
-    "owner": "opencode:rival-netrunner-1",
-    "started_by": "opencode:rival-netrunner-1",
-    "continuations": [],
-    "completed_at": 1793374717.1625774
+    "active_phase": 4,
+    "status": "in_progress",
+    "updated_at": 1793374977.3094077,
+    "owner": "opencode:run-score-1",
+    "started_by": "opencode:run-score-1",
+    "continuations": []
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-replay-seeds",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[2/3] Terminal replay command and indexed run history green; 43 CLI tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793372879.8200214,
-      "timestamp_str": "2026-10-30 18:07:59",
-      "agent": "opencode:replay-seeds-1"
-    },
-    {
-      "task_id": "task-cyberpulse-replay-seeds",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[3/3] Web archive replay green; full suite 376 tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793372913.1917424,
-      "timestamp_str": "2026-10-30 18:08:33",
-      "agent": "opencode:replay-seeds-1"
-    },
-    {
-      "task_id": "task-cyberpulse-replay-seeds",
-      "phase": "in_progress",
-      "phase_num": 4,
-      "description": "[3/3] Seed replay complete; project gate 5/5, 376 tests; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793372965.499787,
-      "timestamp_str": "2026-10-30 18:09:25",
-      "agent": "opencode:replay-seeds-1"
-    },
     {
       "task_id": "task-cyberpulse-replay-seeds",
       "phase": "completed",
@@ -250,6 +216,45 @@
       "timestamp": 1793374717.1625783,
       "timestamp_str": "2026-10-30 18:38:37",
       "agent": "opencode:rival-netrunner-1"
+    },
+    {
+      "task_id": "task-cyberpulse-run-score",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/4] Score each settled run and keep a top-10 career Hall of Fame",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793374785.3888855,
+      "timestamp_str": "2026-10-30 18:39:45",
+      "agent": "opencode:run-score-1",
+      "impact_assessment": {
+        "why": "Run history and milestones record outcomes but provide no single comparable performance number or all-time ranking.",
+        "benefits": "A transparent score turns each run into a measurable result, gives the dossier a leaderboard, and makes replaying seeds or dailies more meaningful.",
+        "risks": "contract: career.json gains additive hall_of_fame data and run summaries gain score fields; dependency: none; concurrency: settlement remains one-shot; state: old careers default empty and duplicate settlement must not duplicate hall entries.",
+        "mitigation": "Keep the formula in one scoring module, insert/dedupe/cap inside the one-shot settlement path, sanitize old payloads, and cover weights, rank, cap, persistence and both displays with tests."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-run-score",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[3/4] Scoring, hall ranking, CLI/Web displays and persistence green; 402 tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793374934.6269443,
+      "timestamp_str": "2026-10-30 18:42:14",
+      "agent": "opencode:run-score-1"
+    },
+    {
+      "task_id": "task-cyberpulse-run-score",
+      "phase": "in_progress",
+      "phase_num": 4,
+      "description": "[4/4] Run score and Hall of Fame complete; project gate 5/5, 402 tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793374977.3094077,
+      "timestamp_str": "2026-10-30 18:42:57",
+      "agent": "opencode:run-score-1"
     }
   ]
 }

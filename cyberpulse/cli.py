@@ -258,6 +258,17 @@ def print_career(profile: CareerProfile) -> None:
         print("[*] Daily Bests:     " + " | ".join(f"{day} +{creds} CR" for day, creds in recent))
     else:
         print("[*] Daily Bests:      none yet (try --daily or menu 7)")
+    hall = profile.hall_of_fame if isinstance(profile.hall_of_fame, list) else []
+    print("--------------------------------------------------------------------------")
+    print("HALL OF FAME:")
+    if not hall:
+        print("   (no ranked runs yet; finish a run to enter the board)")
+    for index, entry in enumerate(hall[:5], start=1):
+        outcome = str(entry.get("outcome", "unknown")).upper()
+        print(
+            f"   #{index} {int(entry.get('score', 0)):>6,}  {outcome:<8} "
+            f"SEED {entry.get('seed', '?')}  TURN {entry.get('turns', 0)}"
+        )
     print("--------------------------------------------------------------------------")
     print("RECENT RUNS:")
     history = profile.run_history[-5:] if isinstance(profile.run_history, list) else []
@@ -381,6 +392,9 @@ def print_run_summary(engine: GameEngine) -> None:
         print(f"[*] Milestones:  {', '.join(summary['achievements_unlocked'])}")
     if summary.get("daily_key"):
         print(f"[*] Daily:       {summary['daily_key']}")
+    if summary.get("score") is not None:
+        rank = f" | HALL #{summary['hall_rank']}" if summary.get("hall_rank") else ""
+        print(f"[*] Score:       {summary['score']:,}{rank}")
     real_contacts = [c for c in summary["contacts"] if c["trust"] > 0 or c["favor_used"]]
     if real_contacts:
         print("[*] Operatives:  " + ", ".join(

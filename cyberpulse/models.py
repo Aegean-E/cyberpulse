@@ -128,6 +128,7 @@ class CareerProfile:
     daily_streak: int = 0
     best_daily_streak: int = 0
     last_daily_key: str = ""
+    hall_of_fame: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -169,6 +170,26 @@ class CareerProfile:
         )
         last_key = data_clean.get("last_daily_key", "")
         data_clean["last_daily_key"] = last_key if isinstance(last_key, str) else ""
+        hall = data_clean.get("hall_of_fame")
+        if not isinstance(hall, list):
+            hall = []
+        cleaned_hall: List[Dict[str, Any]] = []
+        ranked_hall = sorted(
+            (entry for entry in hall if isinstance(entry, dict)),
+            key=lambda entry: int(entry.get("score", 0)) if isinstance(entry.get("score", 0), int) else 0,
+            reverse=True,
+        )
+        seen_runs = set()
+        for entry in ranked_hall:
+            run_id = entry.get("run_id")
+            if run_id and run_id in seen_runs:
+                continue
+            if run_id:
+                seen_runs.add(run_id)
+            cleaned_hall.append(dict(entry))
+            if len(cleaned_hall) >= 10:
+                break
+        data_clean["hall_of_fame"] = cleaned_hall
         return cls(**data_clean)
 
 

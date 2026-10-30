@@ -4101,3 +4101,10 @@ body {
 .rival-stat .v { font-family: var(--font-display); font-size: 13px; color: var(--c-text-bright); }
 .rival-hint { margin: 0; font-size: 9px; line-height: 1.5; color: var(--c-text-dim); }
 #btn-counter-rival { align-self: flex-start; }
+.dossier-hall {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--c-border);
+}
+.dossier-hall-list { display: flex; flex-direction: column; gap: 6px; }
+.run-outcome.hall-rank { color: var(--c-warning); }

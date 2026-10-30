@@ -729,6 +729,10 @@ function buildRunStats(summary, gState) {
   if (summary.daily_key) {
     stats.push({ label: "DAILY", value: summary.daily_key });
   }
+  if (typeof summary.score === "number") {
+    const rank = summary.hall_rank ? ` #${summary.hall_rank}` : "";
+    stats.push({ label: "SCORE", value: `${summary.score.toLocaleString()}${rank}` });
+  }
   return stats;
 }
 
@@ -2481,6 +2485,35 @@ async function openCareerModal() {
   document.getElementById("dossier-upgrades").textContent = data.purchased_upgrades.length > 0
     ? data.purchased_upgrades.join(", ")
     : "Standard Factory Rig";
+
+  const hallEl = document.getElementById("dossier-hall");
+  if (hallEl) {
+    hallEl.innerHTML = "";
+    const hall = Array.isArray(data.hall_of_fame) ? data.hall_of_fame : [];
+    if (!hall.length) {
+      const empty = document.createElement("span");
+      empty.className = "empty-chips";
+      empty.textContent = "No ranked runs yet. Finish a run to enter the board.";
+      hallEl.appendChild(empty);
+    } else {
+      hall.slice(0, 5).forEach((entry, index) => {
+        const row = document.createElement("div");
+        row.className = "dossier-run-row";
+        const rank = document.createElement("span");
+        rank.className = "run-outcome hall-rank";
+        rank.textContent = `#${index + 1}`;
+        const meta = document.createElement("span");
+        meta.className = "run-meta";
+        const score = Number(entry.score || 0).toLocaleString();
+        const outcome = String(entry.outcome || "unknown").toUpperCase();
+        const seed = entry.seed !== undefined ? entry.seed : "?";
+        const turns = entry.turns !== undefined ? entry.turns : 0;
+        meta.textContent = `${score} PTS · ${outcome} · SEED ${seed} · TURN ${turns}`;
+        row.append(rank, meta);
+        hallEl.appendChild(row);
+      });
+    }
+  }
 
   const dailyStreakEl = document.getElementById("dossier-daily-streak");
   if (dailyStreakEl) {

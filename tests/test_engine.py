@@ -1169,6 +1169,43 @@ class TestEngine(unittest.TestCase):
 
         self.assertEqual(profile.daily_best["2026-10-30"], 900)
 
+    def test_settle_career_scores_and_ranks_the_run(self):
+        from cyberpulse.models import CareerProfile
+
+        self.engine.state.story_act = 4
+        self.engine.complete_breach("node_central_core")
+        self.engine.state.unbanked_creds = 250
+        profile = CareerProfile()
+
+        self.engine.settle_career(profile)
+
+        record = profile.run_history[-1]
+        self.assertEqual(record["score"], self.engine.last_run_score)
+        self.assertGreater(record["score"], 0)
+        self.assertEqual(profile.hall_of_fame[0]["run_id"], self.engine.run_id)
+        self.assertEqual(self.engine.last_hall_rank, 1)
+        self.assertEqual(self.engine.run_summary()["score"], record["score"])
+
+    def test_settle_career_hall_dedupes_and_caps_at_ten(self):
+        from cyberpulse.models import CareerProfile
+
+        self.engine.state.is_victory = True
+        self.engine.state.unbanked_creds = 500
+        self.engine.state.best_combo = 5
+        self.engine.state.story_act = 5
+        profile = CareerProfile(hall_of_fame=[
+            {"run_id": f"old-{index}", "score": 100 + index}
+            for index in range(10)
+        ])
+
+        self.engine.settle_career(profile)
+
+        self.assertEqual(len(profile.hall_of_fame), 10)
+        self.assertEqual(profile.hall_of_fame[0]["run_id"], self.engine.run_id)
+        self.assertNotIn("old-0", {entry["run_id"] for entry in profile.hall_of_fame})
+        self.assertFalse(self.engine.settle_career(profile))
+        self.assertEqual(len(profile.hall_of_fame), 10)
+
     def test_daily_streak_increments_on_consecutive_days(self):
         from cyberpulse.models import CareerProfile
 

@@ -186,6 +186,19 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(restored.run_history[0]["creds"], 420)
         self.assertEqual(restored.achievements, ["veteran", "ghost_protocol"])
 
+    def test_career_hall_of_fame_round_trips(self):
+        profile = CareerProfile(alias="Champion", hall_of_fame=[
+            {"run_id": "run-1", "score": 1250, "outcome": "victory", "seed": 1337},
+            {"run_id": "run-2", "score": 800, "outcome": "jackout", "seed": 42},
+        ])
+
+        self.save_mgr.save_career(profile)
+        restored = self.save_mgr.load_career()
+
+        self.assertEqual(len(restored.hall_of_fame), 2)
+        self.assertEqual(restored.hall_of_fame[0]["score"], 1250)
+        self.assertEqual(restored.hall_of_fame[0]["run_id"], "run-1")
+
     def test_career_default_fallback(self):
         fallback = self.save_mgr.load_career()
         self.assertEqual(fallback.alias, "ZeroCool")

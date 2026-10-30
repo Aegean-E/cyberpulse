@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from cyberpulse.achievements import achievement_names, evaluate_achievements
 from cyberpulse.daily import is_next_day
 from cyberpulse.rivals import generate_rival
+from cyberpulse.scoring import score_run
 from cyberpulse.models import (
     BountyContract,
     CareerProfile,
@@ -228,6 +229,9 @@ class GameEngine:
         self.run_id = uuid.uuid4().hex
         self.daily_key = ""
         self.last_unlocked_achievements: List[str] = []
+        self.last_run_score: Optional[int] = None
+        self.last_score_breakdown: Optional[Dict[str, int]] = None
+        self.last_hall_rank: Optional[int] = None
         self.rng = random.Random(self.seed)
         self.nodes: Dict[str, Node] = generate_network(self.seed)
         self.deck: CyberDeck = CyberDeck()
@@ -733,6 +737,9 @@ class GameEngine:
             "achievements_unlocked": achievement_names(self.last_unlocked_achievements),
             "daily_key": getattr(self, "daily_key", ""),
             "rival": self.rival_summary(),
+            "score": self.last_run_score,
+            "score_breakdown": self.last_score_breakdown,
+            "hall_rank": self.last_hall_rank,
         }
 
     def list_quests(self) -> List[Dict[str, Any]]:
@@ -2479,8 +2486,17 @@ class GameEngine:
         ]))
         self.last_unlocked_achievements = new_achievements
 
-        history = profile.run_history if isinstance(profile.run_history, list) else []
-        history.append({
+        summary = self.run_summary()
+        score_info = score_run(
+            gained=gained,
+            best_combo=self.state.best_combo,
+            quests_done=summary["quests_completed_count"],
+            nodes_breached=summary["nodes_breached"],
+            outcome=outcome,
+            contract_completed=bool(contract and contract.completed),
+            main_story_complete=bool(summary["main_story_complete"]),
+        )
+        record = {
             "outcome": outcome,
             "run_id": self.run_id,
             "seed": self.seed,
@@ -2489,13 +2505,49 @@ class GameEngine:
             "gained": gained,
             "best_combo": self.state.best_combo,
             "story_act": self.state.story_act,
-            "quests_done": sum(1 for quest in self.state.quests if getattr(quest, "completed", False)),
+            "quests_done": summary["quests_completed_count"],
             "contract_completed": bool(contract and contract.completed),
             "achievements": list(new_achievements),
             "daily_key": daily_key,
+            "score": score_info["score"],
+            "score_breakdown": score_info["breakdown"],
             "finished_at": time.time(),
-        })
+        }
+        history = profile.run_history if isinstance(profile.run_history, list) else []
+        history.append(record)
         profile.run_history = history[-self.MAX_RUN_HISTORY:]
+
+        hall_entry = {
+            key: record[key]
+            for key in (
+                "run_id", "score", "outcome", "seed", "turns", "creds",
+                "best_combo", "story_act", "daily_key", "finished_at",
+            )
+        }
+        hall = profile.hall_of_fame if isinstance(profile.hall_of_fame, list) else []
+        ranked = sorted(
+            (entry for entry in [*hall, hall_entry] if isinstance(entry, dict)),
+            key=lambda entry: int(entry.get("score", 0)) if isinstance(entry.get("score", 0), int) else 0,
+            reverse=True,
+        )
+        unique: List[Dict[str, Any]] = []
+        seen_runs = set()
+        for entry in ranked:
+            entry_run = entry.get("run_id")
+            if entry_run and entry_run in seen_runs:
+                continue
+            if entry_run:
+                seen_runs.add(entry_run)
+            unique.append(entry)
+            if len(unique) >= 10:
+                break
+        profile.hall_of_fame = unique
+        self.last_run_score = score_info["score"]
+        self.last_score_breakdown = score_info["breakdown"]
+        self.last_hall_rank = next(
+            (index + 1 for index, entry in enumerate(unique) if entry.get("run_id") == self.run_id),
+            None,
+        )
         self.run_settled = True
         return True
 
