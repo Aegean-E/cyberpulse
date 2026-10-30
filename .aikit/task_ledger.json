@@ -3,24 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-difficulty",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793376130.9163928,
     "owner": "opencode:difficulty-1",
     "started_by": "opencode:difficulty-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793376170.7841382
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-storage-hardening",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-storage-hardening' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793373356.3701541,
-      "timestamp_str": "2026-10-30 18:15:56",
-      "agent": "opencode:storage-hardening-1"
-    },
     {
       "task_id": "task-cyberpulse-daily-streak",
       "phase": "in_progress",
@@ -254,6 +245,16 @@
       "status": "in_progress",
       "timestamp": 1793376130.9163928,
       "timestamp_str": "2026-10-30 19:02:10",
+      "agent": "opencode:difficulty-1"
+    },
+    {
+      "task_id": "task-cyberpulse-difficulty",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-difficulty' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793376170.78414,
+      "timestamp_str": "2026-10-30 19:02:50",
       "agent": "opencode:difficulty-1"
     }
   ]
