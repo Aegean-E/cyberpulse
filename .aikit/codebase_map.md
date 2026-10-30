@@ -7,10 +7,10 @@
 
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `26`
-- **Total Classes**: `59`
+- **Total Classes**: `61`
 - **Total Top-Level Functions**: `68`
-- **Total Class Methods**: `521`
-- **Total Source Lines**: `12261`
+- **Total Class Methods**: `534`
+- **Total Source Lines**: `12415`
 
 ---
 
@@ -305,7 +305,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `709` lines (`32148` bytes)
+**Size**: `747` lines (`33938` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -313,6 +313,8 @@
   - Method `.settle_run_if_finished()` - *Persist a victory/lockout exactly once as soon as the run reaches a terminal state.*
   - Method `.get_full_state()` - *Aggregate complete runtime state for frontend rendering.*
   - Method `.reset_game(seed)`
+  - Method `.save_run()` - *Persist the live run with the same atomic manager the terminal uses.*
+  - Method `.load_run()` - *Replace the live engine with the saved run, if one can be restored.*
 - `class CyberdeckHTTPHandler` - *HTTP request handler providing REST API endpoints and static cyberdeck assets.*
   - Method `.log_message(format, *args)` - *Route cyberdeck request logs without cluttering console.*
   - Method `.send_json_response(data, status)`
@@ -348,13 +350,14 @@
 ### [`cyberpulse/storage.py`](cyberpulse/storage.py)
 > *Crash-resilient savegame and career profile storage engine for CyberPulse.*
 
-**Size**: `164` lines (`6425` bytes)
+**Size**: `168` lines (`6623` bytes)
 
 **Classes:**
 - `class SaveManager` - *Manages atomic saving and loading of game states and career profiles.*
   - Method `.__init__(data_dir)`
   - Method `._write_atomic(target_path, data)` - *Write JSON payload to target_path atomically; returns None when the replace never lands.*
   - Method `._read_json_with_backup(target_path)` - *Read JSON from target_path, falling back to shadow .bak if corrupted or missing.*
+  - Method `.has_save()` - *Return True when a savegame or its shadow backup exists on disk.*
   - Method `.save(engine)` - *Atomically persist engine state to disk.*
   - Method `.load()` - *Load and restore engine state from savegame with backup recovery.*
   - Method `.delete_save()` - *Remove savegame and its shadow backup after completed or failed run.*
@@ -744,7 +747,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `730` lines (`32317` bytes)
+**Size**: `842` lines (`36613` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -792,6 +795,18 @@
   - Method `.test_get_world_and_state_contains_hunters()`
   - Method `.test_counter_hunter_api_action()`
   - Method `.test_lay_low_api_action()`
+- `class TestCyberdeckSaveLoadSession`
+  - Method `.setUp()`
+  - Method `.test_save_then_load_restores_exact_progress()`
+  - Method `.test_load_without_a_save_reports_a_missing_run()`
+  - Method `.test_terminal_run_is_not_saved()`
+  - Method `.test_finishing_a_run_deletes_an_earlier_save()`
+- `class TestCyberdeckSaveLoadAPI`
+  - Method `.setUpClass()`
+  - Method `.tearDownClass()`
+  - Method `._post(payload)`
+  - Method `._state()`
+  - Method `.test_save_and_continue_round_trip()`
 
 ---
 

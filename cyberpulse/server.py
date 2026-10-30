@@ -49,6 +49,7 @@ class CyberdeckSession:
         self.engine = GameEngine(seed=seed, career_profile=self.career)
         self.active_puzzle: Optional[Any] = None
         self.active_puzzle_node_id: Optional[str] = None
+        self.save_owned = False
         self.lock = threading.RLock()
 
     def settle_run_if_finished(self) -> Optional[Any]:
@@ -63,6 +64,9 @@ class CyberdeckSession:
         engine.settle_career(profile)
         if not self.save_mgr.save_career(profile):
             engine.run_settled = False
+        elif self.save_owned:
+            self.save_mgr.delete_save()
+            self.save_owned = False
         return profile
 
     def get_full_state(self) -> Dict[str, Any]:
@@ -87,6 +91,7 @@ class CyberdeckSession:
             "shop_items": self.shop.list_available(self.engine.deck, price_multiplier=world["market_multiplier"]),
             "workshop_recipes": self.engine.list_crafting_recipes(),
             "known_cves": self.engine.list_cves(),
+            "has_save": self.save_mgr.has_save(),
             "local_rig": {
                 "ip": self.engine.deck.local_ip,
                 "hostname": self.engine.deck.local_hostname,
@@ -102,7 +107,30 @@ class CyberdeckSession:
         self.engine = GameEngine(seed=new_seed, career_profile=self.career)
         self.active_puzzle = None
         self.active_puzzle_node_id = None
+        self.save_owned = False
         return self.get_full_state()
+
+    def save_run(self) -> Tuple[bool, str]:
+        """Persist the live run with the same atomic manager the terminal uses."""
+        engine = self.engine
+        if engine.state.is_victory or engine.state.is_game_over or engine.state.is_jacked_out:
+            return False, "This run is already over; there is nothing left to save."
+        path = self.save_mgr.save(engine)
+        if path is None:
+            return False, "Save failed: the save file could not be replaced after 5 attempts."
+        self.save_owned = True
+        return True, "Infiltration progress saved. CONTINUE RUN will restore this exact state."
+
+    def load_run(self) -> Tuple[bool, str]:
+        """Replace the live engine with the saved run, if one can be restored."""
+        loaded = self.save_mgr.load()
+        if loaded is None:
+            return False, "No saved run found. Save a run before trying to continue."
+        self.engine = loaded
+        self.active_puzzle = None
+        self.active_puzzle_node_id = None
+        self.save_owned = True
+        return True, "Loaded saved infiltration session."
 
 
 class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
@@ -318,11 +346,21 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
             save_mgr = self.server_session.save_mgr
             shop = self.server_session.shop
 
-            if engine.state.is_victory and action != "reset":
+            if engine.state.is_victory and action not in ("reset", "load"):
                 self.send_json_response(
                     {"ok": False, "error": "Mission already complete. Start a new run.", "state": self.server_session.get_full_state()},
                     HTTPStatus.BAD_REQUEST,
                 )
+                return
+
+            if action == "save":
+                ok, msg = self.server_session.save_run()
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action == "load":
+                ok, msg = self.server_session.load_run()
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 
             if action == "scan":

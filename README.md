@@ -117,7 +117,7 @@ CyberPulse's mechanics are grounded in cognitive neuroscience and behavioral gam
 ## 🎮 How to Play
 
 ### 1. Web Cyberdeck (Visual CRT & Web Audio)
-Launch the browser cyberdeck: main menu, story/mission board, operative channels, interactive 2D node matrix, tactical stance/proxy dock, visual mini-games, a living-grid ticker (clock, alert, market, headlines), and synthesized 8-bit FX:
+Launch the browser cyberdeck: main menu, story/mission board, operative channels, interactive 2D node matrix, tactical stance/proxy dock, visual mini-games, a living-grid ticker (clock, alert, market, headlines), and synthesized 8-bit FX. The header **SAVE** button writes the run through the same atomic store as the terminal, and **CONTINUE RUN** on the main menu restores it after a restart (the save file is interchangeable between both interfaces):
 
 ```bash
 # Launch interactive Web Cyberdeck (auto-opens browser at http://127.0.0.1:8420)
@@ -159,6 +159,7 @@ The full reference of 43 commands, with each one's action and simulation role, i
 - **Zero Undeclared Dependencies**: Built with 100% pure Python standard library modules (`random`, `json`, `dataclasses`, `pathlib`, `argparse`).
 - **Deterministic State Engine**: Every network grid and puzzle sequence can be reproduced using `--seed <int>`.
 - **Seeded Side-Subnet Layer**: The seven-host campaign spine (gateway, proxies, vaults, Black ICE, supercore) is fixed so story targets stay honest, while every seed grows two or three extra `DATA_VAULT` hosts beside it. Template, security level, puzzle type, payout, trace rate and anchors vary, so scans, routes, loot and contract targets differ between runs; the Web matrix places them in three reserved slots with their real names.
+- **Cross-Interface Save Parity**: The Web Cyberdeck's **SAVE** action uses the terminal's atomic `SaveManager`, so the saved run — including RNG state and pending puzzles — restores exactly through **CONTINUE RUN** and can be continued in either interface. A finished run cannot be saved, and the menu button appears only while a save (or its shadow backup) exists; the browser removes only a save it saved or loaded.
 - **Power-Loss Safe Savegames & Shadow Backup**: Uses atomic temporary file writes, `fsync`, `.bak` shadow recovery, and corruption quarantine to eliminate state loss risk.
 - **Deterministic Save Integrity**: The reward RNG state and in-progress puzzle attempts/near-miss state are persisted, so save/load continues the exact seeded sequence instead of rerolling rewards or resetting attempts. Legacy saves without these fields fall back to the prior reseed behavior.
 - **Deterministic Run Settlement**: Victory and `jackout` both bank all unbanked loot; trace lockout records a failed run. CLI and Web Cyberdeck share the same one-shot career lifecycle, so rewards are never double-counted or silently lost.

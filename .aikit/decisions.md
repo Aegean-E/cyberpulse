@@ -325,3 +325,16 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   4. Surface them in the Web Cyberdeck with three reserved canvas slots, per-run labels taken from the host name, and a hit test that ignores absent hosts. Document the layer in the README guarantees and cover determinism, cross-seed variation, spine invariants, reveal/hack/contract eligibility and `/api/state` serialization with tests.
 - **Consequences**: Two runs with different seeds now differ in which side hosts exist, how hard they are, what they hold and where they hang, while the campaign path and its targets remain stable. Contract offers draw from a wider target pool, giving the job board more variety without changing payouts or deadlines. Same-seed runs and save/load remain deterministic because generation uses its own local RNG stream; old saves keep their saved node map. Test suite: 318 tests, 100% green.
 
+### ADR-024: Cross-Interface Save Parity: Web Save/Load Through the Terminal's Atomic Store
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: The Web Cyberdeck is the default launcher, but the run lived only in server memory: the server persisted career totals when a run settled but never the run itself, so closing the server or browser lost all unbanked progress. The terminal already had crash-safe save/load backed by `SaveManager` (atomic replace, shadow backup, corruption quarantine, RNG and pending-puzzle persistence), and both interfaces default to the same `.cyberpulse` data directory.
+- **Decision**:
+  1. Add `SaveManager.has_save()`, which reports a save when either `savegame.json` or its shadow `.bak` exists, so recovery candidates are not hidden.
+  2. Add `CyberdeckSession.save_run()` and `load_run()`: saving refuses a terminal (`victory`/`lockout`/`jackout`) run and reports a failed atomic replace; loading replaces the session engine, clears the transient puzzle UI references, and keeps `engine.pending_puzzles` from the saved file. The session tracks whether it saved or loaded the file, and settlement deletes only an owned save after the career write succeeds, so a CLI-owned save is never destroyed by an unrelated browser run (ADR-010 R7) while a finished run cannot be replayed from its own save.
+  3. Wire `POST /api/action` actions `save` and `load`, expose `has_save` in every state payload, and allow `load` in the victory guard so a player can return to an earlier run after finishing one.
+  4. Surface it in the Web Cyberdeck with a header **SAVE** button (disabled once the run ends) and a **CONTINUE RUN** main-menu button that appears only when `has_save` is true; both reuse the existing terminal log and state refresh paths.
+  5. Test the session semantics (round trip with a pending puzzle, missing save, terminal refusal) and the HTTP round trip (no save, scan, save, diverge, load restores trace/turn).
+- **Consequences**: Browser runs now survive a server restart, and the same save can move between the Web Cyberdeck and the terminal because both use the identical file and schema. Finishing a run removes the mid-run save after the career write, so the terminal's anti-replay behavior is preserved. No storage schema, CLI behavior or career settlement changes. Test suite: 323 tests, 100% green.
+
+

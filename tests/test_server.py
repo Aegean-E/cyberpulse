@@ -724,6 +724,118 @@ class TestCyberdeckServer(unittest.TestCase):
             ) = saved
 
 
+class TestCyberdeckSaveLoadSession(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.temp_dir, True)
+        self.session = CyberdeckSession(data_dir=self.temp_dir, seed=7)
+
+    def test_save_then_load_restores_exact_progress(self):
+        engine = self.session.engine
+        scanned, _, _ = engine.scan_surroundings()
+        self.assertTrue(scanned)
+        puzzle_ok, _, _, _ = engine.get_or_create_puzzle("node_proxy_a")
+        self.assertTrue(puzzle_ok)
+        saved_trace = engine.state.trace_percent
+        saved_turn = engine.state.turns_elapsed
+
+        saved, message = self.session.save_run()
+
+        self.assertTrue(saved, message)
+        self.assertIn("saved", message.lower())
+        self.assertTrue(self.session.save_mgr.has_save())
+
+        self.session.engine.state.turns_elapsed = 9
+        loaded, message = self.session.load_run()
+
+        self.assertTrue(loaded, message)
+        self.assertIn("Loaded", message)
+        self.assertEqual(self.session.engine.state.trace_percent, saved_trace)
+        self.assertEqual(self.session.engine.state.turns_elapsed, saved_turn)
+        self.assertIn("node_proxy_a", self.session.engine.pending_puzzles)
+
+    def test_load_without_a_save_reports_a_missing_run(self):
+        loaded, message = self.session.load_run()
+
+        self.assertFalse(loaded)
+        self.assertIn("No saved run", message)
+
+    def test_terminal_run_is_not_saved(self):
+        self.session.engine.state.is_victory = True
+
+        saved, message = self.session.save_run()
+
+        self.assertFalse(saved)
+        self.assertIn("nothing left to save", message)
+        self.assertFalse(self.session.save_mgr.has_save())
+
+    def test_finishing_a_run_deletes_an_earlier_save(self):
+        saved, message = self.session.save_run()
+        self.assertTrue(saved, message)
+        self.assertTrue(self.session.save_mgr.has_save())
+
+        self.session.engine.state.is_victory = True
+        state = self.session.get_full_state()
+
+        self.assertFalse(state["has_save"])
+        self.assertTrue(self.session.engine.run_settled)
+
+
+class TestCyberdeckSaveLoadAPI(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.temp_dir = Path(tempfile.mkdtemp())
+        cls.server = create_server(host="127.0.0.1", port=0, data_dir=cls.temp_dir, seed=5)
+        cls.port = cls.server.server_address[1]
+        cls.base_url = f"http://127.0.0.1:{cls.port}"
+        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
+        cls.thread.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+        shutil.rmtree(cls.temp_dir, ignore_errors=True)
+
+    def _post(self, payload: dict):
+        body = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            f"{self.base_url}/api/action",
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    def _state(self):
+        with urllib.request.urlopen(f"{self.base_url}/api/state", timeout=3.0) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    def test_save_and_continue_round_trip(self):
+        self.assertFalse(self._state()["has_save"])
+
+        missing = self._post({"action": "load"})
+        self.assertFalse(missing["ok"])
+        self.assertIn("No saved run", missing["message"])
+
+        scan = self._post({"action": "scan"})
+        self.assertTrue(scan["ok"])
+        self.assertEqual(scan["state"]["state"]["trace_percent"], 5)
+
+        saved = self._post({"action": "save"})
+        self.assertTrue(saved["ok"], saved.get("message"))
+        self.assertTrue(saved["state"]["has_save"])
+
+        second_scan = self._post({"action": "scan"})
+        self.assertEqual(second_scan["state"]["state"]["trace_percent"], 10)
+
+        loaded = self._post({"action": "load"})
+        self.assertTrue(loaded["ok"], loaded.get("message"))
+        self.assertEqual(loaded["state"]["state"]["trace_percent"], 5)
+        self.assertEqual(loaded["state"]["state"]["turns_elapsed"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
 

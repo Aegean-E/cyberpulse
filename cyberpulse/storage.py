@@ -94,6 +94,10 @@ class SaveManager:
 
         return None
 
+    def has_save(self) -> bool:
+        """Return True when a savegame or its shadow backup exists on disk."""
+        return self.save_file.exists() or self.save_file.with_suffix(".bak").exists()
+
     def save(self, engine: GameEngine) -> Optional[Path]:
         """Atomically persist engine state to disk."""
         data = {

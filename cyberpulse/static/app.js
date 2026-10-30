@@ -258,6 +258,8 @@ function initUIEvents() {
   }
 
   // Main menu
+  document.getElementById("menu-load-run").addEventListener("click", handleLoad);
+  document.getElementById("btn-save-run").addEventListener("click", handleSave);
   document.getElementById("menu-jack-in").addEventListener("click", () => {
     document.getElementById("modal-main-menu").classList.add("hidden");
     sfx.success();
@@ -609,6 +611,14 @@ function renderHUD(data) {
     if (menuStory) menuStory.textContent = `${data.story.act_title} // ${data.story.chapter_title}`;
     const menuSub = document.getElementById("main-menu-sub");
     if (menuSub && data.story.intro) menuSub.textContent = data.story.intro;
+  }
+
+  const loadBtn = document.getElementById("menu-load-run");
+  if (loadBtn) loadBtn.classList.toggle("hidden", !data.has_save);
+  const saveBtn = document.getElementById("btn-save-run");
+  if (saveBtn) {
+    saveBtn.disabled = Boolean(gState.is_victory || gState.is_game_over || gState.is_jacked_out);
+    saveBtn.title = saveBtn.disabled ? "Run is over; nothing to save" : "Save this run to disk";
   }
 
   // Syndicate Bounty Contract
@@ -989,6 +999,39 @@ async function handleReset() {
     closePuzzleBay();
     renderEmptyTargetCard();
     renderHUD(res.state);
+  }
+}
+
+async function handleSave() {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "save" });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message || "Infiltration progress saved.", "success");
+    state.data = res.state;
+    renderHUD(res.state);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || res.error || "Save failed.", "warn");
+    applyStateSnapshot(res);
+  }
+}
+
+async function handleLoad() {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "load" });
+  if (res && res.ok) {
+    state.selectedNodeId = null;
+    closePuzzleBay();
+    renderEmptyTargetCard();
+    addTerminalLog(res.message || "Loaded saved infiltration session.", "success");
+    state.data = res.state;
+    renderHUD(res.state);
+    document.getElementById("modal-main-menu").classList.add("hidden");
+    sfx.success();
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || res.error || "No saved run found.", "warn");
   }
 }
 

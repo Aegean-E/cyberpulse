@@ -1,66 +1,17 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-procedural-subnet",
+    "task_id": "task-cyberpulse-web-save-load",
     "last_phase": "phase 4",
     "active_phase": 5,
     "status": "completed",
-    "updated_at": 1793320823.7802362,
-    "owner": "opencode:subnet-1",
-    "started_by": "opencode:subnet-1",
+    "updated_at": 1793356754.7576659,
+    "owner": "opencode:save-load-1",
+    "started_by": "opencode:save-load-1",
     "continuations": [],
-    "completed_at": 1793320828.410455
+    "completed_at": 1793356762.9413836
   },
   "checkpoints": [
-    {
-      "task_id": "reforge:run-1",
-      "phase": "reforge stage 27",
-      "phase_num": 3,
-      "description": "Reforge stage 27: window 81, 3 commit(s), 6 file(s) reviewed (unreviewed), 0 finding(s), 0 repaired",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793286110.4201157,
-      "timestamp_str": "2026-10-29 18:01:50",
-      "agent": "opencode"
-    },
-    {
-      "task_id": "reforge:run-1",
-      "phase": "reforge stage 28",
-      "phase_num": 3,
-      "description": "Reforge stage 28: window 84, 3 commit(s), 10 file(s) reviewed (unreviewed), 0 finding(s), 0 repaired",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793286154.0664182,
-      "timestamp_str": "2026-10-29 18:02:34",
-      "agent": "opencode"
-    },
-    {
-      "task_id": "reforge:run-1",
-      "phase": "reforge stage 29",
-      "phase_num": 3,
-      "description": "Reforge stage 29: window 87, 3 commit(s), 8 file(s) reviewed (unreviewed), 0 finding(s), 0 repaired",
-      "files_affected": [],
-      "status": "completed",
-      "timestamp": 1793286198.1901646,
-      "timestamp_str": "2026-10-29 18:03:18",
-      "agent": "opencode"
-    },
-    {
-      "task_id": "task-cyberpulse-reforge-audit-5",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[2/3] Reforge stages 27-29 reviewed (87 commits total); no new findings after the daemon-ID fix. checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793286219.7297783,
-      "timestamp_str": "2026-10-29 18:03:39",
-      "agent": "opencode:reforge-audit-5",
-      "handoff": {
-        "state": "source clean at 5f46efb, audit memory dirty",
-        "next": "complete the audit batch",
-        "evidence": "313 tests, 4-of-4 gates"
-      }
-    },
     {
       "task_id": "task-cyberpulse-reforge-audit-5",
       "phase": "phase 4",
@@ -273,6 +224,64 @@
       "timestamp": 1793320828.410457,
       "timestamp_str": "2026-10-30 03:40:28",
       "agent": "opencode:subnet-1"
+    },
+    {
+      "task_id": "task-cyberpulse-web-save-load",
+      "phase": "phase 2",
+      "phase_num": 2,
+      "description": "[1/3] Give the Web Cyberdeck the terminal's atomic save/load parity",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793356500.0139544,
+      "timestamp_str": "2026-10-30 13:35:00",
+      "agent": "opencode:save-load-1",
+      "impact_assessment": {
+        "why": "The Web Cyberdeck is the default launcher but holds the run only in server memory: closing the server loses the run, while the terminal already has crash-safe save/load. The server persists career stats but never the run.",
+        "benefits": "Players can bank a long run from the browser, resume the exact seeded state including pending puzzles and RNG, and see a CONTINUE action only when a save exists.",
+        "risks": "contract: storage schema and CLI semantics unchanged; dependency: none; concurrency: save/load run under the existing session lock; state: load replaces the session engine and clears the transient puzzle UI.",
+        "mitigation": "Reuse SaveManager, refuse terminal saves, expose has_save in the state payload, add API and session tests, and run the full project gate."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-web-save-load",
+      "phase": "phase 3",
+      "phase_num": 3,
+      "description": "[2/3] Session save/load with ownership guard, API actions, has_save payload, SAVE and CONTINUE RUN controls, tests and ADR-024",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793356746.801071,
+      "timestamp_str": "2026-10-30 13:39:06",
+      "agent": "opencode:save-load-1",
+      "handoff": {
+        "state": "server.py/storage.py/app.js/index.html/tests/README/ADR edited, HEAD 987187a",
+        "next": "verify and commit",
+        "evidence": "323 tests green"
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-web-save-load",
+      "phase": "phase 4",
+      "phase_num": 4,
+      "description": "[3/3] Project gate green: 5/5 (test, mechanics, hygiene, guidelines, secrets), 323 tests. checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793356754.7576659,
+      "timestamp_str": "2026-10-30 13:39:14",
+      "agent": "opencode:save-load-1",
+      "handoff": {
+        "next": "commit and push when authorized",
+        "evidence": "5/5 gates, 323 tests"
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-web-save-load",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-web-save-load' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793356762.9413853,
+      "timestamp_str": "2026-10-30 13:39:22",
+      "agent": "opencode:save-load-1"
     }
   ]
 }
