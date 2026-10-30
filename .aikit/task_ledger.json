@@ -3,30 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-autosave-slots",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793364712.5691192,
     "owner": "opencode:autosave-slots-1",
     "started_by": "opencode:autosave-slots-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793364750.4871879
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-reforge-audit-6",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[2/3] Reforge stages 30-32 reviewed (96 commits total). The storage swallowed-exception hits are historical; current code quarantines corrupt files and carries a hygiene: allow marker on the backup fallback. checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793287350.781205,
-      "timestamp_str": "2026-10-29 18:22:30",
-      "agent": "opencode:reforge-audit-6",
-      "handoff": {
-        "state": "source clean at 5f46efb, audit memory dirty",
-        "next": "complete this audit batch",
-        "evidence": "313 tests, 4-of-4 gates"
-      }
-    },
     {
       "task_id": "task-cyberpulse-reforge-audit-6",
       "phase": "phase 4",
@@ -274,6 +259,16 @@
       "status": "in_progress",
       "timestamp": 1793364712.5691192,
       "timestamp_str": "2026-10-30 15:51:52",
+      "agent": "opencode:autosave-slots-1"
+    },
+    {
+      "task_id": "task-cyberpulse-autosave-slots",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-autosave-slots' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793364750.4871893,
+      "timestamp_str": "2026-10-30 15:52:30",
       "agent": "opencode:autosave-slots-1"
     }
   ]
