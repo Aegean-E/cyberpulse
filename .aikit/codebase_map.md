@@ -6,11 +6,11 @@
 ---
 
 ## 📊 Codebase Metrics
-- **Total Python Modules**: `36`
-- **Total Classes**: `69`
-- **Total Top-Level Functions**: `83`
-- **Total Class Methods**: `645`
-- **Total Source Lines**: `14715`
+- **Total Python Modules**: `38`
+- **Total Classes**: `70`
+- **Total Top-Level Functions**: `85`
+- **Total Class Methods**: `652`
+- **Total Source Lines**: `14846`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1269` lines (`59578` bytes)
+**Size**: `1290` lines (`60640` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -53,6 +53,7 @@
 - `def print_contract(engine)`
 - `def print_hunters(engine)`
 - `def print_shop(shop, deck, price_multiplier)`
+- `def print_tutorial(engine, profile)` - *Render the first-run field manual with live checklist state.*
 - `def print_career(profile)`
 - `def print_workshop(engine)`
 - `def print_daemons(engine)`
@@ -101,7 +102,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3650` lines (`170086` bytes)
+**Size**: `3656` lines (`170337` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -140,6 +141,7 @@
   - Method `.add_trace(raw_amount)` - *Increase system trace, mitigated by ICE dampeners. 100% triggers lockout & loss of loot.*
   - Method `.regenerate_cpu(amount)` - *Cool down cyberdeck processing units and recover CPU cycles.*
   - Method `.advance_turn()` - *Advance the run clock one turn: daemons harvest, then the living grid reacts.*
+  - Method `.tutorial_progress()` - *Return the first-run field manual with live completion flags.*
   - Method `.rival_summary()` - *Return the active rival's public status for HUD and dossier display.*
   - Method `.counter_rival()` - *Burn CPU to trace the rival and postpone their next contract grab.*
   - Method `._tick_rival()` - *Let the rival compete for a posted contract, or probe when the board is empty.*
@@ -217,7 +219,7 @@
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `727` lines (`26391` bytes)
+**Size**: `728` lines (`26417` bytes)
 
 **Classes:**
 - `class NodeType`
@@ -374,7 +376,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `869` lines (`38969` bytes)
+**Size**: `870` lines (`39026` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -469,6 +471,16 @@
 
 ---
 
+### [`cyberpulse/tutorial.py`](cyberpulse/tutorial.py)
+> *State-driven first-run field manual.*
+
+**Size**: `38` lines (`1399` bytes)
+
+**Functions:**
+- `def tutorial_steps(engine)` - *Return the five core-loop steps annotated with live completion state.*
+
+---
+
 ### [`cyberpulse/world.py`](cyberpulse/world.py)
 > *Living-grid world simulation: in-game clock, corporate alert, news, and grid response.*
 
@@ -548,7 +560,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `555` lines (`23325` bytes)
+**Size**: `567` lines (`23745` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -579,6 +591,7 @@
   - Method `.test_replay_starts_a_run_from_an_archived_seed()`
   - Method `.test_replay_rejects_an_out_of_range_index()`
   - Method `.test_rival_commands_inspect_and_counter()`
+  - Method `.test_tutorial_command_lists_the_first_run_steps()`
   - Method `.test_difficulty_flag_reaches_the_hud()`
   - Method `.test_daily_flag_uses_the_date_seed()`
   - Method `.test_daily_career_dossier_shows_the_streak()`
@@ -934,7 +947,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `1056` lines (`46159` bytes)
+**Size**: `1059` lines (`46302` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -1082,6 +1095,21 @@
   - Method `.test_rename_missing_or_auto_slot_is_refused()`
   - Method `.test_delete_save_only_removes_the_requested_slot()`
   - Method `.test_invalid_slot_is_rejected()`
+
+---
+
+### [`tests/test_tutorial.py`](tests/test_tutorial.py)
+> *Unit tests for the first-run tutorial checklist.*
+
+**Size**: `49` lines (`1464` bytes)
+
+**Classes:**
+- `class TestTutorial`
+  - Method `.setUp()`
+  - Method `._done_map()`
+  - Method `.test_fresh_run_has_no_completed_steps()`
+  - Method `.test_steps_track_persisted_progress()`
+  - Method `.test_scan_command_sets_the_scan_flag()`
 
 ---
 

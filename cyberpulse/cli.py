@@ -236,6 +236,21 @@ def print_shop(shop: BlackMarketShop, deck: CyberDeck, price_multiplier: float =
     print("+==========================================================================+")
 
 
+def print_tutorial(engine: GameEngine, profile: CareerProfile) -> None:
+    """Render the first-run field manual with live checklist state."""
+    if profile.successful_runs or profile.failed_runs:
+        print("\nField manual archived: your career already has settled runs.")
+        return
+    steps = engine.tutorial_progress()
+    print("\n+-------------------------------- FIRST RUN CHECKLIST ------------------------+")
+    for step in steps:
+        mark = "x" if step["done"] else " "
+        print(f"  [{mark}] {step['title']:<16} {step['hint']}")
+    if all(step["done"] for step in steps):
+        print("  All five steps complete. The rest of the grid is yours.")
+    print("+----------------------------------------------------------------------------+")
+
+
 def print_career(profile: CareerProfile) -> None:
     print("\n+==========================================================================+")
     print(f"|               >> HACKER CAREER DOSSIER: {profile.alias} <<                  |")
@@ -531,7 +546,7 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
         if choice in ("6", "help", "how"):
             print("Commands: status, contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
             print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
-            print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, career,")
+            print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, tutorial, career,")
             print("          save [1-3] [name], load [1-3|auto], saves, rename, delete, replay, quit")
             print("Daily challenge: run `python -m cyberpulse.cli --daily` or choose 7.")
             continue
@@ -1017,6 +1032,10 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         print_career(save_mgr.load_career())
         return True
 
+    if action in ("tutorial", "tips", "manual"):
+        print_tutorial(engine, save_mgr.load_career())
+        return True
+
     if action in ("rival", "rivals"):
         rival = engine.rival_summary()
         if not rival:
@@ -1139,7 +1158,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print(f"No checkpoint in {label}.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, career, status, save, load, saves, rename, delete, replay, quit")
+    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, tutorial, career, status, save, load, saves, rename, delete, replay, quit")
     return True
 
 
@@ -1247,6 +1266,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         else:
             print("No saved infiltration loaded. Starting a new run.")
     print_hud(engine)
+    if career.successful_runs == 0 and career.failed_runs == 0:
+        print("\n[!] FIRST RUN: type `tutorial` for the five-step field manual.")
     notice_seen = engine.state.contract_notice
     while not engine.state.is_game_over and not engine.state.is_victory and not engine.state.is_jacked_out:
         try:

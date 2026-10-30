@@ -10,6 +10,7 @@ from cyberpulse.daily import is_next_day
 from cyberpulse.difficulty import contract_multiplier, normalize_difficulty, trace_multiplier
 from cyberpulse.rivals import generate_rival
 from cyberpulse.scoring import score_run
+from cyberpulse.tutorial import tutorial_steps
 from cyberpulse.models import (
     BountyContract,
     CareerProfile,
@@ -1009,6 +1010,10 @@ class GameEngine:
                 self.regenerate_cpu(1)
         return messages
 
+    def tutorial_progress(self) -> List[Dict[str, Any]]:
+        """Return the first-run field manual with live completion flags."""
+        return tutorial_steps(self)
+
     def rival_summary(self) -> Optional[Dict[str, Any]]:
         """Return the active rival's public status for HUD and dossier display."""
         rival = self.state.rival
@@ -1513,6 +1518,7 @@ class GameEngine:
                     node.status = NodeStatus.DISCOVERED
                 revealed.append(node)
 
+        self.state.scanned = True
         self.add_trace(5)
         self.regenerate_cpu(1)
         self.advance_turn()

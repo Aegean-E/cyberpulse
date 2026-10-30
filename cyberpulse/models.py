@@ -684,6 +684,7 @@ class GameState:
     contacts: List[ContactProfile] = field(default_factory=list)
     world: WorldState = field(default_factory=WorldState)
     probed_nodes: List[str] = field(default_factory=list)
+    scanned: bool = False
     rival: Optional[RivalNetrunner] = None
 
     def to_dict(self) -> Dict[str, Any]:

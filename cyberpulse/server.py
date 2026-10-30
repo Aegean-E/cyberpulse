@@ -101,6 +101,7 @@ class CyberdeckSession:
             "world": world,
             "run_summary": self.engine.run_summary(),
             "rival": self.engine.rival_summary(),
+            "tutorial": self.engine.tutorial_progress(),
             "quests": self.engine.list_quests(),
             "contacts": self.engine.list_contacts(),
             "shop_items": self.shop.list_available(self.engine.deck, price_multiplier=world["market_multiplier"]),

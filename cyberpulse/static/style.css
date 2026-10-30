@@ -4130,3 +4130,29 @@ body {
 .grid-chip.difficulty-chip { color: var(--c-text-main); }
 .grid-chip.difficulty-chip.easy { color: var(--c-primary); border-color: var(--c-primary-glow); }
 .grid-chip.difficulty-chip.hard { color: var(--c-danger); border-color: var(--c-danger-glow); }
+.tutorial-panel {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  background: hsla(185, 45%, 8%, 0.72);
+  border: 1px solid var(--c-border);
+  border-left: 3px solid var(--c-primary);
+  border-radius: var(--radius-sm);
+}
+.tutorial-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+  font-size: 9px;
+  letter-spacing: 1.6px;
+  color: var(--c-primary);
+}
+.tutorial-close { font-size: 16px; line-height: 1; }
+.tutorial-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 6px; }
+.tutorial-step { display: flex; gap: 7px; align-items: flex-start; opacity: 0.85; }
+.tutorial-step.done { opacity: 0.5; }
+.tutorial-mark { font-size: 9px; color: var(--c-primary); }
+.tutorial-copy { display: flex; flex-direction: column; gap: 2px; }
+.tutorial-step-title { font-size: 8px; font-weight: 700; letter-spacing: 1px; color: var(--c-text-bright); }
+.tutorial-step-hint { font-size: 8px; line-height: 1.35; color: var(--c-text-dim); }

@@ -253,6 +253,18 @@ class TestCLI(unittest.TestCase):
         self.assertIn("Counter-traced", out)
         self.assertIn("contract(s) stolen", out)
 
+    def test_tutorial_command_lists_the_first_run_steps(self):
+        code, out = self.run_cli("--exec", "tutorial")
+
+        self.assertEqual(code, 0)
+        self.assertIn("FIRST RUN CHECKLIST", out)
+        self.assertIn("SCAN THE GRID", out)
+        self.assertIn("EXTRACT", out)
+
+        code, out = self.run_cli("--exec", "scan;tutorial")
+        self.assertEqual(code, 0)
+        self.assertIn("[x] SCAN", out)
+
     def test_difficulty_flag_reaches_the_hud(self):
         code, out = self.run_cli("--difficulty", "hard", "--exec", "status")
 

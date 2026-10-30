@@ -113,6 +113,7 @@ const state = {
   bufferInput: [],
   animFrameId: null,
   packetParticles: [],
+  tutorialDismissed: false,
 };
 
 // Node matrix layout coordinates on 800x560 canvas
@@ -315,6 +316,11 @@ function initUIEvents() {
     document.getElementById("modal-rival").classList.add("hidden");
     sfx.click();
   });
+  document.getElementById("btn-tutorial-close").addEventListener("click", () => {
+    state.tutorialDismissed = true;
+    document.getElementById("tutorial-panel").classList.add("hidden");
+    sfx.click();
+  });
   document.getElementById("btn-close-saves").addEventListener("click", () => {
     document.getElementById("modal-saves").classList.add("hidden");
     sfx.click();
@@ -506,6 +512,41 @@ function renderEmptyTargetCard() {
   if (badgeEl) badgeEl.textContent = "NO SELECTION";
 }
 
+function renderTutorial(data) {
+  const panel = document.getElementById("tutorial-panel");
+  const container = document.getElementById("tutorial-steps");
+  if (!panel || !container) return;
+  const career = data.career || {};
+  const settled = (career.successful_runs || 0) + (career.failed_runs || 0);
+  const steps = Array.isArray(data.tutorial) ? data.tutorial : [];
+  const complete = steps.length > 0 && steps.every((step) => step.done);
+  if (!steps.length || settled > 0 || complete || state.tutorialDismissed) {
+    panel.classList.add("hidden");
+    return;
+  }
+
+  panel.classList.remove("hidden");
+  container.innerHTML = "";
+  steps.forEach((step) => {
+    const row = document.createElement("div");
+    row.className = `tutorial-step${step.done ? " done" : ""}`;
+    const mark = document.createElement("span");
+    mark.className = "tutorial-mark";
+    mark.textContent = step.done ? "[x]" : "[ ]";
+    const copy = document.createElement("div");
+    copy.className = "tutorial-copy";
+    const title = document.createElement("span");
+    title.className = "tutorial-step-title";
+    title.textContent = step.title;
+    const hint = document.createElement("span");
+    hint.className = "tutorial-step-hint";
+    hint.textContent = step.hint;
+    copy.append(title, hint);
+    row.append(mark, copy);
+    container.appendChild(row);
+  });
+}
+
 function renderGridTicker(world) {
   const bar = document.getElementById("grid-bar");
   if (!bar || !world) return;
@@ -610,6 +651,8 @@ function renderHUD(data) {
 
   // Living grid ticker: clock, alert, market, and the newest headline
   renderGridTicker(data.world || gState.world);
+
+  renderTutorial(data);
 
   const dailyChip = document.getElementById("grid-daily");
   if (dailyChip) {

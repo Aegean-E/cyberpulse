@@ -558,6 +558,9 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertIn("run_summary", res)
         self.assertIn("quests", res)
         self.assertIn("contacts", res)
+        self.assertEqual([step["step_id"] for step in res["tutorial"]], [
+            "scan", "probe", "breach", "loot", "jackout",
+        ])
         self.assertEqual(res["story"]["act"], 1)
         self.assertEqual(res["run_summary"]["outcome"], "active")
         self.assertTrue(any(q["quest_id"] == "q_gateway" for q in res["quests"]))

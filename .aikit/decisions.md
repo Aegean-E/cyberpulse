@@ -482,4 +482,16 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   6. Cover normalization, trace/start modifiers, contract pay, save round-trip, CLI HUD, API reset fallback, and existing default behavior.
 - **Consequences**: Runs now have an explicit challenge dial without changing Normal-mode behavior, and difficulty remains visible in the archive and leaderboard. Balance changes are isolated to one module and three call sites. Test suite: 409 tests, 100% green.
 
+### ADR-037: First-Run Field Manual: State-Driven Onboarding Checklist
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: The game exposes 51 commands and many interlocking systems, but onboarding was static help text. New players had no live signal for the core loop (scan, probe, breach, loot, extract), and established careers had no reason to see hints again.
+- **Decision**:
+  1. Add `tutorial.py` with five ordered steps: scan, probe, breach, loot and jackout. Each step is derived from persisted run state (`scanned`, `probed_nodes`, breached nodes, `looted_payloads`, terminal flags) rather than client-only bookkeeping.
+  2. Add `GameState.scanned`, set only by a successful `scan_surroundings`, so scan progress survives save/load and old saves default to unscanned.
+  3. Expose `engine.tutorial_progress()` and include it in every state payload. The terminal `tutorial` command renders a live checklist and the main loop prints a one-line first-run hint; the Web renders a dismissible panel only for careers with no settled runs.
+  4. Hide the guide once all steps are complete, once any run has settled, or when dismissed in the current page session.
+  5. Cover fresh-run state, step transitions, successful scan marking, CLI rendering and the API payload.
+- **Consequences**: A new player gets a concrete path through the first run without new gameplay rules, while experienced careers never see the panel. The checklist is save-safe and cannot drift from actual progress. Test suite: 413 tests, 100% green.
+
 

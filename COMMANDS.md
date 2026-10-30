@@ -35,6 +35,7 @@
 | `counter [method]` | Deploy tactical countermeasures against hunter (`logic_bomb`, `ghost_protocol`, `cpu_burst`) | Active counter-defense & hunter neutralization |
 | `story` | Show the current act, story log, and briefing | Narrative orientation & campaign immersion |
 | `contract` / `bounty` | Open the job board: active job plus offers; `accept_job <id>` takes one, `drop_offer <id>` passes one for 30 CR or a one-turn cooldown, `decline_contract` abandons the active job | Job choice, clock & risk/reward |
+| `tutorial` / `tips` | Show the first-run field manual with live scan, probe, breach, loot and extraction checkboxes | Onboarding & core-loop clarity |
 | `rival` | Inspect the run's rival netrunner, stolen contract count, and next scheduled move | Peer-antagonist awareness |
 | `counter_rival` | Burn 2 CPU to trace the rival and delay their next contract grab by 5 turns | Counterplay & tempo decision |
 | `quests` / `missions` | Open the mission board with progress, rewards, and available jobs | Goal clarity & Zeigarnik completion pressure |
