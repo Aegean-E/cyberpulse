@@ -171,6 +171,8 @@ class TestModels(unittest.TestCase):
                 "2026-10-30": 450,
                 "2026-10-31": "bad",
                 "2026-11-01": 120.9,
+                "2026-11-02": float("nan"),
+                "2026-11-03": float("inf"),
             },
         })
 

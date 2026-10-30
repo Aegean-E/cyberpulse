@@ -411,4 +411,15 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   4. Cover the valid replay path and out-of-range rejection in the CLI, and validate the JavaScript entry point with the syntax check.
 - **Consequences**: Seeds become reusable content rather than a read-only field, while daily records stay immutable and no save/career schema changes are needed. Test suite: 376 tests, 100% green.
 
+### ADR-031: Shadow Backup Integrity and Non-Finite Metadata Guards
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: `_write_atomic` refreshed the `.bak` shadow from any existing primary before replacing it. If the primary was corrupt while the backup was good, a save could overwrite the only recoverable copy, defeating the crash-safety claim. Separately, the archive trusted `meta.saved_at`, so `NaN`/`Infinity` crashed `list_saves`, and malformed `daily_best` numbers crashed `CareerProfile.from_dict`.
+- **Decision**:
+  1. Validate an existing primary as JSON before copying it to the shadow backup. A corrupt primary leaves the prior backup untouched; the new payload still replaces the primary through the normal five-retry atomic path.
+  2. Treat non-finite, boolean or non-positive `saved_at` metadata as unusable and fall back to the file's modification time, keeping the archive listable.
+  3. Filter non-finite `daily_best` values during career load, coerce finite numbers to non-negative integers, and keep valid entries.
+  4. Cover corrupt-primary backup preservation, non-finite archive timestamps, and malformed daily values with failing-first tests.
+- **Consequences**: A corrupt primary can no longer destroy the last good recovery copy, and damaged metadata degrades to a safe fallback instead of crashing the Web state payload or career dossier. Valid saves behave exactly as before. Test suite: 378 tests, 100% green.
+
 

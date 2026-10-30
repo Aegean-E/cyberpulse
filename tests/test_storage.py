@@ -1,5 +1,7 @@
 """Unit tests for CyberPulse savegame and career profile persistence."""
 
+import json
+import math
 import shutil
 import tempfile
 import unittest
@@ -105,6 +107,39 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(restored.current_streak, 2)
         self.assertEqual(restored.best_combo, 6)
         self.assertIn("overclock_cpu", restored.purchased_upgrades)
+
+    def test_corrupt_primary_does_not_overwrite_a_good_backup(self):
+        engine = GameEngine(seed=77)
+        engine.deck.cryptocreds = 500
+        self.save_mgr.save(engine)
+        engine.deck.cryptocreds = 600
+        self.save_mgr.save(engine)
+
+        self.save_mgr.save_file.write_text("{ corrupt primary", encoding="utf-8")
+        engine.deck.cryptocreds = 700
+        self.assertTrue(self.save_mgr.save(engine))
+
+        backup = self.save_mgr.save_file.with_suffix(".bak")
+        payload = json.loads(backup.read_text(encoding="utf-8"))
+        self.assertEqual(payload["deck"]["cryptocreds"], 500)
+
+        self.save_mgr.save_file.write_text("{ corrupt again", encoding="utf-8")
+        recovered = self.save_mgr.load()
+        self.assertIsNotNone(recovered)
+        self.assertEqual(recovered.deck.cryptocreds, 500)
+
+    def test_list_saves_falls_back_when_timestamp_is_not_finite(self):
+        engine = GameEngine(seed=78)
+        self.save_mgr.save(engine)
+        payload = json.loads(self.save_mgr.save_file.read_text(encoding="utf-8"))
+        payload["meta"]["saved_at"] = float("nan")
+        self.save_mgr.save_file.write_text(json.dumps(payload), encoding="utf-8")
+
+        saves = self.save_mgr.list_saves()
+
+        self.assertEqual(len(saves), 1)
+        self.assertTrue(math.isfinite(saves[0]["saved_at"]))
+        self.assertGreater(saves[0]["saved_at"], 0)
 
     def test_career_run_history_round_trips(self):
         profile = CareerProfile(alias="Archivist", achievements=["veteran", "ghost_protocol"])

@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import math
 import os
 import random
 import shutil
@@ -89,6 +90,15 @@ class SaveManager:
         path = self.slot_path(key)
         return path.exists() or path.with_suffix(".bak").exists()
 
+    def _is_readable_json(self, path: Path) -> bool:
+        """Return True when a file parses as JSON, so a corrupt primary never replaces a good backup."""
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                json.load(f)
+            return True
+        except (json.JSONDecodeError, OSError):
+            return False
+
     def _write_atomic(self, target_path: Path, data: Any) -> Optional[Path]:
         """Write JSON payload to target_path atomically; returns None when the replace never lands."""
         backup_path = target_path.with_suffix(".bak")
@@ -102,7 +112,7 @@ class SaveManager:
                 f.flush()
                 os.fsync(f.fileno())
 
-            if target_path.exists():
+            if target_path.exists() and self._is_readable_json(target_path):
                 shutil.copy2(target_path, backup_path)
 
             for _ in range(5):
@@ -298,7 +308,12 @@ class SaveManager:
             state = data.get("state") if isinstance(data.get("state"), dict) else {}
             deck = data.get("deck") if isinstance(data.get("deck"), dict) else {}
             saved_at = meta.get("saved_at")
-            if not isinstance(saved_at, (int, float)):
+            if (
+                not isinstance(saved_at, (int, float))
+                or isinstance(saved_at, bool)
+                or not math.isfinite(float(saved_at))
+                or float(saved_at) <= 0
+            ):
                 path = self.slot_path(key)
                 candidates = [p for p in (path, path.with_suffix(".bak")) if p.exists()]
                 saved_at = max(p.stat().st_mtime for p in candidates) if candidates else 0.0

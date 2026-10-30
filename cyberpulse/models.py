@@ -1,5 +1,6 @@
 """Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles."""
 
+import math
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -145,9 +146,14 @@ class CareerProfile:
         if not isinstance(daily_best, dict):
             daily_best = {}
         cleaned_daily = {
-            str(day): int(value)
+            str(day): max(0, int(value))
             for day, value in daily_best.items()
-            if isinstance(day, str) and isinstance(value, (int, float)) and not isinstance(value, bool)
+            if (
+                isinstance(day, str)
+                and isinstance(value, (int, float))
+                and not isinstance(value, bool)
+                and math.isfinite(float(value))
+            )
         }
         data_clean["daily_best"] = dict(sorted(cleaned_daily.items())[-30:])
         return cls(**data_clean)
