@@ -586,4 +586,15 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. Cover thresholds, rewards, duplicate settlement, CLI and API display.
 - **Consequences**: Faction investment now has named status and a one-time payoff, while the standing snapshot and existing bonuses remain unchanged. Test suite: 436 tests, 100% green.
 
+### ADR-046: Version SSOT and the 0.4.0 Release
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: Runtime, packaging and CLI metadata disagreed (`0.1.0`, `0.2.0`, `0.3.0`), and the large feature set added since the last public baseline had no release record.
+- **Decision**:
+  1. Make `cyberpulse.__version__` the single runtime source at `0.4.0`; derive the CLI banner and a new `--version` flag from it.
+  2. Align `pyproject.toml` at `0.4.0`.
+  3. Add `tests/test_version.py` to enforce semver, package/pyproject parity and the CLI flag; remove the hardcoded `0.1.0` assertion from the init smoke test.
+  4. Add `CHANGELOG.md` for the 0.4.0 release, covering save slots, history, milestones, dailies, difficulty, rival, insurance, tutorial, preferences, factions/ranks and the reset workflow, plus the storage/faction fixes.
+- **Consequences**: Release metadata cannot drift silently, support can query the installed version, and the release history is legible. Test suite: 439 tests, 100% green.
+
 

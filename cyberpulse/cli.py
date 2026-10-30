@@ -12,6 +12,7 @@ if str(project_root) not in sys.path:
 
 from typing import List, Optional
 
+from cyberpulse import __version__
 from cyberpulse.achievements import ACHIEVEMENTS, achievement_names
 from cyberpulse.daily import daily_modifier, daily_run
 from cyberpulse.engine import GameEngine
@@ -73,7 +74,7 @@ def print_hud(engine: GameEngine) -> None:
         contract_str = f"None | Offers: {len(engine.state.contract_offers)} (run contracts)"
 
     print("\n+==========================================================================+")
-    print("|          >> CYBERPULSE // NEURAL INTRUSION HARNESS v0.3.0 <<             |")
+    print(f"|          >> CYBERPULSE // NEURAL INTRUSION HARNESS v{__version__} <<             |")
     print("+==========================================================================+")
     print(f"[*] Location:   {curr.name} | {curr.hostname} ({curr.ip_address}) [{curr.node_id}]")
     print(f"[*] Local Rig:  {engine.deck.local_hostname} ({engine.deck.local_ip}) [{engine.deck.model_name}]")
@@ -1273,6 +1274,7 @@ def handle_run_completion(engine: GameEngine, save_mgr: SaveManager) -> Optional
 def main(argv: Optional[List[str]] = None) -> int:
     setup_terminal_encoding()
     parser = argparse.ArgumentParser(prog="cyberpulse", description="Retro-cyberpunk terminal hacking simulation game")
+    parser.add_argument("--version", action="version", version=f"CyberPulse {__version__}")
     parser.add_argument("--seed", type=int, default=1337, help="Deterministic world seed")
     parser.add_argument(
         "--difficulty", choices=("easy", "normal", "hard"), default="normal",

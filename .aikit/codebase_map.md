@@ -6,11 +6,11 @@
 ---
 
 ## 📊 Codebase Metrics
-- **Total Python Modules**: `40`
-- **Total Classes**: `72`
+- **Total Python Modules**: `41`
+- **Total Classes**: `73`
 - **Total Top-Level Functions**: `94`
-- **Total Class Methods**: `683`
-- **Total Source Lines**: `15623`
+- **Total Class Methods**: `686`
+- **Total Source Lines**: `15661`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1395` lines (`64516` bytes)
+**Size**: `1397` lines (`64652` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -889,7 +889,7 @@
 ### [`tests/test_init.py`](tests/test_init.py)
 > *Smoke test for cyberpulse package.*
 
-**Size**: `13` lines (`266` bytes)
+**Size**: `13` lines (`277` bytes)
 
 **Classes:**
 - `class TestCyberpulseInit`
@@ -1172,6 +1172,19 @@
   - Method `.test_fresh_run_has_no_completed_steps()`
   - Method `.test_steps_track_persisted_progress()`
   - Method `.test_scan_command_sets_the_scan_flag()`
+
+---
+
+### [`tests/test_version.py`](tests/test_version.py)
+> *Release metadata tests.*
+
+**Size**: `36` lines (`1071` bytes)
+
+**Classes:**
+- `class TestVersion`
+  - Method `.test_version_is_semver()`
+  - Method `.test_pyproject_version_matches_the_package()`
+  - Method `.test_cli_version_flag_reports_the_package_version()`
 
 ---
 

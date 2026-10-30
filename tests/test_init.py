@@ -6,7 +6,7 @@ import cyberpulse
 
 class TestCyberpulseInit(unittest.TestCase):
     def test_version_defined(self):
-        self.assertEqual(cyberpulse.__version__, "0.1.0")
+        self.assertRegex(cyberpulse.__version__, r"^\d+\.\d+\.\d+$")
 
 
 if __name__ == "__main__":
