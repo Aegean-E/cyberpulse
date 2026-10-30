@@ -111,7 +111,7 @@ class CyberdeckSession:
         self.save_mgr.mark_autosave_baseline(self.engine)
         return self.get_full_state()
 
-    def save_run(self, slot: Any = 1) -> Tuple[bool, str]:
+    def save_run(self, slot: Any = 1, name: Optional[str] = None) -> Tuple[bool, str]:
         """Persist the live run to a manual slot with the terminal's atomic manager."""
         key = self.save_mgr.normalize_slot(slot)
         if key == "auto":
@@ -119,11 +119,35 @@ class CyberdeckSession:
         engine = self.engine
         if engine.state.is_victory or engine.state.is_game_over or engine.state.is_jacked_out:
             return False, "This run is already over; there is nothing left to save."
-        path = self.save_mgr.save(engine, key)
+        path = self.save_mgr.save(engine, key, name=name)
         if path is None:
             return False, "Save failed: the save file could not be replaced after 5 attempts."
         self.save_mgr.claim_slot(key)
-        return True, f"Infiltration progress saved to {self.save_mgr.slot_label(key)}. LOAD will restore this exact state."
+        label = self.save_mgr.slot_label(key)
+        if self.save_mgr.clean_name(name):
+            label = f"{label} // {self.save_mgr.clean_name(name)}"
+        return True, f"Infiltration progress saved to {label}. LOAD will restore this exact state."
+
+    def rename_save(self, slot: Any = 1, name: Any = "") -> Tuple[bool, str]:
+        """Rename an existing manual checkpoint without changing the run."""
+        key = self.save_mgr.normalize_slot(slot)
+        label = self.save_mgr.slot_label(key)
+        if key == "auto":
+            return False, "AUTOSAVE cannot be renamed."
+        if not self.save_mgr.rename_slot(key, name):
+            return False, f"No checkpoint in {label}."
+        clean = self.save_mgr.clean_name(name)
+        suffix = f" to '{clean}'" if clean else " (label cleared)"
+        return True, f"Renamed {label}{suffix}."
+
+    def delete_save(self, slot: Any = 1) -> Tuple[bool, str]:
+        """Delete a checkpoint from the archive without touching the live run."""
+        key = self.save_mgr.normalize_slot(slot)
+        label = self.save_mgr.slot_label(key)
+        if not self.save_mgr.has_save(key):
+            return False, f"No checkpoint in {label}."
+        self.save_mgr.delete_save(key)
+        return True, f"Deleted {label} checkpoint."
 
     def load_run(self, slot: Any = 1) -> Tuple[bool, str]:
         """Replace the live engine with a saved run from the requested slot."""
@@ -360,7 +384,29 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
 
             if action == "save":
                 try:
-                    ok, msg = self.server_session.save_run(payload.get("slot", 1))
+                    ok, msg = self.server_session.save_run(
+                        payload.get("slot", 1), name=payload.get("name")
+                    )
+                except ValueError as exc:
+                    self.send_json_response({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                    return
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action in ("rename_save", "rename"):
+                try:
+                    ok, msg = self.server_session.rename_save(
+                        payload.get("slot", 1), payload.get("name", "")
+                    )
+                except ValueError as exc:
+                    self.send_json_response({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                    return
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action in ("delete_save", "delete"):
+                try:
+                    ok, msg = self.server_session.delete_save(payload.get("slot", 1))
                 except ValueError as exc:
                     self.send_json_response({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
                     return

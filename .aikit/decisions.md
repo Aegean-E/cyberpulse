@@ -351,4 +351,17 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   7. Cover slot isolation, legacy loading, listing metadata, autosave deduplication and terminal refusal, run-scoped purge, CLI commands, session semantics and the HTTP round trip with tests.
 - **Consequences**: Players can keep three independent runs and recover from a crash without saving manually. The legacy save file and schema remain readable, the Web and terminal archives are interchangeable, and finishing a run still cannot be replayed from any checkpoint this interface created. Test suite: 341 tests, 100% green.
 
+### ADR-026: Slot Archive Management: Run Labels, Rename, and Delete
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: ADR-025 shipped three manual slots and autosave, but every checkpoint was still called SLOT 1/2/3, stale runs could not be removed, and relabeling a run required loading and re-saving it. The archive was functional but not usable as a library.
+- **Decision**:
+  1. Store an additive `meta.name` on manual saves. Names collapse whitespace, cap at 32 characters, and are optional; saving with no name preserves the existing label, while an explicit empty name clears it. Old saves without a name load normally and show an empty label.
+  2. Add `SaveManager.rename_slot`, which rewrites the same atomic payload with a new `meta.name` while preserving the checkpoint, `run_id`, `saved_at`, and progress. Renaming a missing or autosave slot is refused.
+  3. Expose `name` in `list_saves` and in every state payload. Terminal adds `save [1-3] [name]`, `rename <slot> <name>`, and `delete <slot>`; delete requires an explicit slot, removes only that checkpoint and its backup, and leaves the live engine untouched.
+  4. Web Cyberdeck adds an editable run-label field plus RENAME and DELETE actions in the slot archive. Delete asks for confirmation; every action refreshes the archive from the returned state.
+  5. Add `rename_save` and `delete_save` API actions, keep `save` accepting an optional `name`, and reject invalid or autosave renames with a clear message.
+  6. Cover name normalization and capping, label preservation across saves, rename preserving timestamp/progress, missing-slot refusal, delete isolation, CLI commands, session semantics, and the HTTP round trip.
+- **Consequences**: The slot archive now works as a labeled library: players can distinguish parallel runs, relabel old checkpoints without touching them, and clear stale ones. Legacy saves without metadata keep their original display timestamp when renamed. No save schema break occurs; the new field is additive and optional. Test suite: 353 tests, 100% green.
+
 

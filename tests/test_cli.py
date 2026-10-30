@@ -184,6 +184,30 @@ class TestCLI(unittest.TestCase):
         self.assertIn("SLOT 1", out)
         self.assertIn("SLOT 3", out)
 
+    def test_named_slot_round_trip_and_rename(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "save 2 Night Run;saves")
+        self.assertEqual(code, 0)
+        self.assertIn("SLOT 2", out)
+        self.assertIn("Night Run", out)
+
+        code, out = self.run_cli("--seed", "1337", "--exec", "rename 2 Vault Run;saves")
+        self.assertEqual(code, 0)
+        self.assertIn("Vault Run", out)
+        self.assertNotIn("Night Run", out)
+
+    def test_delete_slot_command_requires_an_explicit_slot(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "save 1;save 2;delete 1;saves")
+
+        self.assertEqual(code, 0)
+        self.assertIn("Deleted SLOT 1", out)
+        self.assertFalse((self.temp_dir / "savegame.json").exists())
+        self.assertTrue((self.temp_dir / "savegame_slot2.json").exists())
+        self.assertIn("SLOT 2", out)
+
+        code, out = self.run_cli("--seed", "1337", "--exec", "delete")
+        self.assertEqual(code, 0)
+        self.assertIn("Usage: delete <1|2|3|auto>", out)
+
     def test_batch_commands_autosave_state_changes(self):
         code, out = self.run_cli("--seed", "1337", "--exec", "scan")
 

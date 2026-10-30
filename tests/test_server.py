@@ -822,6 +822,28 @@ class TestCyberdeckSaveLoadSession(unittest.TestCase):
         self.assertIn("AUTOSAVE", message)
         self.assertEqual(self.session.engine.state.trace_percent, 33)
 
+    def test_named_slot_can_be_renamed_without_reloading_it(self):
+        self.session.engine.state.trace_percent = 18
+        saved, message = self.session.save_run(3, name="Night Run")
+        self.assertTrue(saved, message)
+
+        renamed, message = self.session.rename_save(3, "Vault Run")
+        self.assertTrue(renamed, message)
+        saves = {entry["slot"]: entry for entry in self.session.get_full_state()["saves"]}
+        self.assertEqual(saves["3"]["name"], "Vault Run")
+        self.assertEqual(saves["3"]["trace"], 18)
+
+    def test_delete_save_leaves_the_live_run_untouched(self):
+        self.session.engine.state.trace_percent = 77
+        self.assertTrue(self.session.save_run(2)[0])
+
+        deleted, message = self.session.delete_save(2)
+
+        self.assertTrue(deleted, message)
+        self.assertFalse(self.session.save_mgr.has_save(2))
+        self.assertEqual(self.session.engine.state.trace_percent, 77)
+        self.assertEqual(self.session.get_full_state()["state"]["trace_percent"], 77)
+
     def test_invalid_slot_is_rejected(self):
         with self.assertRaises(ValueError):
             self.session.save_run(9)
@@ -923,6 +945,25 @@ class TestCyberdeckSaveSlotsAPI(unittest.TestCase):
         )
         with urllib.request.urlopen(req, timeout=3.0) as resp:
             return json.loads(resp.read().decode("utf-8"))
+
+    def test_name_rename_and_delete_over_http(self):
+        saved = self._post({"action": "save", "slot": 3, "name": "Night Run"})
+        self.assertTrue(saved["ok"], saved.get("message"))
+        self.assertIn("Night Run", saved["message"])
+        slot_three = {entry["slot"]: entry for entry in saved["state"]["saves"]}["3"]
+        self.assertEqual(slot_three["name"], "Night Run")
+
+        renamed = self._post({"action": "rename_save", "slot": 3, "name": "Vault Run"})
+        self.assertTrue(renamed["ok"], renamed.get("message"))
+        slot_three = {entry["slot"]: entry for entry in renamed["state"]["saves"]}["3"]
+        self.assertEqual(slot_three["name"], "Vault Run")
+
+        trace_before = renamed["state"]["state"]["trace_percent"]
+        deleted = self._post({"action": "delete_save", "slot": 3})
+
+        self.assertTrue(deleted["ok"], deleted.get("message"))
+        self.assertNotIn("3", {entry["slot"] for entry in deleted["state"]["saves"]})
+        self.assertEqual(deleted["state"]["state"]["trace_percent"], trace_before)
 
     def test_named_slot_round_trip_and_autosave_payload(self):
         scanned = self._post({"action": "scan"})

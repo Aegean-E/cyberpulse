@@ -17,6 +17,7 @@ from cyberpulse.puzzles import puzzle_from_dict
 
 AUTO_SLOT = "auto"
 SLOT_KEYS = ("1", "2", "3", AUTO_SLOT)
+SLOT_NAME_LIMIT = 32
 
 
 def encode_rng_state(state: Any) -> Dict[str, Any]:
@@ -150,10 +151,19 @@ class SaveManager:
             return any(self._slot_exists(key) for key in SLOT_KEYS)
         return self._slot_exists(self.normalize_slot(slot))
 
-    def save(self, engine: GameEngine, slot: Any = 1) -> Optional[Path]:
+    @staticmethod
+    def clean_name(name: Any = "") -> str:
+        """Normalize a slot label to one line and cap it for the archive UI."""
+        return " ".join(str(name or "").split())[:SLOT_NAME_LIMIT]
+
+    def save(self, engine: GameEngine, slot: Any = 1, name: Optional[str] = None) -> Optional[Path]:
         """Atomically persist engine state to a manual slot or the autosave slot."""
         key = self.normalize_slot(slot)
         target = self.slot_path(key)
+        if name is None and key != AUTO_SLOT:
+            existing = self._read_slot_payload(key)
+            existing_meta = existing.get("meta") if isinstance(existing, dict) else None
+            name = existing_meta.get("name", "") if isinstance(existing_meta, dict) else ""
         data = {
             "seed": engine.seed,
             "run_id": getattr(engine, "run_id", uuid.uuid4().hex),
@@ -169,6 +179,7 @@ class SaveManager:
             "meta": {
                 "slot": key,
                 "kind": "auto" if key == AUTO_SLOT else "manual",
+                "name": self.clean_name(name),
                 "saved_at": time.time(),
             },
         }
@@ -177,6 +188,24 @@ class SaveManager:
     def claim_slot(self, slot: Any = 1) -> None:
         """Record that this interface owns a slot and may purge it when the run settles."""
         self._owned_slots.add(self.normalize_slot(slot))
+
+    def rename_slot(self, slot: Any = 1, name: Any = "") -> bool:
+        """Rename an existing manual checkpoint without changing its run progress or timestamp."""
+        key = self.normalize_slot(slot)
+        if key == AUTO_SLOT:
+            return False
+        path = self.slot_path(key)
+        data = self._read_json_with_backup(path)
+        if not isinstance(data, dict):
+            return False
+        meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
+        if "saved_at" not in meta:
+            candidates = [candidate for candidate in (path, path.with_suffix(".bak")) if candidate.exists()]
+            if candidates:
+                meta["saved_at"] = max(candidate.stat().st_mtime for candidate in candidates)
+        meta["name"] = self.clean_name(name)
+        data["meta"] = meta
+        return self._write_atomic(path, data) is not None
 
     def load(self, slot: Any = 1) -> Optional[GameEngine]:
         """Load and restore engine state from a slot with backup recovery."""
@@ -274,6 +303,7 @@ class SaveManager:
             saves.append({
                 "slot": key,
                 "label": self.slot_label(key),
+                "name": self.clean_name(meta.get("name", "")),
                 "kind": "auto" if key == AUTO_SLOT else "manual",
                 "saved_at": float(saved_at),
                 "saved_at_display": time.strftime("%Y-%m-%d %H:%M", time.localtime(float(saved_at))),

@@ -382,6 +382,87 @@ class TestStorage(unittest.TestCase):
         self.save_mgr.delete_run(loaded.run_id)
         self.assertFalse(self.save_mgr.has_save(1))
 
+    def test_save_stores_and_lists_a_slot_name(self):
+        engine = GameEngine(seed=21)
+        engine.state.trace_percent = 12
+
+        self.assertIsNotNone(self.save_mgr.save(engine, 2, name="  Night   Run  "))
+
+        saves = {entry["slot"]: entry for entry in self.save_mgr.list_saves()}
+        self.assertEqual(saves["2"]["name"], "Night Run")
+        self.assertEqual(saves["2"]["label"], "SLOT 2")
+        loaded = self.save_mgr.load(2)
+        self.assertIsNotNone(loaded)
+        self.assertEqual(loaded.state.trace_percent, 12)
+
+    def test_save_without_a_name_preserves_the_existing_name(self):
+        engine = GameEngine(seed=22)
+        self.save_mgr.save(engine, 1, name="Stealth Run")
+
+        self.save_mgr.save(engine, 1)
+
+        saves = {entry["slot"]: entry for entry in self.save_mgr.list_saves()}
+        self.assertEqual(saves["1"]["name"], "Stealth Run")
+
+    def test_rename_slot_preserves_checkpoint_and_timestamp(self):
+        engine = GameEngine(seed=23)
+        engine.state.trace_percent = 44
+        self.save_mgr.save(engine, 3, name="Old Label")
+        before = {entry["slot"]: entry for entry in self.save_mgr.list_saves()}["3"]
+
+        renamed = self.save_mgr.rename_slot(3, "Vault Run")
+
+        self.assertTrue(renamed)
+        after = {entry["slot"]: entry for entry in self.save_mgr.list_saves()}["3"]
+        self.assertEqual(after["name"], "Vault Run")
+        self.assertEqual(after["saved_at"], before["saved_at"])
+        self.assertEqual(after["trace"], 44)
+        loaded = self.save_mgr.load(3)
+        self.assertIsNotNone(loaded)
+        self.assertEqual(loaded.state.trace_percent, 44)
+
+    def test_rename_legacy_save_keeps_its_display_timestamp(self):
+        import json
+
+        engine = GameEngine(seed=27)
+        self.save_mgr.save(engine, 1)
+        payload = json.loads(self.save_mgr.save_file.read_text(encoding="utf-8"))
+        payload.pop("meta", None)
+        self.save_mgr.save_file.write_text(json.dumps(payload), encoding="utf-8")
+        before = self.save_mgr.list_saves()[0]
+
+        self.assertTrue(self.save_mgr.rename_slot(1, "Legacy Run"))
+
+        after = self.save_mgr.list_saves()[0]
+        self.assertEqual(after["name"], "Legacy Run")
+        self.assertEqual(after["saved_at"], before["saved_at"])
+        self.assertEqual(after["turns"], before["turns"])
+
+    def test_slot_name_is_trimmed_and_capped(self):
+        engine = GameEngine(seed=24)
+        self.save_mgr.save(engine, 1, name="  " + "x" * 50 + "  ")
+
+        saves = {entry["slot"]: entry for entry in self.save_mgr.list_saves()}
+        self.assertEqual(saves["1"]["name"], "x" * 32)
+
+    def test_rename_missing_or_auto_slot_is_refused(self):
+        engine = GameEngine(seed=25)
+        self.assertFalse(self.save_mgr.rename_slot(2, "Ghost"))
+        self.save_mgr.save(engine, "auto")
+
+        self.assertFalse(self.save_mgr.rename_slot("auto", "Auto Label"))
+
+    def test_delete_save_only_removes_the_requested_slot(self):
+        engine = GameEngine(seed=26)
+        self.save_mgr.save(engine, 1)
+        self.save_mgr.save(engine, 2)
+
+        self.save_mgr.delete_save(2)
+
+        self.assertTrue(self.save_mgr.slot_path(1).exists())
+        self.assertFalse(self.save_mgr.slot_path(2).exists())
+        self.assertIsNotNone(self.save_mgr.load(1))
+
     def test_invalid_slot_is_rejected(self):
         engine = GameEngine(seed=14)
 

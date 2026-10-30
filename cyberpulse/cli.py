@@ -406,8 +406,11 @@ def print_save_slots(saves: List[dict]) -> None:
         return
     print("\n+-------------------------------- SAVED RUNS --------------------------------+")
     for entry in saves:
+        label = entry["label"]
+        if entry.get("name"):
+            label = f"{label} // {entry['name']}"
         print(
-            f"  [{entry['slot']}] {entry['label']:<9} TURN {entry['turns']:<3} "
+            f"  [{entry['slot']}] {label:<28} TURN {entry['turns']:<3} "
             f"{entry['creds']} CR  TRACE {entry['trace']}%  ACT {entry['act']}  "
             f"{entry['saved_at_display']}"
         )
@@ -471,7 +474,7 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
             print("Commands: status, contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
             print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
             print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career,")
-            print("          save [1-3], load [1-3|auto], saves, quit")
+            print("          save [1-3] [name], load [1-3|auto], saves, rename, delete, quit")
             continue
         if choice in ("q", "quit", "exit"):
             print("👋 Neural link closed.")
@@ -962,10 +965,14 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         if slot == "auto":
             print("AUTOSAVE is automatic; choose manual slot 1, 2, or 3.")
             return True
-        path = save_mgr.save(engine, slot)
+        name = " ".join(parts[2:]) if len(parts) > 2 else None
+        path = save_mgr.save(engine, slot, name=name)
         if path:
             save_mgr.claim_slot(slot)
-            print(f"💾 Infiltration progress saved to {save_mgr.slot_label(slot)} ({path}).")
+            label = save_mgr.slot_label(slot)
+            if save_mgr.clean_name(name):
+                label = f"{label} // {save_mgr.clean_name(name)}"
+            print(f"💾 Infiltration progress saved to {label} ({path}).")
         else:
             print("❌ Save failed: the file could not be replaced after 5 attempts; progress is NOT persisted.")
         return True
@@ -989,7 +996,45 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         print_save_slots(save_mgr.list_saves())
         return True
 
-    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career, status, save, load, saves, quit")
+    if action in ("rename", "rename_slot"):
+        if len(parts) < 2:
+            print("Usage: rename <1|2|3> <name>")
+            return True
+        try:
+            slot = save_mgr.normalize_slot(parts[1])
+        except ValueError:
+            print("Usage: rename <1|2|3> <name>")
+            return True
+        if slot == "auto":
+            print("AUTOSAVE cannot be renamed.")
+            return True
+        name = " ".join(parts[2:])
+        label = save_mgr.slot_label(slot)
+        if save_mgr.rename_slot(slot, name):
+            suffix = f" to '{save_mgr.clean_name(name)}'" if save_mgr.clean_name(name) else " (label cleared)"
+            print(f"Renamed {label}{suffix}.")
+        else:
+            print(f"No checkpoint in {label}.")
+        return True
+
+    if action in ("delete", "delete_save"):
+        if len(parts) < 2:
+            print("Usage: delete <1|2|3|auto>")
+            return True
+        try:
+            slot = save_mgr.normalize_slot(parts[1])
+        except ValueError:
+            print("Usage: delete <1|2|3|auto>")
+            return True
+        label = save_mgr.slot_label(slot)
+        if save_mgr.has_save(slot):
+            save_mgr.delete_save(slot)
+            print(f"Deleted {label} checkpoint.")
+        else:
+            print(f"No checkpoint in {label}.")
+        return True
+
+    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career, status, save, load, saves, rename, delete, quit")
     return True
 
 

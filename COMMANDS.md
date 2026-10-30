@@ -44,7 +44,9 @@
 | `buy <item_id>` | Purchase permanent cyberdeck upgrades with banked career credits | Long-term investment & competence scaling |
 | `career` | View lifetime operative dossier, breach stats, best neural combo, and installed cyberware | Identity, pride & meta-game mastery |
 | `status` | Display cyberdeck specs, unbanked credits, and active syndicate contract | HUD awareness & contract progress tracking |
-| `save [1\|2\|3]` | Atomically persist the live run to a manual slot (default slot 1) | Power-loss protection & parallel runs |
+| `save [1\|2\|3] [name]` | Atomically persist the live run to a manual slot with an optional run label (default slot 1) | Power-loss protection & parallel runs |
 | `load [1\|2\|3\|auto]` | Restore a manual slot or the autosave checkpoint | Resumption fidelity |
-| `saves` | List every checkpoint with turn, credits, trace, act and timestamp | Save-slot awareness & recovery choice |
+| `saves` | List every checkpoint with label, turn, credits, trace, act and timestamp | Save-slot awareness & recovery choice |
+| `rename <1\|2\|3> <name>` | Relabel an existing checkpoint without changing its progress or timestamp | Archive organization |
+| `delete <1\|2\|3\|auto>` | Remove one checkpoint; the live run is untouched | Stale-run cleanup |
 | `quit` | Sever connection and terminate terminal link | Clean exit |

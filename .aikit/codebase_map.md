@@ -9,8 +9,8 @@
 - **Total Python Modules**: `26`
 - **Total Classes**: `62`
 - **Total Top-Level Functions**: `70`
-- **Total Class Methods**: `566`
-- **Total Source Lines**: `12912`
+- **Total Class Methods**: `582`
+- **Total Source Lines**: `13179`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1101` lines (`51556` bytes)
+**Size**: `1146` lines (`53239` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -307,7 +307,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `760` lines (`34802` bytes)
+**Size**: `806` lines (`37088` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -315,7 +315,9 @@
   - Method `.settle_run_if_finished()` - *Persist a victory/lockout exactly once as soon as the run reaches a terminal state.*
   - Method `.get_full_state()` - *Aggregate complete runtime state for frontend rendering.*
   - Method `.reset_game(seed)`
-  - Method `.save_run(slot)` - *Persist the live run to a manual slot with the terminal's atomic manager.*
+  - Method `.save_run(slot, name)` - *Persist the live run to a manual slot with the terminal's atomic manager.*
+  - Method `.rename_save(slot, name)` - *Rename an existing manual checkpoint without changing the run.*
+  - Method `.delete_save(slot)` - *Delete a checkpoint from the archive without touching the live run.*
   - Method `.load_run(slot)` - *Replace the live engine with a saved run from the requested slot.*
 - `class CyberdeckHTTPHandler` - *HTTP request handler providing REST API endpoints and static cyberdeck assets.*
   - Method `.log_message(format, *args)` - *Route cyberdeck request logs without cluttering console.*
@@ -352,7 +354,7 @@
 ### [`cyberpulse/storage.py`](cyberpulse/storage.py)
 > *Crash-resilient savegame and career profile storage engine for CyberPulse.*
 
-**Size**: `331` lines (`13966` bytes)
+**Size**: `361` lines (`15495` bytes)
 
 **Classes:**
 - `class SaveManager` - *Manages atomic saving and loading of game states and career profiles.*
@@ -365,8 +367,10 @@
   - Method `._read_json_with_backup(target_path, quarantine)` - *Read JSON from target_path, falling back to shadow .bak if corrupted or missing.*
   - Method `._read_slot_payload(key, quarantine)`
   - Method `.has_save(slot)` - *Return True when any slot (or the requested slot) has a save or shadow backup.*
-  - Method `.save(engine, slot)` - *Atomically persist engine state to a manual slot or the autosave slot.*
+  - Method `.clean_name(name)` - *Normalize a slot label to one line and cap it for the archive UI.*
+  - Method `.save(engine, slot, name)` - *Atomically persist engine state to a manual slot or the autosave slot.*
   - Method `.claim_slot(slot)` - *Record that this interface owns a slot and may purge it when the run settles.*
+  - Method `.rename_slot(slot, name)` - *Rename an existing manual checkpoint without changing its run progress or timestamp.*
   - Method `.load(slot)` - *Load and restore engine state from a slot with backup recovery.*
   - Method `._signature(engine)` - *Hash the parts of a run that autosave should notice without rewriting unchanged state.*
   - Method `.mark_autosave_baseline(engine)` - *Remember the current state so a new or freshly loaded run is not written before it changes.*
@@ -458,7 +462,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `463` lines (`19457` bytes)
+**Size**: `487` lines (`20499` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -481,6 +485,8 @@
   - Method `.test_batch_infiltration_playthrough()`
   - Method `.test_batch_named_slot_round_trip()`
   - Method `.test_saves_command_lists_manual_slots()`
+  - Method `.test_named_slot_round_trip_and_rename()`
+  - Method `.test_delete_slot_command_requires_an_explicit_slot()`
   - Method `.test_batch_commands_autosave_state_changes()`
   - Method `.test_invalid_save_slot_reports_usage()`
   - Method `.test_jackout_purges_owned_slots_and_autosave()`
@@ -765,7 +771,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `950` lines (`40984` bytes)
+**Size**: `991` lines (`43061` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -823,6 +829,8 @@
   - Method `.test_autosave_starts_after_baseline_and_tracks_changes()`
   - Method `.test_manual_save_refuses_the_auto_slot()`
   - Method `.test_autosave_can_be_loaded_from_its_slot()`
+  - Method `.test_named_slot_can_be_renamed_without_reloading_it()`
+  - Method `.test_delete_save_leaves_the_live_run_untouched()`
   - Method `.test_invalid_slot_is_rejected()`
   - Method `.test_settlement_deletes_every_checkpoint_of_the_run()`
 - `class TestCyberdeckSaveLoadAPI`
@@ -835,6 +843,7 @@
   - Method `.setUpClass()`
   - Method `.tearDownClass()`
   - Method `._post(payload)`
+  - Method `.test_name_rename_and_delete_over_http()`
   - Method `.test_named_slot_round_trip_and_autosave_payload()`
 
 ---
@@ -861,7 +870,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `396` lines (`14934` bytes)
+**Size**: `477` lines (`18245` bytes)
 
 **Classes:**
 - `class TestStorage`
@@ -890,6 +899,13 @@
   - Method `.test_autosave_refuses_a_finished_run()`
   - Method `.test_delete_run_removes_every_checkpoint_of_that_run_only()`
   - Method `.test_legacy_save_without_run_id_is_still_slot_one()`
+  - Method `.test_save_stores_and_lists_a_slot_name()`
+  - Method `.test_save_without_a_name_preserves_the_existing_name()`
+  - Method `.test_rename_slot_preserves_checkpoint_and_timestamp()`
+  - Method `.test_rename_legacy_save_keeps_its_display_timestamp()`
+  - Method `.test_slot_name_is_trimmed_and_capped()`
+  - Method `.test_rename_missing_or_auto_slot_is_refused()`
+  - Method `.test_delete_save_only_removes_the_requested_slot()`
   - Method `.test_invalid_slot_is_rejected()`
 
 ---

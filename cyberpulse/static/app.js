@@ -1040,7 +1040,16 @@ function saveSlotRow(slot, label, entry, terminal) {
   time.className = "save-slot-time";
   time.textContent = entry ? entry.saved_at_display : "No checkpoint stored";
   copy.append(name, meta, time);
-  row.appendChild(copy);
+
+  const nameInput = slot !== "auto" ? document.createElement("input") : null;
+  if (nameInput) {
+    nameInput.className = "save-slot-name-input";
+    nameInput.maxLength = 32;
+    nameInput.placeholder = "Run label";
+    nameInput.value = entry ? (entry.name || "") : "";
+    nameInput.setAttribute("aria-label", `${label} run label`);
+    copy.appendChild(nameInput);
+  }
 
   const actions = document.createElement("div");
   actions.className = "save-slot-actions";
@@ -1050,8 +1059,24 @@ function saveSlotRow(slot, label, entry, terminal) {
     saveBtn.textContent = "SAVE";
     saveBtn.disabled = terminal;
     saveBtn.title = terminal ? "This run is over" : `Write the live run to ${label}`;
-    saveBtn.addEventListener("click", () => handleSaveSlot(slot));
+    saveBtn.addEventListener("click", () => handleSaveSlot(slot, nameInput.value));
     actions.appendChild(saveBtn);
+
+    if (entry) {
+      const renameBtn = document.createElement("button");
+      renameBtn.className = "action-btn";
+      renameBtn.textContent = "RENAME";
+      renameBtn.title = `Rename ${label} without changing its checkpoint`;
+      renameBtn.addEventListener("click", () => handleRenameSlot(slot, nameInput.value));
+      actions.appendChild(renameBtn);
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "action-btn danger-action";
+      deleteBtn.textContent = "DELETE";
+      deleteBtn.title = `Delete ${label} checkpoint`;
+      deleteBtn.addEventListener("click", () => handleDeleteSlot(slot, label));
+      actions.appendChild(deleteBtn);
+    }
   }
   const loadBtn = document.createElement("button");
   loadBtn.className = "action-btn";
@@ -1061,7 +1086,7 @@ function saveSlotRow(slot, label, entry, terminal) {
   loadBtn.addEventListener("click", () => handleLoadSlot(slot));
   actions.appendChild(loadBtn);
 
-  row.appendChild(actions);
+  row.append(copy, actions);
   return row;
 }
 
@@ -1084,9 +1109,9 @@ function renderSavesModal() {
   document.getElementById("modal-saves").classList.remove("hidden");
 }
 
-async function handleSaveSlot(slot) {
+async function handleSaveSlot(slot, name = "") {
   sfx.click();
-  const res = await apiPost("/api/action", { action: "save", slot });
+  const res = await apiPost("/api/action", { action: "save", slot, name });
   if (res && res.ok) {
     sfx.success();
     addTerminalLog(res.message || "Infiltration progress saved.", "success");
@@ -1096,6 +1121,42 @@ async function handleSaveSlot(slot) {
   } else if (res) {
     sfx.failure();
     addTerminalLog(res.message || res.error || "Save failed.", "warn");
+    if (applyStateSnapshot(res)) renderSavesModal();
+  }
+}
+
+async function handleRenameSlot(slot, name = "") {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "rename_save", slot, name });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message || "Checkpoint renamed.", "success");
+    state.data = res.state;
+    renderHUD(res.state);
+    renderSavesModal();
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || res.error || "Rename failed.", "warn");
+    if (applyStateSnapshot(res)) renderSavesModal();
+  }
+}
+
+async function handleDeleteSlot(slot, label) {
+  const entry = ((state.data && state.data.saves) || []).find((save) => save.slot === slot);
+  const suffix = entry && entry.name ? ` (${entry.name})` : "";
+  if (!window.confirm(`Delete ${label}${suffix}? The live run is not affected.`)) return;
+
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "delete_save", slot });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message || `Deleted ${label} checkpoint.`, "success");
+    state.data = res.state;
+    renderHUD(res.state);
+    renderSavesModal();
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || res.error || "Delete failed.", "warn");
     if (applyStateSnapshot(res)) renderSavesModal();
   }
 }

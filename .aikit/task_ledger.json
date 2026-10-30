@@ -1,78 +1,16 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-autosave-slots",
+    "task_id": "task-cyberpulse-slot-manage",
     "last_phase": "in_progress",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1793364712.5691192,
-    "owner": "opencode:autosave-slots-1",
-    "started_by": "opencode:autosave-slots-1",
-    "continuations": [],
-    "completed_at": 1793364750.4871879
+    "active_phase": 4,
+    "status": "in_progress",
+    "updated_at": 1793370183.068319,
+    "owner": "opencode:slot-manage-1",
+    "started_by": "opencode:slot-manage-1",
+    "continuations": []
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-reforge-audit-6",
-      "phase": "phase 4",
-      "phase_num": 4,
-      "description": "[3/3] Audit batch complete at Reforge stop 96. Source is pushed at 5f46efb; only audit memory is uncommitted. checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793287355.8942301,
-      "timestamp_str": "2026-10-29 18:22:35",
-      "agent": "opencode:reforge-audit-6",
-      "handoff": {
-        "state": "clean source, dirty audit memory",
-        "next": "continue Reforge at stage 33 (window 99) or commit audit memory",
-        "evidence": "313 tests, 4-of-4 gates"
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-reforge-audit-6",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-reforge-audit-6' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793287356.2017646,
-      "timestamp_str": "2026-10-29 18:22:36",
-      "agent": "opencode:reforge-audit-6"
-    },
-    {
-      "task_id": "reforge:run-1",
-      "phase": "reforge stage 33",
-      "phase_num": 3,
-      "description": "Reforge stage 33: window 99, 3 commit(s), 9 file(s) reviewed (unreviewed), 0 finding(s), 0 repaired",
-      "files_affected": [],
-      "status": "completed",
-      "timestamp": 1793287423.1356225,
-      "timestamp_str": "2026-10-29 18:23:43",
-      "agent": "opencode"
-    },
-    {
-      "task_id": "reforge:run-1",
-      "phase": "reforge stage 34",
-      "phase_num": 3,
-      "description": "Reforge stage 34: window 102, 3 commit(s), 6 file(s) reviewed (unreviewed), 1 finding(s), 0 repaired (regression=1)",
-      "files_affected": [
-        "cyberpulse/cli.py"
-      ],
-      "status": "completed",
-      "timestamp": 1793287518.3529327,
-      "timestamp_str": "2026-10-29 18:25:18",
-      "agent": "opencode"
-    },
-    {
-      "task_id": "reforge:run-1",
-      "phase": "reforge stage 35",
-      "phase_num": 3,
-      "description": "Reforge stage 35: window 105, 3 commit(s), 7 file(s) reviewed (unreviewed), 0 finding(s), 0 repaired",
-      "files_affected": [],
-      "status": "completed",
-      "timestamp": 1793287569.060543,
-      "timestamp_str": "2026-10-29 18:26:09",
-      "agent": "opencode"
-    },
     {
       "task_id": "task-cyberpulse-procedural-subnet",
       "phase": "phase 2",
@@ -270,6 +208,67 @@
       "timestamp": 1793364750.4871893,
       "timestamp_str": "2026-10-30 15:52:30",
       "agent": "opencode:autosave-slots-1"
+    },
+    {
+      "task_id": "task-cyberpulse-slot-manage",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/4] Name, rename and delete save slots across the terminal and Web Cyberdeck",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793369772.2433226,
+      "timestamp_str": "2026-10-30 17:16:12",
+      "agent": "opencode:slot-manage-1",
+      "impact_assessment": {
+        "why": "Three slots shipped in ADR-025, but every checkpoint is still called SLOT 1/2/3 and stale runs cannot be cleared, so parallel runs are hard to tell apart.",
+        "benefits": "Players can label runs, rename an archive entry without replaying it, and delete stale checkpoints; the slot archive becomes a usable library.",
+        "risks": "contract: additive save meta and new API/CLI verbs; dependency: none; concurrency: single-user local files rewritten atomically; state: rename must preserve the checkpoint and saved_at, delete must not touch the live run or other slots.",
+        "mitigation": "Keep names in additive meta, rewrite the same atomic payload on rename, require an explicit slot for delete, and cover legacy saves, name trimming, cross-slot isolation and the HTTP/CLI paths with failing-first tests."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-slot-manage",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[2/4] Storage names, rename and delete green; 31 storage tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793369833.0070653,
+      "timestamp_str": "2026-10-30 17:17:13",
+      "agent": "opencode:slot-manage-1"
+    },
+    {
+      "task_id": "task-cyberpulse-slot-manage",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[3/4] CLI naming, rename and delete green; 39 CLI tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793369886.393696,
+      "timestamp_str": "2026-10-30 17:18:06",
+      "agent": "opencode:slot-manage-1"
+    },
+    {
+      "task_id": "task-cyberpulse-slot-manage",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[3/4] API and Web archive controls green: names, rename, delete; 352 tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793370013.4908352,
+      "timestamp_str": "2026-10-30 17:20:13",
+      "agent": "opencode:slot-manage-1"
+    },
+    {
+      "task_id": "task-cyberpulse-slot-manage",
+      "phase": "in_progress",
+      "phase_num": 4,
+      "description": "[4/4] Slot labels, rename and delete complete; project gate 5/5, 353 tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793370183.068319,
+      "timestamp_str": "2026-10-30 17:23:03",
+      "agent": "opencode:slot-manage-1"
     }
   ]
 }

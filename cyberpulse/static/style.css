@@ -3966,3 +3966,23 @@ body {
   .save-slot-actions .action-btn { flex: 1; }
 }
 #modal-saves { z-index: 1001; }
+.save-slot-name-input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 5px 7px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  color: var(--c-text-bright);
+  background: hsla(220, 30%, 4%, 0.8);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+}
+.save-slot-name-input::placeholder { color: var(--c-text-dim); }
+.save-slot-name-input:focus {
+  outline: none;
+  border-color: var(--c-border-bright);
+  box-shadow: 0 0 8px var(--c-primary-glow);
+}
+.save-slot-actions { flex-wrap: wrap; justify-content: flex-end; }
+.save-slot-actions .danger-action { color: var(--c-danger); border-color: var(--c-danger-glow); }
