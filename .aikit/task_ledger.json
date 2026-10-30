@@ -3,24 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-first-run-tutorial",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793376529.5567415,
     "owner": "opencode:tutorial-1",
     "started_by": "opencode:tutorial-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793376571.7558758
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-daily-streak",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-daily-streak' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793373734.5747125,
-      "timestamp_str": "2026-10-30 18:22:14",
-      "agent": "opencode:daily-streak-1"
-    },
     {
       "task_id": "task-cyberpulse-dead-mans-switch",
       "phase": "in_progress",
@@ -254,6 +245,16 @@
       "status": "in_progress",
       "timestamp": 1793376529.5567415,
       "timestamp_str": "2026-10-30 19:08:49",
+      "agent": "opencode:tutorial-1"
+    },
+    {
+      "task_id": "task-cyberpulse-first-run-tutorial",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-first-run-tutorial' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793376571.7558784,
+      "timestamp_str": "2026-10-30 19:09:31",
       "agent": "opencode:tutorial-1"
     }
   ]
