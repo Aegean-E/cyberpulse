@@ -3,24 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-daily-modifiers",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793376908.93414,
     "owner": "opencode:daily-modifiers-1",
     "started_by": "opencode:daily-modifiers-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793376968.8021722
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-dead-mans-switch",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-dead-mans-switch' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793374185.9534857,
-      "timestamp_str": "2026-10-30 18:29:45",
-      "agent": "opencode:dead-mans-switch-1"
-    },
     {
       "task_id": "task-cyberpulse-rival-netrunner",
       "phase": "in_progress",
@@ -254,6 +245,16 @@
       "status": "in_progress",
       "timestamp": 1793376908.93414,
       "timestamp_str": "2026-10-30 19:15:08",
+      "agent": "opencode:daily-modifiers-1"
+    },
+    {
+      "task_id": "task-cyberpulse-daily-modifiers",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-daily-modifiers' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793376968.8021748,
+      "timestamp_str": "2026-10-30 19:16:08",
       "agent": "opencode:daily-modifiers-1"
     }
   ]
