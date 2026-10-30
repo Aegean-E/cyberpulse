@@ -52,6 +52,7 @@ cyberpulse/
 ├── start.sh                  <- POSIX / Linux / macOS launcher
 ├── cyberpulse/               <- core game engine and CLI
 │   ├── __init__.py
+│   ├── achievements.py       <- career milestone catalog & settlement unlocks
 │   ├── cli.py                <- interactive terminal interface & REPL
 │   ├── engine.py             <- deterministic game state coordinator
 │   ├── models.py             <- frozen dataclasses & domain state models
@@ -67,8 +68,9 @@ cyberpulse/
 │   │   └── style.css
 │   ├── world.py              <- living-grid clock, alert, news, ambient events
 │   └── storage.py            <- atomic persistence & career dossier management
-└── tests/                    <- unit & integration test suite (about a second)
+└── tests/                    <- unit & integration test suite (about five seconds)
     ├── __init__.py
+    ├── test_achievements.py
     ├── test_cli.py
     ├── test_engine.py
     ├── test_grid.py
