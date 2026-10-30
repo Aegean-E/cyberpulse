@@ -4170,3 +4170,24 @@ body {
   cursor: pointer;
 }
 .hall-filter.active { color: var(--c-primary); border-color: var(--c-primary); }
+.alias-editor { display: flex; gap: 5px; margin-top: 6px; }
+.alias-editor input {
+  width: 110px;
+  padding: 5px 7px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--c-text-bright);
+  background: hsla(220, 30%, 4%, 0.8);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+}
+.alias-editor .action-btn { padding: 5px 7px; font-size: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

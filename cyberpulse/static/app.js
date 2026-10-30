@@ -101,6 +101,23 @@ class SoundFX {
 
 const sfx = new SoundFX();
 
+function loadPreference(key, fallback) {
+  try {
+    const value = localStorage.getItem(`cyberpulse.${key}`);
+    return value === null ? fallback : value;
+  } catch (_) {
+    return fallback;
+  }
+}
+
+function savePreference(key, value) {
+  try {
+    localStorage.setItem(`cyberpulse.${key}`, String(value));
+  } catch (_) {
+    // Local storage can be unavailable in private or restricted contexts.
+  }
+}
+
 // ==========================================================================
 // 2. Cyberdeck Application State Coordinator
 // ==========================================================================
@@ -200,6 +217,44 @@ document.addEventListener("DOMContentLoaded", () => {
   refreshFullState();
 });
 
+function restorePreferences() {
+  const themes = ["theme-phosphor", "theme-cyber", "theme-amber"];
+  const storedTheme = loadPreference("theme", "theme-cyber");
+  const theme = themes.includes(storedTheme) ? storedTheme : "theme-cyber";
+  document.body.classList.remove(...themes);
+  document.body.classList.add(theme);
+  const themeSelector = document.getElementById("theme-selector");
+  if (themeSelector) themeSelector.value = theme;
+
+  const audioOn = loadPreference("audio", "on") !== "off";
+  sfx.enabled = audioOn;
+  const btnAudio = document.getElementById("btn-audio");
+  if (btnAudio) btnAudio.textContent = audioOn ? "FX ON" : "FX OFF";
+
+  const crtOn = loadPreference("crt", "off") === "on";
+  document.body.classList.toggle("crt-effects", crtOn);
+  const btnCrt = document.getElementById("btn-crt");
+  if (btnCrt) btnCrt.textContent = crtOn ? "CRT ON" : "CRT OFF";
+}
+
+async function handleSaveAlias() {
+  const input = document.getElementById("dossier-alias-input");
+  const name = input ? input.value.trim() : "";
+  if (!name) return;
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "rename_alias", name });
+  if (res && res.ok) {
+    sfx.success();
+    document.getElementById("dossier-alias").textContent = name;
+    if (state.careerData) state.careerData.alias = name;
+    state.data = res.state;
+    addTerminalLog(res.message || `Alias set to ${name}.`, "success");
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || res.error || "Alias could not be saved.", "warn");
+  }
+}
+
 function initUIEvents() {
   // First user interaction unlocks AudioContext
   document.body.addEventListener("click", () => sfx.init(), { once: true });
@@ -209,13 +264,16 @@ function initUIEvents() {
   btnAudio.addEventListener("click", () => {
     sfx.enabled = !sfx.enabled;
     btnAudio.textContent = sfx.enabled ? "FX ON" : "FX OFF";
+    savePreference("audio", sfx.enabled ? "on" : "off");
     if (sfx.enabled) sfx.click();
   });
 
   const btnCrt = document.getElementById("btn-crt");
   btnCrt.addEventListener("click", () => {
     document.body.classList.toggle("crt-effects");
-    btnCrt.textContent = document.body.classList.contains("crt-effects") ? "CRT ON" : "CRT OFF";
+    const enabled = document.body.classList.contains("crt-effects");
+    btnCrt.textContent = enabled ? "CRT ON" : "CRT OFF";
+    savePreference("crt", enabled ? "on" : "off");
     sfx.click();
   });
 
@@ -223,8 +281,12 @@ function initUIEvents() {
   themeSelector.addEventListener("change", (e) => {
     document.body.classList.remove("theme-phosphor", "theme-cyber", "theme-amber");
     document.body.classList.add(e.target.value);
+    savePreference("theme", e.target.value);
     sfx.click();
   });
+
+  restorePreferences();
+  document.getElementById("btn-save-alias").addEventListener("click", handleSaveAlias);
 
   // Action Buttons
   document.getElementById("btn-scan").addEventListener("click", handleScan);
@@ -2559,6 +2621,8 @@ async function openCareerModal() {
   if (!data) return;
 
   document.getElementById("dossier-alias").textContent = data.alias;
+  const aliasInput = document.getElementById("dossier-alias-input");
+  if (aliasInput) aliasInput.value = data.alias;
   document.getElementById("dossier-banked").textContent = `${data.banked_creds} CR`;
   document.getElementById("dossier-lifetime").textContent = `${data.lifetime_creds} CR`;
   document.getElementById("dossier-wins").textContent = data.successful_runs;

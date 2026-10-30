@@ -135,6 +135,16 @@ class TestCyberdeckServer(unittest.TestCase):
         finally:
             session.engine.state.world.market_index = 1.0
 
+    def test_rename_alias_action(self):
+        status, res = self._post("/api/action", {"action": "rename_alias", "name": "NightFox"})
+
+        self.assertEqual(status, 200)
+        self.assertTrue(res["ok"], res.get("message"))
+        self.assertEqual(res["state"]["career"]["alias"], "NightFox")
+        self.assertIn("NightFox", res["message"])
+
+        self._post("/api/action", {"action": "rename_alias", "name": "ZeroCool"})
+
     def test_get_career(self):
         status, data = self._get("/api/career")
         self.assertEqual(status, 200)

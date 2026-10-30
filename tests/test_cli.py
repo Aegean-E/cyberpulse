@@ -253,6 +253,21 @@ class TestCLI(unittest.TestCase):
         self.assertIn("Counter-traced", out)
         self.assertIn("contract(s) stolen", out)
 
+    def test_alias_command_persists_and_shows_in_the_dossier(self):
+        code, out = self.run_cli("--exec", "alias NightFox;career")
+
+        self.assertEqual(code, 0)
+        self.assertIn("Alias set to NightFox", out)
+        self.assertIn("HACKER CAREER DOSSIER: NightFox", out)
+
+        code, out = self.run_cli("--exec", "career")
+        self.assertEqual(code, 0)
+        self.assertIn("NightFox", out)
+
+        code, out = self.run_cli("--exec", "alias")
+        self.assertEqual(code, 0)
+        self.assertIn("Usage: alias <name>", out)
+
     def test_hall_command_filters_by_difficulty(self):
         from cyberpulse.models import CareerProfile
         from cyberpulse.storage import SaveManager

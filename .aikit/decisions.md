@@ -517,4 +517,16 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   4. Cover command validation, filtered output, legacy entries defaulting to Normal, and the Web script syntax.
 - **Consequences**: Players can compare runs within the mode they actually played, while the all-time board remains available. No save or career schema change is required. Test suite: 417 tests, 100% green.
 
+### ADR-040: Career Alias and Persistent Web Preferences
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: The career alias was fixed at `ZeroCool`, and the Web theme/audio/CRT controls reset on every reload. Players could not personalize the dossier or keep a preferred presentation.
+- **Decision**:
+  1. Sanitize `CareerProfile.alias` on load: collapse whitespace, cap at 24 characters, and default empty values to `ZeroCool`.
+  2. Add `alias <name>` to the terminal, which updates and saves the career profile. Add a `rename_alias` API action and a Web dossier alias editor with the same trimming/cap rules.
+  3. Persist the Web theme, audio and CRT choices in `localStorage` under `cyberpulse.*`, restore them during UI initialization, and save on every toggle/change. Storage failures degrade silently to defaults.
+  4. Add a `prefers-reduced-motion` stylesheet path that shortens non-essential transitions and animations.
+  5. Cover alias normalization, CLI persistence, the HTTP action and the existing default dossier behavior.
+- **Consequences**: Players can set a lasting handle and keep their preferred presentation across reloads, while old careers and restricted storage contexts remain safe. No save schema change is required. Test suite: 420 tests, 100% green.
+
 

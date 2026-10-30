@@ -178,6 +178,18 @@ class CyberdeckSession:
         suffix = f" to '{clean}'" if clean else " (label cleared)"
         return True, f"Renamed {label}{suffix}."
 
+    def rename_alias(self, name: Any = "") -> Tuple[bool, str]:
+        """Persist a new career alias after trimming and capping it."""
+        clean = " ".join(str(name or "").split())[:24]
+        if not clean:
+            return False, "Alias cannot be empty."
+        profile = self.save_mgr.load_career()
+        profile.alias = clean
+        if not self.save_mgr.save_career(profile):
+            return False, "Alias could not be saved."
+        self.career = profile
+        return True, f"Alias set to {clean}."
+
     def delete_save(self, slot: Any = 1) -> Tuple[bool, str]:
         """Delete a checkpoint from the archive without touching the live run."""
         key = self.save_mgr.normalize_slot(slot)
@@ -450,6 +462,11 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                 except ValueError as exc:
                     self.send_json_response({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
                     return
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action in ("rename_alias", "alias"):
+                ok, msg = self.server_session.rename_alias(payload.get("name", ""))
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 

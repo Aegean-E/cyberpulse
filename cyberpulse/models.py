@@ -136,6 +136,8 @@ class CareerProfile:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "CareerProfile":
         data_clean = dict(data)
+        alias = " ".join(str(data_clean.get("alias", "ZeroCool") or "").split())[:24]
+        data_clean["alias"] = alias or "ZeroCool"
         history = data_clean.get("run_history")
         if not isinstance(history, list):
             history = []

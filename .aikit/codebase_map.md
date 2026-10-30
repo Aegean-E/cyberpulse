@@ -9,8 +9,8 @@
 - **Total Python Modules**: `38`
 - **Total Classes**: `71`
 - **Total Top-Level Functions**: `88`
-- **Total Class Methods**: `657`
-- **Total Source Lines**: `15065`
+- **Total Class Methods**: `661`
+- **Total Source Lines**: `15130`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1330` lines (`62163` bytes)
+**Size**: `1346` lines (`62699` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -226,7 +226,7 @@
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `728` lines (`26417` bytes)
+**Size**: `730` lines (`26553` bytes)
 
 **Classes:**
 - `class NodeType`
@@ -383,7 +383,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `884` lines (`39487` bytes)
+**Size**: `901` lines (`40284` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -393,6 +393,7 @@
   - Method `.reset_game(seed, daily, difficulty)`
   - Method `.save_run(slot, name)` - *Persist the live run to a manual slot with the terminal's atomic manager.*
   - Method `.rename_save(slot, name)` - *Rename an existing manual checkpoint without changing the run.*
+  - Method `.rename_alias(name)` - *Persist a new career alias after trimming and capping it.*
   - Method `.delete_save(slot)` - *Delete a checkpoint from the archive without touching the live run.*
   - Method `.load_run(slot)` - *Replace the live engine with a saved run from the requested slot.*
 - `class CyberdeckHTTPHandler` - *HTTP request handler providing REST API endpoints and static cyberdeck assets.*
@@ -567,7 +568,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `595` lines (`24999` bytes)
+**Size**: `610` lines (`25549` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -598,6 +599,7 @@
   - Method `.test_replay_starts_a_run_from_an_archived_seed()`
   - Method `.test_replay_rejects_an_out_of_range_index()`
   - Method `.test_rival_commands_inspect_and_counter()`
+  - Method `.test_alias_command_persists_and_shows_in_the_dossier()`
   - Method `.test_hall_command_filters_by_difficulty()`
   - Method `.test_tutorial_command_lists_the_first_run_steps()`
   - Method `.test_difficulty_flag_reaches_the_hud()`
@@ -856,7 +858,7 @@
 ### [`tests/test_models.py`](tests/test_models.py)
 > *Unit tests for CyberPulse domain models.*
 
-**Size**: `297` lines (`12075` bytes)
+**Size**: `302` lines (`12403` bytes)
 
 **Classes:**
 - `class TestModels`
@@ -868,6 +870,7 @@
   - Method `.test_game_state_backfills_missing_lost_creds()`
   - Method `.test_bounty_contract_objective_inference_and_deadline_roundtrip()`
   - Method `.test_career_profile_roundtrip()`
+  - Method `.test_career_alias_is_trimmed_and_defaulted()`
   - Method `.test_old_career_payload_defaults_to_empty_run_history()`
   - Method `.test_career_daily_best_drops_malformed_values()`
   - Method `.test_career_history_drops_malformed_entries_and_keeps_recent()`
@@ -958,7 +961,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `1060` lines (`46363` bytes)
+**Size**: `1070` lines (`46797` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -972,6 +975,7 @@
   - Method `.test_get_shop()`
   - Method `.test_get_world_state_and_grid_fields()`
   - Method `.test_market_markup_reaches_shop_endpoint()`
+  - Method `.test_rename_alias_action()`
   - Method `.test_get_career()`
   - Method `.test_action_scan_and_spoof()`
   - Method `.test_puzzle_endpoint_and_solve()`

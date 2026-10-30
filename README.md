@@ -158,7 +158,7 @@ python -m cyberpulse.cli --daily
 
 ### In-Game Commands (Authentic Simulation & Tactical Netrunning)
 
-The full reference of 51 commands, with each one's action and simulation role, is in [COMMANDS.md](COMMANDS.md).
+The full reference of 52 commands, with each one's action and simulation role, is in [COMMANDS.md](COMMANDS.md).
 
 ### 🕹️ Authentic Cyber Warfare Infiltration Workflow
 1. **Network Reconnaissance**: Discover network topology with `scan` or read host configuration files with `cat /etc/hosts`. Scan active network ports using `probe 192.168.1.10`.
@@ -194,6 +194,7 @@ The full reference of 51 commands, with each one's action and simulation role, i
 - **Career Milestones**: Twelve permanent achievements are evaluated once at settlement: first extraction, five clears, x5/x10 combos, ghost and speed victories, a black contract, three vaults, 50 turns, 1,000 banked credits, a hot extraction, and reaching Act V. New unlocks appear in the run legacy and persist as dossier badges in both interfaces.
 - **Difficulty Modes**: Easy grants +2 max CPU, -20% trace gain and +10% contract pay; Normal is the baseline; Hard starts at +15 grid alert with +20% trace gain and -10% contract pay. The choice persists in saves and run history, is selectable with `--difficulty` or the Web main-menu picker, and is shown in both HUDs.
 - **First-Run Field Manual**: Careers with no settled runs get a live five-step checklist for `scan`, `probe`, `hack`, `steal` and `jackout`. The terminal exposes it as `tutorial`; the Web shows a dismissible panel that checks steps off from persisted state. Established careers never see it.
+- **Career Alias & Preferences**: `alias <name>` sets the dossier handle (trimmed, capped at 24 characters); the Web dossier offers the same editor through `rename_alias`. The Web remembers theme, audio and CRT settings in local storage, and a `prefers-reduced-motion` stylesheet path disables non-essential animation for users who request it.
 - **Daily Run**: The local date derives a stable seed (`YYYYMMDD`) and key at run start, available from `--daily`, main-menu option 7, or the Web **DAILY RUN** button. The key persists in saves, appears as a HUD chip and run-legacy tag, and settlement records the day's best net gain (capped to 30 days) in the career dossier. Consecutive daily runs build a streak (same-day repeats do not increment; gaps reset it), shown with the all-time best in both dossiers and the Web HUD chip. Old saves and careers default to no daily mode.
 - **Daily Rule Modifiers**: The date also selects one deterministic twist from Hot Grid (+20 starting alert), Blackout (-2 starting CPU), Thin ICE (+15% trace) or Data Bloom (+20% contract pay). The modifier is selected once at run start, persists through saves, appears in the HUD/run summary, and never applies to normal seeded runs.
 - **Seed Replay**: The last five archived runs are indexed newest-first in the terminal, so `replay 1` starts a fresh run from that record's seed with current career upgrades; the Web dossier offers a **REPLAY** button per run with confirmation. Replays are normal runs, not daily runs, so they never rewrite a historical daily best.
@@ -209,7 +210,7 @@ The full reference of 51 commands, with each one's action and simulation role, i
 - **Backward-Compatible World State**: Old saves without a world clock load with a fresh Day 1 world; the new fields are additive and atomic with the existing savegame.
 - **NetWatch Active Hunters & Pursuit Simulation**: Alert 60%+ mobilizes autonomous ICE hunters that track player location across network graph hops, trigger connection clashes on interception (+15% trace, -2 CPU), quarantine unmonitored daemons, and react to scent scrambling (`spoof`/`wipe_logs`) and countermeasures (`logic_bomb`/`ghost_protocol`). Only one hunter can hold the sector at a time; an intercepted hunter still counts as active, preventing a second clamp from stacking onto the first.
 - **Tactical Shift Dynamics & Downtime**: The four in-game shifts (Late Night, Morning, Afternoon, Evening) apply distinct modifiers to alert decay, re-secure chance, market bias, hunter deployment thresholds, and social-engineering odds (staff answer lures differently at 03:00 than at 09:00), so the clock carries real tactical weight. `lay_low`/`wait` trades 1-3 turns of grid movement (with its patrol, hunter, and ambient risk) for CPU recovery, exposed in both the CLI and the Web Cyberdeck shift chip.
-- **Fast Test Shield**: 100% test pass rate across 417 unit and integration tests in about eight seconds via `python -m unittest discover`.
+- **Fast Test Shield**: 100% test pass rate across 420 unit and integration tests in about eight seconds via `python -m unittest discover`.
 
 <!-- aegean:brand-assets:start -->
 ## 🎨 Brand Assets

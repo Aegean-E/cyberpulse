@@ -36,6 +36,7 @@
 | `story` | Show the current act, story log, and briefing | Narrative orientation & campaign immersion |
 | `contract` / `bounty` | Open the job board: active job plus offers; `accept_job <id>` takes one, `drop_offer <id>` passes one for 30 CR or a one-turn cooldown, `decline_contract` abandons the active job | Job choice, clock & risk/reward |
 | `hall [all\|easy\|normal\|hard]` | Show the career Hall of Fame, optionally filtered by difficulty | Difficulty-aware mastery tracking |
+| `alias <name>` | Set the career dossier handle (trimmed, 24 characters max) | Identity & personalization |
 | `tutorial` / `tips` | Show the first-run field manual with live scan, probe, breach, loot and extraction checkboxes | Onboarding & core-loop clarity |
 | `rival` | Inspect the run's rival netrunner, stolen contract count, and next scheduled move | Peer-antagonist awareness |
 | `counter_rival` | Burn 2 CPU to trace the rival and delay their next contract grab by 5 turns | Counterplay & tempo decision |

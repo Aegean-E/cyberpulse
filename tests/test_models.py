@@ -157,6 +157,11 @@ class TestModels(unittest.TestCase):
         self.assertEqual(restored.banked_creds, 1200)
         self.assertEqual(restored.current_streak, 3)
 
+    def test_career_alias_is_trimmed_and_defaulted(self):
+        self.assertEqual(CareerProfile.from_dict({"alias": "  Night   Fox  "}).alias, "Night Fox")
+        self.assertEqual(CareerProfile.from_dict({"alias": ""}).alias, "ZeroCool")
+        self.assertEqual(CareerProfile.from_dict({"alias": "x" * 40}).alias, "x" * 24)
+
     def test_old_career_payload_defaults_to_empty_run_history(self):
         restored = CareerProfile.from_dict({"alias": "OldTimer", "banked_creds": 55})
 
