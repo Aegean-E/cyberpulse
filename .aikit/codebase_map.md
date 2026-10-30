@@ -9,8 +9,8 @@
 - **Total Python Modules**: `30`
 - **Total Classes**: `65`
 - **Total Top-Level Functions**: `77`
-- **Total Class Methods**: `606`
-- **Total Source Lines**: `13780`
+- **Total Class Methods**: `609`
+- **Total Source Lines**: `13838`
 
 ---
 
@@ -201,7 +201,7 @@
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `652` lines (`23526` bytes)
+**Size**: `658` lines (`23658` bytes)
 
 **Classes:**
 - `class NodeType`
@@ -382,7 +382,7 @@
 ### [`cyberpulse/storage.py`](cyberpulse/storage.py)
 > *Crash-resilient savegame and career profile storage engine for CyberPulse.*
 
-**Size**: `363` lines (`15618` bytes)
+**Size**: `378` lines (`16197` bytes)
 
 **Classes:**
 - `class SaveManager` - *Manages atomic saving and loading of game states and career profiles.*
@@ -391,6 +391,7 @@
   - Method `.slot_path(slot)` - *Map a slot key to its atomic save file, keeping slot 1 backward compatible.*
   - Method `.slot_label(slot)` - *Return a human-readable label for a slot.*
   - Method `._slot_exists(key)`
+  - Method `._is_readable_json(path)` - *Return True when a file parses as JSON, so a corrupt primary never replaces a good backup.*
   - Method `._write_atomic(target_path, data)` - *Write JSON payload to target_path atomically; returns None when the replace never lands.*
   - Method `._read_json_with_backup(target_path, quarantine)` - *Read JSON from target_path, falling back to shadow .bak if corrupted or missing.*
   - Method `._read_slot_payload(key, quarantine)`
@@ -763,7 +764,7 @@
 ### [`tests/test_models.py`](tests/test_models.py)
 > *Unit tests for CyberPulse domain models.*
 
-**Size**: `291` lines (`11774` bytes)
+**Size**: `293` lines (`11862` bytes)
 
 **Classes:**
 - `class TestModels`
@@ -941,7 +942,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `498` lines (`19073` bytes)
+**Size**: `533` lines (`20489` bytes)
 
 **Classes:**
 - `class TestStorage`
@@ -952,6 +953,8 @@
   - Method `.test_save_preserves_tactical_deck_state()`
   - Method `.test_load_backfills_story_for_old_save()`
   - Method `.test_career_save_and_load()`
+  - Method `.test_corrupt_primary_does_not_overwrite_a_good_backup()`
+  - Method `.test_list_saves_falls_back_when_timestamp_is_not_finite()`
   - Method `.test_career_run_history_round_trips()`
   - Method `.test_career_default_fallback()`
   - Method `.test_old_career_payload_uses_best_combo_default()`
