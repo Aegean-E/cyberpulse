@@ -18,3 +18,13 @@ def daily_run(day: Optional[date] = None) -> Tuple[str, int]:
     """Return the (key, seed) pair for a daily run."""
     current = day or date.today()
     return current.isoformat(), int(current.strftime("%Y%m%d"))
+
+
+def is_next_day(previous_key: str, current_key: str) -> bool:
+    """Return True when current_key is exactly one calendar day after previous_key."""
+    try:
+        previous = date.fromisoformat(str(previous_key))
+        current = date.fromisoformat(str(current_key))
+    except (TypeError, ValueError):
+        return False
+    return (current - previous).days == 1

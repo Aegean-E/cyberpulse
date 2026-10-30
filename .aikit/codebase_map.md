@@ -8,9 +8,9 @@
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `30`
 - **Total Classes**: `65`
-- **Total Top-Level Functions**: `77`
-- **Total Class Methods**: `609`
-- **Total Source Lines**: `13838`
+- **Total Top-Level Functions**: `78`
+- **Total Class Methods**: `614`
+- **Total Source Lines**: `13944`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1223` lines (`56954` bytes)
+**Size**: `1224` lines (`57049` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -76,19 +76,20 @@
 ### [`cyberpulse/daily.py`](cyberpulse/daily.py)
 > *Deterministic daily-run keys and seeds.*
 
-**Size**: `20` lines (`651` bytes)
+**Size**: `30` lines (`1022` bytes)
 
 **Functions:**
 - `def daily_key(day)` - *Return the ISO date key for a daily run.*
 - `def daily_seed(day)` - *Return a stable numeric seed derived from the local date.*
 - `def daily_run(day)` - *Return the (key, seed) pair for a daily run.*
+- `def is_next_day(previous_key, current_key)` - *Return True when current_key is exactly one calendar day after previous_key.*
 
 ---
 
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3472` lines (`162557` bytes)
+**Size**: `3485` lines (`163171` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -201,7 +202,7 @@
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `658` lines (`23658` bytes)
+**Size**: `671` lines (`24281` bytes)
 
 **Classes:**
 - `class NodeType`
@@ -509,7 +510,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `522` lines (`21929` bytes)
+**Size**: `531` lines (`22315` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -540,6 +541,7 @@
   - Method `.test_replay_starts_a_run_from_an_archived_seed()`
   - Method `.test_replay_rejects_an_out_of_range_index()`
   - Method `.test_daily_flag_uses_the_date_seed()`
+  - Method `.test_daily_career_dossier_shows_the_streak()`
   - Method `.test_career_dossier_lists_recent_runs()`
   - Method `.test_jackout_command()`
   - Method `.test_shop_and_buy_command()`
@@ -564,19 +566,20 @@
 ### [`tests/test_daily.py`](tests/test_daily.py)
 > *Unit tests for deterministic daily-run keys and seeds.*
 
-**Size**: `26` lines (`772` bytes)
+**Size**: `33` lines (`1163` bytes)
 
 **Classes:**
 - `class TestDailyRun`
   - Method `.test_key_and_seed_are_stable_for_a_date()`
   - Method `.test_different_days_produce_different_seeds()`
+  - Method `.test_next_day_detection_handles_gaps_and_bad_keys()`
 
 ---
 
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `1850` lines (`78599` bytes)
+**Size**: `1900` lines (`80223` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -658,6 +661,9 @@
   - Method `.test_settle_career_history_is_capped_and_records_lockout()`
   - Method `.test_settle_career_records_daily_best_and_history_tag()`
   - Method `.test_settle_career_keeps_the_best_daily_gain()`
+  - Method `.test_daily_streak_increments_on_consecutive_days()`
+  - Method `.test_daily_streak_same_day_repeat_does_not_increment()`
+  - Method `.test_daily_streak_resets_after_a_gap()`
   - Method `.test_settle_career_banks_victory_loot_once()`
   - Method `.test_exploit_lockout_does_not_claim_root_access()`
   - Method `.test_float_seed_is_coerced()`
@@ -764,7 +770,7 @@
 ### [`tests/test_models.py`](tests/test_models.py)
 > *Unit tests for CyberPulse domain models.*
 
-**Size**: `293` lines (`11862` bytes)
+**Size**: `296` lines (`12023` bytes)
 
 **Classes:**
 - `class TestModels`

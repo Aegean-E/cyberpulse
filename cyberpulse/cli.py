@@ -244,6 +244,7 @@ def print_career(profile: CareerProfile) -> None:
     print(f"[*] Milestones:       {len(unlocked_names)}/{len(ACHIEVEMENTS)}")
     if unlocked_names:
         print(f"     {', '.join(unlocked_names)}")
+    print(f"[*] Daily Streak:     {profile.daily_streak} (Best: {profile.best_daily_streak})")
     daily = profile.daily_best if isinstance(profile.daily_best, dict) else {}
     if daily:
         recent = sorted(daily.items(), reverse=True)[:3]

@@ -164,6 +164,9 @@ class TestModels(unittest.TestCase):
         self.assertEqual(restored.run_history, [])
         self.assertEqual(restored.achievements, [])
         self.assertEqual(restored.daily_best, {})
+        self.assertEqual(restored.daily_streak, 0)
+        self.assertEqual(restored.best_daily_streak, 0)
+        self.assertEqual(restored.last_daily_key, "")
 
     def test_career_daily_best_drops_malformed_values(self):
         restored = CareerProfile.from_dict({

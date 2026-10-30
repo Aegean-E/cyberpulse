@@ -607,7 +607,10 @@ function renderHUD(data) {
   const dailyChip = document.getElementById("grid-daily");
   if (dailyChip) {
     const dailyKey = data.daily_key || "";
-    dailyChip.textContent = dailyKey ? `DAILY ${dailyKey}` : "";
+    const dailyStreak = data.career && data.career.daily_streak
+      ? ` · STREAK ${data.career.daily_streak}`
+      : "";
+    dailyChip.textContent = dailyKey ? `DAILY ${dailyKey}${dailyStreak}` : "";
     dailyChip.style.display = dailyKey ? "" : "none";
   }
 
@@ -2458,6 +2461,13 @@ async function openCareerModal() {
   document.getElementById("dossier-upgrades").textContent = data.purchased_upgrades.length > 0
     ? data.purchased_upgrades.join(", ")
     : "Standard Factory Rig";
+
+  const dailyStreakEl = document.getElementById("dossier-daily-streak");
+  if (dailyStreakEl) {
+    dailyStreakEl.textContent = data.daily_streak
+      ? `// STREAK ${data.daily_streak} (BEST ${data.best_daily_streak || 0})`
+      : "";
+  }
 
   const dailyEl = document.getElementById("dossier-daily");
   if (dailyEl) {

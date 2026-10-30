@@ -125,6 +125,9 @@ class CareerProfile:
     run_history: List[Dict[str, Any]] = field(default_factory=list)
     achievements: List[str] = field(default_factory=list)
     daily_best: Dict[str, int] = field(default_factory=dict)
+    daily_streak: int = 0
+    best_daily_streak: int = 0
+    last_daily_key: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -156,6 +159,16 @@ class CareerProfile:
             )
         }
         data_clean["daily_best"] = dict(sorted(cleaned_daily.items())[-30:])
+        for field_name in ("daily_streak", "best_daily_streak"):
+            value = data_clean.get(field_name, 0)
+            if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                value = 0
+            data_clean[field_name] = value
+        data_clean["best_daily_streak"] = max(
+            data_clean["best_daily_streak"], data_clean["daily_streak"]
+        )
+        last_key = data_clean.get("last_daily_key", "")
+        data_clean["last_daily_key"] = last_key if isinstance(last_key, str) else ""
         return cls(**data_clean)
 
 

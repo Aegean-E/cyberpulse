@@ -1,55 +1,16 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-storage-hardening",
+    "task_id": "task-cyberpulse-daily-streak",
     "last_phase": "in_progress",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1793373282.366963,
-    "owner": "opencode:storage-hardening-1",
-    "started_by": "opencode:storage-hardening-1",
-    "continuations": [],
-    "completed_at": 1793373356.3701532
+    "active_phase": 4,
+    "status": "in_progress",
+    "updated_at": 1793373699.7839267,
+    "owner": "opencode:daily-streak-1",
+    "started_by": "opencode:daily-streak-1",
+    "continuations": []
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-run-history",
-      "phase": "in_progress",
-      "phase_num": 4,
-      "description": "[4/4] Career run archive complete; project gate 5/5, 359 tests; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793371323.616835,
-      "timestamp_str": "2026-10-30 17:42:03",
-      "agent": "opencode:run-history-1"
-    },
-    {
-      "task_id": "task-cyberpulse-run-history",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-run-history' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793371353.950948,
-      "timestamp_str": "2026-10-30 17:42:33",
-      "agent": "opencode:run-history-1"
-    },
-    {
-      "task_id": "task-cyberpulse-milestones",
-      "phase": "in_progress",
-      "phase_num": 2,
-      "description": "[1/4] Add career milestones evaluated at settlement and shown in the dossier and run legacy",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793371661.669547,
-      "timestamp_str": "2026-10-30 17:47:41",
-      "agent": "opencode:milestones-1",
-      "impact_assessment": {
-        "why": "The career dossier records totals and recent runs, but there are no long-term goals; a player can finish many runs without a visible mastery ladder.",
-        "benefits": "Permanent milestone badges give replay goals, make unusual outcomes legible, and turn the run archive into evidence of progress.",
-        "risks": "contract: career.json gains an additive achievements list and run summaries gain a field; dependency: none; concurrency: settlement remains one-shot; state: old careers must load unlocked-empty and unlocks must never duplicate.",
-        "mitigation": "Evaluate only inside settle_career after stats update, append unique IDs, sanitize old payloads, keep the catalog in one module, and cover unlock rules, deduplication, persistence, CLI and API display with tests."
-      }
-    },
     {
       "task_id": "task-cyberpulse-milestones",
       "phase": "in_progress",
@@ -250,6 +211,45 @@
       "timestamp": 1793373356.3701541,
       "timestamp_str": "2026-10-30 18:15:56",
       "agent": "opencode:storage-hardening-1"
+    },
+    {
+      "task_id": "task-cyberpulse-daily-streak",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/3] Track consecutive daily-run participation and show the streak in both dossiers",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793373559.8252642,
+      "timestamp_str": "2026-10-30 18:19:19",
+      "agent": "opencode:daily-streak-1",
+      "impact_assessment": {
+        "why": "Daily runs record a best gain per day but no streak, so returning players have no visible retention signal or long-term daily goal.",
+        "benefits": "A streak makes the daily challenge a habit loop, distinguishes same-day repeats from consecutive days, and adds a durable career stat without changing gameplay balance.",
+        "risks": "contract: career.json gains additive streak fields; dependency: none; concurrency: settlement remains one-shot; state: old careers default to zero and same-day repeats must not inflate the streak.",
+        "mitigation": "Resolve consecutive days by ISO date, treat same-day repeats as no-ops, reset on gaps, sanitize old values, and cover first/consecutive/same-day/gap paths in engine and CLI tests."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-daily-streak",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[2/3] Daily streak engine, CLI dossier and Web dossier green; targeted 196 tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793373633.0072281,
+      "timestamp_str": "2026-10-30 18:20:33",
+      "agent": "opencode:daily-streak-1"
+    },
+    {
+      "task_id": "task-cyberpulse-daily-streak",
+      "phase": "in_progress",
+      "phase_num": 4,
+      "description": "[3/3] Daily streak complete; project gate 5/5, 383 tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793373699.7839267,
+      "timestamp_str": "2026-10-30 18:21:39",
+      "agent": "opencode:daily-streak-1"
     }
   ]
 }

@@ -422,4 +422,15 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   4. Cover corrupt-primary backup preservation, non-finite archive timestamps, and malformed daily values with failing-first tests.
 - **Consequences**: A corrupt primary can no longer destroy the last good recovery copy, and damaged metadata degrades to a safe fallback instead of crashing the Web state payload or career dossier. Valid saves behave exactly as before. Test suite: 378 tests, 100% green.
 
+### ADR-032: Daily Streaks: Consecutive-Day Participation and Same-Day Idempotence
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: ADR-029 records a best daily gain per date, but a player who returns every day has no visible streak or long-term daily goal. Without explicit same-day handling, repeated daily runs could also inflate a naive counter.
+- **Decision**:
+  1. Add `daily_streak`, `best_daily_streak` and `last_daily_key` to `CareerProfile`. Old careers default to zero/empty; malformed negative or non-integer values sanitize to zero and `best` is raised to at least `daily_streak`.
+  2. At settlement of a daily run, compare the run key with `last_daily_key`: same day is idempotent (streak stays, minimum 1), exactly the next ISO day increments, any gap or bad key resets to 1. Update `best_daily_streak` and `last_daily_key` in the same one-shot settlement path.
+  3. Show `Daily Streak: N (Best: M)` in the terminal dossier, a `// STREAK N (BEST M)` suffix in the Web dossier's daily section, and append the current streak to the Web HUD daily chip.
+  4. Add `is_next_day` to the daily helper module and cover first participation, consecutive days, same-day repeats, gaps, bad keys, old-career defaults, and the CLI dossier.
+- **Consequences**: The daily challenge gains a retention signal and a durable best, while same-day experimentation cannot farm the streak. No save schema change is required and ordinary runs are unaffected. Test suite: 383 tests, 100% green.
+
 

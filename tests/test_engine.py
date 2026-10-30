@@ -1169,6 +1169,56 @@ class TestEngine(unittest.TestCase):
 
         self.assertEqual(profile.daily_best["2026-10-30"], 900)
 
+    def test_daily_streak_increments_on_consecutive_days(self):
+        from cyberpulse.models import CareerProfile
+
+        self.engine.daily_key = "2026-10-30"
+        self.engine.state.is_victory = True
+        profile = CareerProfile(
+            daily_streak=3,
+            best_daily_streak=3,
+            last_daily_key="2026-10-29",
+        )
+
+        self.engine.settle_career(profile)
+
+        self.assertEqual(profile.daily_streak, 4)
+        self.assertEqual(profile.best_daily_streak, 4)
+        self.assertEqual(profile.last_daily_key, "2026-10-30")
+
+    def test_daily_streak_same_day_repeat_does_not_increment(self):
+        from cyberpulse.models import CareerProfile
+
+        self.engine.daily_key = "2026-10-30"
+        self.engine.state.is_victory = True
+        profile = CareerProfile(
+            daily_streak=4,
+            best_daily_streak=4,
+            last_daily_key="2026-10-30",
+        )
+
+        self.engine.settle_career(profile)
+
+        self.assertEqual(profile.daily_streak, 4)
+        self.assertEqual(profile.best_daily_streak, 4)
+
+    def test_daily_streak_resets_after_a_gap(self):
+        from cyberpulse.models import CareerProfile
+
+        self.engine.daily_key = "2026-10-30"
+        self.engine.state.is_victory = True
+        profile = CareerProfile(
+            daily_streak=9,
+            best_daily_streak=9,
+            last_daily_key="2026-10-27",
+        )
+
+        self.engine.settle_career(profile)
+
+        self.assertEqual(profile.daily_streak, 1)
+        self.assertEqual(profile.best_daily_streak, 9)
+        self.assertEqual(profile.last_daily_key, "2026-10-30")
+
     def test_settle_career_banks_victory_loot_once(self):
         from cyberpulse.models import CareerProfile
 

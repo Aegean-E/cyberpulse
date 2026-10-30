@@ -6,6 +6,7 @@ import uuid
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from cyberpulse.achievements import achievement_names, evaluate_achievements
+from cyberpulse.daily import is_next_day
 from cyberpulse.models import (
     BountyContract,
     CareerProfile,
@@ -2358,6 +2359,18 @@ class GameEngine:
             best = profile.daily_best if isinstance(profile.daily_best, dict) else {}
             best[daily_key] = max(int(best.get(daily_key, 0) or 0), gained)
             profile.daily_best = dict(sorted(best.items())[-30:])
+
+            last_key = profile.last_daily_key if isinstance(profile.last_daily_key, str) else ""
+            previous_streak = int(profile.daily_streak or 0)
+            if daily_key == last_key:
+                streak = max(1, previous_streak)
+            elif is_next_day(last_key, daily_key):
+                streak = max(1, previous_streak) + 1
+            else:
+                streak = 1
+            profile.daily_streak = streak
+            profile.best_daily_streak = max(int(profile.best_daily_streak or 0), streak)
+            profile.last_daily_key = daily_key
 
         if self.state.is_victory:
             outcome = "victory"
