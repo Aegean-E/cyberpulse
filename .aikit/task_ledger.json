@@ -3,24 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-contract-reroll",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793380041.838927,
     "owner": "opencode:contract-reroll-1",
     "started_by": "opencode:contract-reroll-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793380080.6434705
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-career-reset",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-career-reset' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793378617.2911365,
-      "timestamp_str": "2026-10-30 19:43:37",
-      "agent": "opencode:career-reset-1"
-    },
     {
       "task_id": "task-cyberpulse-milestone-expansion",
       "phase": "in_progress",
@@ -254,6 +245,16 @@
       "status": "in_progress",
       "timestamp": 1793380041.838927,
       "timestamp_str": "2026-10-30 20:07:21",
+      "agent": "opencode:contract-reroll-1"
+    },
+    {
+      "task_id": "task-cyberpulse-contract-reroll",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-contract-reroll' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793380080.643473,
+      "timestamp_str": "2026-10-30 20:08:00",
       "agent": "opencode:contract-reroll-1"
     }
   ]
