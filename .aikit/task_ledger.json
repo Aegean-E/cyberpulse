@@ -3,29 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-run-history",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793371323.616835,
     "owner": "opencode:run-history-1",
     "started_by": "opencode:run-history-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793371353.9509466
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-web-save-load",
-      "phase": "phase 4",
-      "phase_num": 4,
-      "description": "[3/3] Project gate green: 5/5 (test, mechanics, hygiene, guidelines, secrets), 323 tests. checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793356754.7576659,
-      "timestamp_str": "2026-10-30 13:39:14",
-      "agent": "opencode:save-load-1",
-      "handoff": {
-        "next": "commit and push when authorized",
-        "evidence": "5/5 gates, 323 tests"
-      }
-    },
     {
       "task_id": "task-cyberpulse-web-save-load",
       "phase": "completed",
@@ -248,6 +234,16 @@
       "status": "in_progress",
       "timestamp": 1793371323.616835,
       "timestamp_str": "2026-10-30 17:42:03",
+      "agent": "opencode:run-history-1"
+    },
+    {
+      "task_id": "task-cyberpulse-run-history",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-run-history' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793371353.950948,
+      "timestamp_str": "2026-10-30 17:42:33",
       "agent": "opencode:run-history-1"
     }
   ]
