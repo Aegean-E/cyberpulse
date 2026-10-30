@@ -3,25 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-milestone-expansion",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793378774.0882869,
     "owner": "opencode:milestone-expansion-1",
     "started_by": "opencode:milestone-expansion-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793378817.0932038
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-hall-filters",
-      "phase": "in_progress",
-      "phase_num": 4,
-      "description": "[3/3] Hall filters complete; project gate 5/5, 417 tests; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793377186.7789938,
-      "timestamp_str": "2026-10-30 19:19:46",
-      "agent": "opencode:hall-filters-1"
-    },
     {
       "task_id": "task-cyberpulse-hall-filters",
       "phase": "completed",
@@ -254,6 +244,16 @@
       "status": "in_progress",
       "timestamp": 1793378774.0882869,
       "timestamp_str": "2026-10-30 19:46:14",
+      "agent": "opencode:milestone-expansion-1"
+    },
+    {
+      "task_id": "task-cyberpulse-milestone-expansion",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-milestone-expansion' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793378817.0932057,
+      "timestamp_str": "2026-10-30 19:46:57",
       "agent": "opencode:milestone-expansion-1"
     }
   ]
