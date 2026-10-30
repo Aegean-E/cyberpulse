@@ -114,6 +114,8 @@ const state = {
   animFrameId: null,
   packetParticles: [],
   tutorialDismissed: false,
+  hallFilter: "all",
+  careerData: null,
 };
 
 // Node matrix layout coordinates on 800x560 canvas
@@ -237,6 +239,15 @@ function initUIEvents() {
   document.getElementById("btn-rival-open").addEventListener("click", openRivalModal);
   document.getElementById("btn-counter-rival").addEventListener("click", handleCounterRival);
   document.getElementById("grid-rival").addEventListener("click", openRivalModal);
+  document.querySelectorAll(".hall-filter").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.hallFilter = button.dataset.hallFilter || "all";
+      document.querySelectorAll(".hall-filter").forEach((candidate) => {
+        candidate.classList.toggle("active", candidate === button);
+      });
+      renderHall();
+    });
+  });
   document.getElementById("btn-reset-run").addEventListener("click", handleReset);
   document.getElementById("btn-quests-open").addEventListener("click", openQuestsModal);
   document.getElementById("btn-contacts-open").addEventListener("click", openContactsModal);
@@ -2559,35 +2570,8 @@ async function openCareerModal() {
     ? data.purchased_upgrades.join(", ")
     : "Standard Factory Rig";
 
-  const hallEl = document.getElementById("dossier-hall");
-  if (hallEl) {
-    hallEl.innerHTML = "";
-    const hall = Array.isArray(data.hall_of_fame) ? data.hall_of_fame : [];
-    if (!hall.length) {
-      const empty = document.createElement("span");
-      empty.className = "empty-chips";
-      empty.textContent = "No ranked runs yet. Finish a run to enter the board.";
-      hallEl.appendChild(empty);
-    } else {
-      hall.slice(0, 5).forEach((entry, index) => {
-        const row = document.createElement("div");
-        row.className = "dossier-run-row";
-        const rank = document.createElement("span");
-        rank.className = "run-outcome hall-rank";
-        rank.textContent = `#${index + 1}`;
-        const meta = document.createElement("span");
-        meta.className = "run-meta";
-        const score = Number(entry.score || 0).toLocaleString();
-        const outcome = String(entry.outcome || "unknown").toUpperCase();
-        const seed = entry.seed !== undefined ? entry.seed : "?";
-        const turns = entry.turns !== undefined ? entry.turns : 0;
-        const difficulty = String(entry.difficulty || "normal").toUpperCase();
-        meta.textContent = `${score} PTS · ${outcome} · ${difficulty} · SEED ${seed} · TURN ${turns}`;
-        row.append(rank, meta);
-        hallEl.appendChild(row);
-      });
-    }
-  }
+  state.careerData = data;
+  renderHall();
 
   const dailyStreakEl = document.getElementById("dossier-daily-streak");
   if (dailyStreakEl) {
@@ -2732,6 +2716,44 @@ async function handleCounterRival() {
     addTerminalLog(res.message || res.error || "Counter-trace failed.", "warn");
     if (applyStateSnapshot(res)) renderRivalModal();
   }
+}
+
+function renderHall() {
+  const hallEl = document.getElementById("dossier-hall");
+  const data = state.careerData;
+  if (!hallEl || !data) return;
+  const filter = state.hallFilter || "all";
+  const all = Array.isArray(data.hall_of_fame) ? data.hall_of_fame : [];
+  const hall = filter === "all"
+    ? all
+    : all.filter((entry) => String(entry.difficulty || "normal").toLowerCase() === filter);
+  hallEl.innerHTML = "";
+  if (!hall.length) {
+    const empty = document.createElement("span");
+    empty.className = "empty-chips";
+    empty.textContent = filter === "all"
+      ? "No ranked runs yet. Finish a run to enter the board."
+      : `No ranked ${filter.toUpperCase()} runs yet.`;
+    hallEl.appendChild(empty);
+    return;
+  }
+  hall.slice(0, 5).forEach((entry, index) => {
+    const row = document.createElement("div");
+    row.className = "dossier-run-row";
+    const rank = document.createElement("span");
+    rank.className = "run-outcome hall-rank";
+    rank.textContent = `#${index + 1}`;
+    const meta = document.createElement("span");
+    meta.className = "run-meta";
+    const score = Number(entry.score || 0).toLocaleString();
+    const outcome = String(entry.outcome || "unknown").toUpperCase();
+    const seed = entry.seed !== undefined ? entry.seed : "?";
+    const turns = entry.turns !== undefined ? entry.turns : 0;
+    const difficulty = String(entry.difficulty || "normal").toUpperCase();
+    meta.textContent = `${score} PTS · ${outcome} · ${difficulty} · SEED ${seed} · TURN ${turns}`;
+    row.append(rank, meta);
+    hallEl.appendChild(row);
+  });
 }
 
 async function openRigModal() {

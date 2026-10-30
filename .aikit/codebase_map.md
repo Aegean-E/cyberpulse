@@ -8,9 +8,9 @@
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `38`
 - **Total Classes**: `71`
-- **Total Top-Level Functions**: `87`
-- **Total Class Methods**: `656`
-- **Total Source Lines**: `15018`
+- **Total Top-Level Functions**: `88`
+- **Total Class Methods**: `657`
+- **Total Source Lines**: `15065`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1310` lines (`61365` bytes)
+**Size**: `1330` lines (`62163` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -54,6 +54,7 @@
 - `def print_hunters(engine)`
 - `def print_shop(shop, deck, price_multiplier)`
 - `def print_tutorial(engine, profile)` - *Render the first-run field manual with live checklist state.*
+- `def print_hall(profile, difficulty)` - *Render the Hall of Fame, optionally filtered by difficulty.*
 - `def print_career(profile)`
 - `def print_workshop(engine)`
 - `def print_daemons(engine)`
@@ -566,7 +567,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `568` lines (`23791` bytes)
+**Size**: `595` lines (`24999` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -597,6 +598,7 @@
   - Method `.test_replay_starts_a_run_from_an_archived_seed()`
   - Method `.test_replay_rejects_an_out_of_range_index()`
   - Method `.test_rival_commands_inspect_and_counter()`
+  - Method `.test_hall_command_filters_by_difficulty()`
   - Method `.test_tutorial_command_lists_the_first_run_steps()`
   - Method `.test_difficulty_flag_reaches_the_hud()`
   - Method `.test_daily_flag_uses_the_date_seed()`

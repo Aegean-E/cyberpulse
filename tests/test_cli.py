@@ -253,6 +253,33 @@ class TestCLI(unittest.TestCase):
         self.assertIn("Counter-traced", out)
         self.assertIn("contract(s) stolen", out)
 
+    def test_hall_command_filters_by_difficulty(self):
+        from cyberpulse.models import CareerProfile
+        from cyberpulse.storage import SaveManager
+
+        profile = CareerProfile(hall_of_fame=[
+            {"run_id": "easy-run", "score": 500, "difficulty": "easy", "outcome": "jackout", "seed": 11},
+            {"run_id": "normal-run", "score": 800, "difficulty": "normal", "outcome": "victory", "seed": 22},
+            {"run_id": "hard-run", "score": 1200, "difficulty": "hard", "outcome": "victory", "seed": 33},
+            {"run_id": "legacy-run", "score": 300, "outcome": "lockout", "seed": 44},
+        ])
+        SaveManager(self.temp_dir).save_career(profile)
+
+        code, out = self.run_cli("--exec", "hall hard")
+
+        self.assertEqual(code, 0)
+        self.assertIn("HALL OF FAME [HARD]", out)
+        self.assertIn("SEED 33", out)
+        self.assertNotIn("SEED 11", out)
+        self.assertNotIn("SEED 44", out)
+
+        code, out = self.run_cli("--exec", "hall easy")
+        self.assertIn("SEED 11", out)
+        self.assertNotIn("SEED 33", out)
+
+        code, out = self.run_cli("--exec", "hall nightmare")
+        self.assertIn("Usage: hall [all|easy|normal|hard]", out)
+
     def test_tutorial_command_lists_the_first_run_steps(self):
         code, out = self.run_cli("--exec", "tutorial")
 

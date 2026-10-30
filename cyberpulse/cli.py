@@ -254,6 +254,27 @@ def print_tutorial(engine: GameEngine, profile: CareerProfile) -> None:
     print("+----------------------------------------------------------------------------+")
 
 
+def print_hall(profile: CareerProfile, difficulty: str = "all") -> None:
+    """Render the Hall of Fame, optionally filtered by difficulty."""
+    hall = profile.hall_of_fame if isinstance(profile.hall_of_fame, list) else []
+    if difficulty != "all":
+        hall = [
+            entry for entry in hall
+            if str(entry.get("difficulty", "normal")).lower() == difficulty
+        ]
+    label = difficulty.upper()
+    print(f"HALL OF FAME [{label}]:")
+    if not hall:
+        print("   (no ranked runs for this filter yet)")
+    for index, entry in enumerate(hall[:5], start=1):
+        outcome = str(entry.get("outcome", "unknown")).upper()
+        entry_difficulty = str(entry.get("difficulty", "normal")).upper()
+        print(
+            f"   #{index} {int(entry.get('score', 0)):>6,}  {entry_difficulty:<6} "
+            f"{outcome:<8} SEED {entry.get('seed', '?')}  TURN {entry.get('turns', 0)}"
+        )
+
+
 def print_career(profile: CareerProfile) -> None:
     print("\n+==========================================================================+")
     print(f"|               >> HACKER CAREER DOSSIER: {profile.alias} <<                  |")
@@ -276,17 +297,8 @@ def print_career(profile: CareerProfile) -> None:
         print("[*] Daily Bests:     " + " | ".join(f"{day} +{creds} CR" for day, creds in recent))
     else:
         print("[*] Daily Bests:      none yet (try --daily or menu 7)")
-    hall = profile.hall_of_fame if isinstance(profile.hall_of_fame, list) else []
     print("--------------------------------------------------------------------------")
-    print("HALL OF FAME:")
-    if not hall:
-        print("   (no ranked runs yet; finish a run to enter the board)")
-    for index, entry in enumerate(hall[:5], start=1):
-        outcome = str(entry.get("outcome", "unknown")).upper()
-        print(
-            f"   #{index} {int(entry.get('score', 0)):>6,}  {outcome:<8} "
-            f"SEED {entry.get('seed', '?')}  TURN {entry.get('turns', 0)}"
-        )
+    print_hall(profile)
     print("--------------------------------------------------------------------------")
     print("RECENT RUNS:")
     history = profile.run_history[-5:] if isinstance(profile.run_history, list) else []
@@ -549,7 +561,7 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
         if choice in ("6", "help", "how"):
             print("Commands: status, contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
             print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
-            print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, tutorial, career,")
+            print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, tutorial, career, hall,")
             print("          save [1-3] [name], load [1-3|auto], saves, rename, delete, replay, quit")
             print("Daily challenge: run `python -m cyberpulse.cli --daily` or choose 7.")
             continue
@@ -1035,6 +1047,14 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         print_career(save_mgr.load_career())
         return True
 
+    if action in ("hall", "leaderboard"):
+        difficulty = parts[1].lower() if len(parts) > 1 else "all"
+        if difficulty not in ("all", "easy", "normal", "hard"):
+            print("Usage: hall [all|easy|normal|hard]")
+            return True
+        print_hall(save_mgr.load_career(), difficulty)
+        return True
+
     if action in ("tutorial", "tips", "manual"):
         print_tutorial(engine, save_mgr.load_career())
         return True
@@ -1161,7 +1181,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print(f"No checkpoint in {label}.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, tutorial, career, status, save, load, saves, rename, delete, replay, quit")
+    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, tutorial, career, hall, status, save, load, saves, rename, delete, replay, quit")
     return True
 
 

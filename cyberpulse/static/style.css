@@ -4156,3 +4156,17 @@ body {
 .tutorial-copy { display: flex; flex-direction: column; gap: 2px; }
 .tutorial-step-title { font-size: 8px; font-weight: 700; letter-spacing: 1px; color: var(--c-text-bright); }
 .tutorial-step-hint { font-size: 8px; line-height: 1.35; color: var(--c-text-dim); }
+.hall-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.hall-filters { display: flex; gap: 4px; }
+.hall-filter {
+  padding: 3px 6px;
+  font-family: var(--font-mono);
+  font-size: 7px;
+  letter-spacing: 0.8px;
+  color: var(--c-text-dim);
+  background: transparent;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.hall-filter.active { color: var(--c-primary); border-color: var(--c-primary); }

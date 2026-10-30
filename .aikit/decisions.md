@@ -506,4 +506,15 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. Cover deterministic selection, roster coverage, start conditions, trace/payout effects, save round-trip, CLI output and the API daily reset.
 - **Consequences**: Each date now has both a seed and a rule identity, giving players a reason to adapt rather than replay the same plan. Normal runs remain unchanged, and the modifier is visible and archive-safe. Test suite: 416 tests, 100% green.
 
+### ADR-039: Difficulty-Filtered Hall of Fame
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: ADR-035 ranks the top ten scores, and ADR-036 tags each run with a difficulty. The all-time board still compared Easy, Normal and Hard scores directly, so a high Easy score could outrank a strong Hard run even though the modes are not equivalent.
+- **Decision**:
+  1. Add `hall [all|easy|normal|hard]` to the terminal. `all` remains the default and the existing dossier view; an invalid filter prints the usage line without changing anything. Entries missing a difficulty are treated as Normal.
+  2. Add ALL/EASY/NORMAL/HARD controls to the Web Hall of Fame. The selected filter re-renders the same cached career payload without a network round trip; the all-time view remains the initial state.
+  3. Keep ranking logic unchanged: filters are read-only projections over the stored top ten, so a filtered board may show fewer than five entries and never alters the underlying hall.
+  4. Cover command validation, filtered output, legacy entries defaulting to Normal, and the Web script syntax.
+- **Consequences**: Players can compare runs within the mode they actually played, while the all-time board remains available. No save or career schema change is required. Test suite: 417 tests, 100% green.
+
 

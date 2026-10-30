@@ -158,7 +158,7 @@ python -m cyberpulse.cli --daily
 
 ### In-Game Commands (Authentic Simulation & Tactical Netrunning)
 
-The full reference of 50 commands, with each one's action and simulation role, is in [COMMANDS.md](COMMANDS.md).
+The full reference of 51 commands, with each one's action and simulation role, is in [COMMANDS.md](COMMANDS.md).
 
 ### 🕹️ Authentic Cyber Warfare Infiltration Workflow
 1. **Network Reconnaissance**: Discover network topology with `scan` or read host configuration files with `cat /etc/hosts`. Scan active network ports using `probe 192.168.1.10`.
@@ -190,7 +190,7 @@ The full reference of 50 commands, with each one's action and simulation role, i
 - **Story, Quests & Operatives Persist**: Story act, log, quest progress, contact trust, and spent favors are stored in the savegame and backfilled for pre-story saves.
 - **Run Legacy & Epilogues**: Victory, jackout, and lockout produce a run summary with quest/contact progress, best combo, and a story epilogue shown in both CLI and Web. Career dossiers record the highest combo across runs.
 - **Career Run Archive**: Every settled run appends a bounded record to the career dossier with its outcome, seed, turns, banked credits, net gain, best combo, story act, quest count, contract completion and finish time. The terminal shows the last five runs and the Web dossier shows the last six, so the RUN LEGACY moment survives into the next session and different seeds are easy to compare.
-- **Transparent Run Score & Hall of Fame**: Settlement scores each run from net credits, combo, quests, breaches, contract completion, outcome and story progress, then records the itemized breakdown. The top ten scores are deduplicated by run id and kept in the career Hall of Fame; the run legacy shows the score and rank, while both dossiers show the leaderboard.
+- **Transparent Run Score & Hall of Fame**: Settlement scores each run from net credits, combo, quests, breaches, contract completion, outcome and story progress, then records the itemized breakdown. The top ten scores are deduplicated by run id and kept in the career Hall of Fame; the run legacy shows the score and rank, while both dossiers show the leaderboard. The board filters by difficulty (`hall [all|easy|normal|hard]` or Web ALL/EASY/NORMAL/HARD controls), so cross-mode scores are never presented as directly comparable; legacy entries count as Normal.
 - **Career Milestones**: Twelve permanent achievements are evaluated once at settlement: first extraction, five clears, x5/x10 combos, ghost and speed victories, a black contract, three vaults, 50 turns, 1,000 banked credits, a hot extraction, and reaching Act V. New unlocks appear in the run legacy and persist as dossier badges in both interfaces.
 - **Difficulty Modes**: Easy grants +2 max CPU, -20% trace gain and +10% contract pay; Normal is the baseline; Hard starts at +15 grid alert with +20% trace gain and -10% contract pay. The choice persists in saves and run history, is selectable with `--difficulty` or the Web main-menu picker, and is shown in both HUDs.
 - **First-Run Field Manual**: Careers with no settled runs get a live five-step checklist for `scan`, `probe`, `hack`, `steal` and `jackout`. The terminal exposes it as `tutorial`; the Web shows a dismissible panel that checks steps off from persisted state. Established careers never see it.
@@ -209,7 +209,7 @@ The full reference of 50 commands, with each one's action and simulation role, i
 - **Backward-Compatible World State**: Old saves without a world clock load with a fresh Day 1 world; the new fields are additive and atomic with the existing savegame.
 - **NetWatch Active Hunters & Pursuit Simulation**: Alert 60%+ mobilizes autonomous ICE hunters that track player location across network graph hops, trigger connection clashes on interception (+15% trace, -2 CPU), quarantine unmonitored daemons, and react to scent scrambling (`spoof`/`wipe_logs`) and countermeasures (`logic_bomb`/`ghost_protocol`). Only one hunter can hold the sector at a time; an intercepted hunter still counts as active, preventing a second clamp from stacking onto the first.
 - **Tactical Shift Dynamics & Downtime**: The four in-game shifts (Late Night, Morning, Afternoon, Evening) apply distinct modifiers to alert decay, re-secure chance, market bias, hunter deployment thresholds, and social-engineering odds (staff answer lures differently at 03:00 than at 09:00), so the clock carries real tactical weight. `lay_low`/`wait` trades 1-3 turns of grid movement (with its patrol, hunter, and ambient risk) for CPU recovery, exposed in both the CLI and the Web Cyberdeck shift chip.
-- **Fast Test Shield**: 100% test pass rate across 416 unit and integration tests in about fifteen seconds via `python -m unittest discover`.
+- **Fast Test Shield**: 100% test pass rate across 417 unit and integration tests in about eight seconds via `python -m unittest discover`.
 
 <!-- aegean:brand-assets:start -->
 ## 🎨 Brand Assets
