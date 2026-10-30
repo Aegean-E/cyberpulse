@@ -3,24 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-run-score",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793374977.3094077,
     "owner": "opencode:run-score-1",
     "started_by": "opencode:run-score-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793375008.9755402
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-replay-seeds",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-replay-seeds' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793372999.0207598,
-      "timestamp_str": "2026-10-30 18:09:59",
-      "agent": "opencode:replay-seeds-1"
-    },
     {
       "task_id": "task-cyberpulse-storage-hardening",
       "phase": "in_progress",
@@ -254,6 +245,16 @@
       "status": "in_progress",
       "timestamp": 1793374977.3094077,
       "timestamp_str": "2026-10-30 18:42:57",
+      "agent": "opencode:run-score-1"
+    },
+    {
+      "task_id": "task-cyberpulse-run-score",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-run-score' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793375008.9755416,
+      "timestamp_str": "2026-10-30 18:43:28",
       "agent": "opencode:run-score-1"
     }
   ]
