@@ -3,24 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-replay-seeds",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793372965.499787,
     "owner": "opencode:replay-seeds-1",
     "started_by": "opencode:replay-seeds-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793372999.0207586
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-slot-manage",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-slot-manage' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793370212.330048,
-      "timestamp_str": "2026-10-30 17:23:32",
-      "agent": "opencode:slot-manage-1"
-    },
     {
       "task_id": "task-cyberpulse-run-history",
       "phase": "in_progress",
@@ -249,6 +240,16 @@
       "status": "in_progress",
       "timestamp": 1793372965.499787,
       "timestamp_str": "2026-10-30 18:09:25",
+      "agent": "opencode:replay-seeds-1"
+    },
+    {
+      "task_id": "task-cyberpulse-replay-seeds",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-replay-seeds' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793372999.0207598,
+      "timestamp_str": "2026-10-30 18:09:59",
       "agent": "opencode:replay-seeds-1"
     }
   ]
