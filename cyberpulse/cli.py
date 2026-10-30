@@ -255,7 +255,7 @@ def print_career(profile: CareerProfile) -> None:
     history = profile.run_history[-5:] if isinstance(profile.run_history, list) else []
     if not history:
         print("   (no settled runs yet; finish a run to record a legacy)")
-    for record in reversed(history):
+    for index, record in enumerate(reversed(history), start=1):
         outcome = str(record.get("outcome", "unknown")).upper()
         finished = record.get("finished_at")
         stamp = "--"
@@ -265,7 +265,7 @@ def print_career(profile: CareerProfile) -> None:
             except (ValueError, OSError, OverflowError):  # hygiene: allow malformed timestamp shows as --
                 pass
         print(
-            f"   * {outcome:<8} SEED {record.get('seed', '?')}  "
+            f"   * [{index}] {outcome:<8} SEED {record.get('seed', '?')}  "
             f"TURN {record.get('turns', 0)}  {record.get('creds', 0)} CR  "
             f"COMBO x{record.get('best_combo', 0)}  {stamp}"
         )
@@ -510,7 +510,7 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
             print("Commands: status, contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
             print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
             print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career,")
-            print("          save [1-3] [name], load [1-3|auto], saves, rename, delete, quit")
+            print("          save [1-3] [name], load [1-3|auto], saves, rename, delete, replay, quit")
             print("Daily challenge: run `python -m cyberpulse.cli --daily` or choose 7.")
             continue
         if choice in ("7", "daily", "daily run"):
@@ -994,6 +994,31 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         print_career(save_mgr.load_career())
         return True
 
+    if action in ("replay", "seed"):
+        if len(parts) < 2:
+            print("Usage: replay <1-5>")
+            return True
+        try:
+            index = int(parts[1])
+        except ValueError:
+            print("Usage: replay <1-5>")
+            return True
+        profile = save_mgr.load_career()
+        history = profile.run_history[-5:] if isinstance(profile.run_history, list) else []
+        if not 1 <= index <= len(history):
+            print("Usage: replay <1-5>")
+            return True
+        record = history[-index]
+        seed = record.get("seed")
+        if not isinstance(seed, int):
+            print("Usage: replay <1-5>")
+            return True
+        replayed = GameEngine(seed=seed, career_profile=profile)
+        engine.__dict__.update(replayed.__dict__)
+        save_mgr.mark_autosave_baseline(engine)
+        print(f"Replaying run {index} // seed {seed}.")
+        return True
+
     if action == "save":
         raw_slot = parts[1] if len(parts) > 1 else 1
         try:
@@ -1073,7 +1098,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print(f"No checkpoint in {label}.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career, status, save, load, saves, rename, delete, quit")
+    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career, status, save, load, saves, rename, delete, replay, quit")
     return True
 
 

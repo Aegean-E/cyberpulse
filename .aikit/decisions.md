@@ -400,4 +400,15 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. Sanitize malformed daily keys/values on career load; cover key/seed determinism, save/load persistence, settlement max behavior, CLI `--daily`, session/API reset, and the Web payload with tests.
 - **Consequences**: Players get a fresh date-seeded challenge each day with a persistent personal best, while ordinary seeded runs and old saves are unaffected. Daily keys remain stable inside a run, and no network or clock service is required. Test suite: 374 tests, 100% green.
 
+### ADR-030: Seed Replay from the Run Archive
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: ADR-027 stores each settled run's seed, but the archive was read-only. Replaying an interesting layout or a daily seed required copying the number and starting a run manually, and the Web dossier offered no path at all.
+- **Decision**:
+  1. Index the last five terminal history records newest-first (`[1]` = newest). `replay <1-5>` rebuilds a fresh `GameEngine` from that record's seed with the current career profile, replaces the live engine, and resets the autosave baseline. Out-of-range or malformed indexes print the usage line and change nothing.
+  2. Replays are ordinary runs: the archived `daily_key` is intentionally ignored, so replaying a past daily seed cannot rewrite that day's historical best.
+  3. Add a **REPLAY** button to each Web dossier history row. It confirms the live-run replacement, calls the existing `reset` action with the archived seed, and refreshes the HUD; rows without a numeric seed disable the button.
+  4. Cover the valid replay path and out-of-range rejection in the CLI, and validate the JavaScript entry point with the syntax check.
+- **Consequences**: Seeds become reusable content rather than a read-only field, while daily records stay immutable and no save/career schema changes are needed. Test suite: 376 tests, 100% green.
+
 

@@ -9,8 +9,8 @@
 - **Total Python Modules**: `30`
 - **Total Classes**: `65`
 - **Total Top-Level Functions**: `77`
-- **Total Class Methods**: `604`
-- **Total Source Lines**: `13740`
+- **Total Class Methods**: `606`
+- **Total Source Lines**: `13780`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1198` lines (`55982` bytes)
+**Size**: `1223` lines (`56954` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -508,7 +508,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `507` lines (`21321` bytes)
+**Size**: `522` lines (`21929` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -536,6 +536,8 @@
   - Method `.test_batch_commands_autosave_state_changes()`
   - Method `.test_invalid_save_slot_reports_usage()`
   - Method `.test_jackout_purges_owned_slots_and_autosave()`
+  - Method `.test_replay_starts_a_run_from_an_archived_seed()`
+  - Method `.test_replay_rejects_an_out_of_range_index()`
   - Method `.test_daily_flag_uses_the_date_seed()`
   - Method `.test_career_dossier_lists_recent_runs()`
   - Method `.test_jackout_command()`

@@ -230,6 +230,21 @@ class TestCLI(unittest.TestCase):
         self.assertFalse((self.temp_dir / "savegame_slot2.json").exists())
         self.assertFalse((self.temp_dir / "autosave.json").exists())
 
+    def test_replay_starts_a_run_from_an_archived_seed(self):
+        batch_cmds = "hack node_proxy_a;jackout;replay 1;status"
+        code, out = self.run_cli("--seed", "1337", "--auto-solve", "--exec", batch_cmds)
+
+        self.assertEqual(code, 0)
+        self.assertIn("Replaying run 1", out)
+        self.assertIn("seed 1337", out)
+        self.assertIn("External Border Gateway", out)
+
+    def test_replay_rejects_an_out_of_range_index(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "replay 9")
+
+        self.assertEqual(code, 0)
+        self.assertIn("Usage: replay <1-5>", out)
+
     def test_daily_flag_uses_the_date_seed(self):
         with mock.patch("cyberpulse.cli.daily_run", return_value=("2026-10-30", 20261030)):
             code, out = self.run_cli("--daily", "--exec", "status")

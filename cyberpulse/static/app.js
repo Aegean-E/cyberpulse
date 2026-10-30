@@ -1020,6 +1020,27 @@ async function handleReset() {
   }
 }
 
+async function handleReplaySeed(seed) {
+  if (!Number.isFinite(seed)) return;
+  if (!window.confirm(`Replay seed ${seed}? The live run will be replaced.`)) return;
+
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "reset", seed });
+  if (res && res.ok) {
+    document.getElementById("modal-career").classList.add("hidden");
+    document.getElementById("modal-main-menu").classList.add("hidden");
+    addTerminalLog(`Replaying archived seed ${seed}.`, "info");
+    state.data = res.state;
+    state.selectedNodeId = null;
+    closePuzzleBay();
+    renderEmptyTargetCard();
+    renderHUD(res.state);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || res.error || "Seed replay failed.", "warn");
+  }
+}
+
 async function handleDailyReset() {
   sfx.click();
   const res = await apiPost("/api/action", { action: "reset", daily: true });
@@ -2519,7 +2540,13 @@ async function openCareerModal() {
         const time = document.createElement("span");
         time.className = "run-time";
         time.textContent = formatRunStamp(record.finished_at);
-        row.append(chip, meta, time);
+        const replay = document.createElement("button");
+        replay.className = "action-btn run-replay-btn";
+        replay.textContent = "REPLAY";
+        replay.title = `Start a new run with seed ${record.seed}`;
+        replay.disabled = !Number.isFinite(record.seed);
+        replay.addEventListener("click", () => handleReplaySeed(record.seed));
+        row.append(chip, meta, time, replay);
         historyEl.appendChild(row);
       });
     }

@@ -4002,7 +4002,7 @@ body {
 .dossier-history-list { display: flex; flex-direction: column; gap: 6px; max-height: 190px; overflow-y: auto; }
 .dossier-run-row {
   display: grid;
-  grid-template-columns: 68px minmax(0, 1fr) auto;
+  grid-template-columns: 68px minmax(0, 1fr) auto auto;
   gap: 10px;
   align-items: center;
   padding: 6px 8px;
@@ -4010,6 +4010,7 @@ body {
   border: 1px solid var(--c-border);
   border-radius: var(--radius-sm);
 }
+.run-replay-btn { padding: 4px 8px; font-size: 8px; letter-spacing: 0.8px; }
 .run-outcome {
   font-family: var(--font-display);
   font-size: 8px;

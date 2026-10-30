@@ -49,4 +49,5 @@
 | `saves` | List every checkpoint with label, turn, credits, trace, act and timestamp | Save-slot awareness & recovery choice |
 | `rename <1\|2\|3> <name>` | Relabel an existing checkpoint without changing its progress or timestamp | Archive organization |
 | `delete <1\|2\|3\|auto>` | Remove one checkpoint; the live run is untouched | Stale-run cleanup |
+| `replay <1-5>` | Start a fresh run from the seed of a recent archived run (1 = newest) | Seed reuse & practice |
 | `quit` | Sever connection and terminate terminal link | Clean exit |
