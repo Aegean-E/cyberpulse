@@ -224,6 +224,7 @@ class GameEngine:
         self.seed = int(seed)
         # Identity of this specific run; save slots use it to purge every checkpoint on settlement.
         self.run_id = uuid.uuid4().hex
+        self.daily_key = ""
         self.last_unlocked_achievements: List[str] = []
         self.rng = random.Random(self.seed)
         self.nodes: Dict[str, Node] = generate_network(self.seed)
@@ -725,6 +726,7 @@ class GameEngine:
             "story_act": self.state.story_act,
             "story_title": f"{title} // {subtitle}",
             "achievements_unlocked": achievement_names(self.last_unlocked_achievements),
+            "daily_key": getattr(self, "daily_key", ""),
         }
 
     def list_quests(self) -> List[Dict[str, Any]]:
@@ -2351,6 +2353,12 @@ class GameEngine:
         profile.banked_creds = self.deck.cryptocreds
         profile.lifetime_creds += gained
 
+        daily_key = getattr(self, "daily_key", "")
+        if daily_key:
+            best = profile.daily_best if isinstance(profile.daily_best, dict) else {}
+            best[daily_key] = max(int(best.get(daily_key, 0) or 0), gained)
+            profile.daily_best = dict(sorted(best.items())[-30:])
+
         if self.state.is_victory:
             outcome = "victory"
         elif self.state.is_jacked_out:
@@ -2378,6 +2386,7 @@ class GameEngine:
             "quests_done": sum(1 for quest in self.state.quests if getattr(quest, "completed", False)),
             "contract_completed": bool(contract and contract.completed),
             "achievements": list(new_achievements),
+            "daily_key": daily_key,
             "finished_at": time.time(),
         })
         profile.run_history = history[-self.MAX_RUN_HISTORY:]

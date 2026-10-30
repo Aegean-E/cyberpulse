@@ -268,6 +268,7 @@ function initUIEvents() {
     document.getElementById("modal-main-menu").classList.add("hidden");
     await handleReset();
   });
+  document.getElementById("menu-daily-run").addEventListener("click", handleDailyReset);
   document.getElementById("menu-story").addEventListener("click", () => {
     document.getElementById("modal-main-menu").classList.add("hidden");
     openQuestsModal();
@@ -603,6 +604,13 @@ function renderHUD(data) {
   // Living grid ticker: clock, alert, market, and the newest headline
   renderGridTicker(data.world || gState.world);
 
+  const dailyChip = document.getElementById("grid-daily");
+  if (dailyChip) {
+    const dailyKey = data.daily_key || "";
+    dailyChip.textContent = dailyKey ? `DAILY ${dailyKey}` : "";
+    dailyChip.style.display = dailyKey ? "" : "none";
+  }
+
   // Story beat and active objective
   if (data.story) {
     document.getElementById("story-act").textContent =
@@ -697,6 +705,9 @@ function buildRunStats(summary, gState) {
   const milestones = Array.isArray(summary.achievements_unlocked) ? summary.achievements_unlocked.length : 0;
   if (milestones) {
     stats.push({ label: "MILESTONES", value: `+${milestones}` });
+  }
+  if (summary.daily_key) {
+    stats.push({ label: "DAILY", value: summary.daily_key });
   }
   return stats;
 }
@@ -1006,6 +1017,23 @@ async function handleReset() {
     closePuzzleBay();
     renderEmptyTargetCard();
     renderHUD(res.state);
+  }
+}
+
+async function handleDailyReset() {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "reset", daily: true });
+  if (res && res.ok) {
+    document.getElementById("modal-main-menu").classList.add("hidden");
+    addTerminalLog(res.message || "Daily run started.", "info");
+    state.data = res.state;
+    state.selectedNodeId = null;
+    closePuzzleBay();
+    renderEmptyTargetCard();
+    renderHUD(res.state);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || res.error || "Daily run could not start.", "warn");
   }
 }
 
@@ -2409,6 +2437,33 @@ async function openCareerModal() {
   document.getElementById("dossier-upgrades").textContent = data.purchased_upgrades.length > 0
     ? data.purchased_upgrades.join(", ")
     : "Standard Factory Rig";
+
+  const dailyEl = document.getElementById("dossier-daily");
+  if (dailyEl) {
+    dailyEl.innerHTML = "";
+    const bests = data.daily_best && typeof data.daily_best === "object"
+      ? Object.entries(data.daily_best).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 5)
+      : [];
+    if (!bests.length) {
+      const empty = document.createElement("span");
+      empty.className = "empty-chips";
+      empty.textContent = "No daily runs yet. Launch DAILY RUN from the main menu.";
+      dailyEl.appendChild(empty);
+    } else {
+      bests.forEach(([day, creds]) => {
+        const row = document.createElement("div");
+        row.className = "dossier-run-row";
+        const chip = document.createElement("span");
+        chip.className = "run-outcome jackout";
+        chip.textContent = "DAILY";
+        const meta = document.createElement("span");
+        meta.className = "run-meta";
+        meta.textContent = `${day} · BEST +${creds} CR`;
+        row.append(chip, meta);
+        dailyEl.appendChild(row);
+      });
+    }
+  }
 
   const achievementsEl = document.getElementById("dossier-achievements");
   if (achievementsEl) {

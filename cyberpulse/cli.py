@@ -13,6 +13,7 @@ if str(project_root) not in sys.path:
 from typing import List, Optional
 
 from cyberpulse.achievements import ACHIEVEMENTS, achievement_names
+from cyberpulse.daily import daily_run
 from cyberpulse.engine import GameEngine
 from cyberpulse.models import CareerProfile, CyberDeck, NodeStatus, NodeType
 from cyberpulse.puzzles import BufferPuzzle, FrequencyPuzzle, HashCrackPuzzle
@@ -243,6 +244,12 @@ def print_career(profile: CareerProfile) -> None:
     print(f"[*] Milestones:       {len(unlocked_names)}/{len(ACHIEVEMENTS)}")
     if unlocked_names:
         print(f"     {', '.join(unlocked_names)}")
+    daily = profile.daily_best if isinstance(profile.daily_best, dict) else {}
+    if daily:
+        recent = sorted(daily.items(), reverse=True)[:3]
+        print("[*] Daily Bests:     " + " | ".join(f"{day} +{creds} CR" for day, creds in recent))
+    else:
+        print("[*] Daily Bests:      none yet (try --daily or menu 7)")
     print("--------------------------------------------------------------------------")
     print("RECENT RUNS:")
     history = profile.run_history[-5:] if isinstance(profile.run_history, list) else []
@@ -364,6 +371,8 @@ def print_run_summary(engine: GameEngine) -> None:
     print(f"[*] Best Combo:  x{summary['best_combo']} | Quests: {summary['quests_completed_count']}/{summary['quests_total']}")
     if summary.get("achievements_unlocked"):
         print(f"[*] Milestones:  {', '.join(summary['achievements_unlocked'])}")
+    if summary.get("daily_key"):
+        print(f"[*] Daily:       {summary['daily_key']}")
     real_contacts = [c for c in summary["contacts"] if c["trust"] > 0 or c["favor_used"]]
     if real_contacts:
         print("[*] Operatives:  " + ", ".join(
@@ -465,7 +474,7 @@ def choose_load_slot(save_mgr: SaveManager) -> Optional[str]:
 
 
 def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
-    """Render the interactive main menu and return 'start', 'load', or 'quit'."""
+    """Render the interactive main menu and return 'start', 'load', 'daily', or 'quit'."""
     print("\n+==========================================================================+")
     print("|              >> CYBERPULSE // NEURAL INTRUSION HARNESS <<                |")
     print("|                              MAIN MENU                                   |")
@@ -473,7 +482,7 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
     print("|  [1] JACK IN (new run)       [2] CONTINUE (load save)                    |")
     print("|  [3] STORY BRIEFING          [4] OPERATIVES                              |")
     print("|  [5] CAREER DOSSIER          [6] HOW TO PLAY                             |")
-    print("|  [Q] QUIT                                                                |")
+    print("|  [7] DAILY RUN               [Q] QUIT                                    |")
     print("+==========================================================================+")
 
     while True:
@@ -502,7 +511,10 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
             print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
             print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career,")
             print("          save [1-3] [name], load [1-3|auto], saves, rename, delete, quit")
+            print("Daily challenge: run `python -m cyberpulse.cli --daily` or choose 7.")
             continue
+        if choice in ("7", "daily", "daily run"):
+            return "daily"
         if choice in ("q", "quit", "exit"):
             print("👋 Neural link closed.")
             return "quit"
@@ -1089,6 +1101,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     setup_terminal_encoding()
     parser = argparse.ArgumentParser(prog="cyberpulse", description="Retro-cyberpunk terminal hacking simulation game")
     parser.add_argument("--seed", type=int, default=1337, help="Deterministic world seed")
+    parser.add_argument("--daily", action="store_true", help="Start the deterministic daily challenge for today")
     parser.add_argument("--data-dir", type=Path, default=None, help="Savegame data directory")
     parser.add_argument("--exec", dest="commands", default=None, help="Execute semicolon-separated commands and exit")
     parser.add_argument("--auto-solve", action="store_true", help="Auto-solve hacking minigames (for testing/automation)")
@@ -1099,6 +1112,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     args = parser.parse_args(argv)
     data_dir = args.data_dir or get_default_data_dir()
+    daily_key_value, seed_value = daily_run() if args.daily else ("", args.seed)
 
     # Web Cyberdeck execution mode
     if args.web:
@@ -1107,15 +1121,19 @@ def main(argv: Optional[List[str]] = None) -> int:
             host=args.host,
             port=args.port,
             data_dir=data_dir,
-            seed=args.seed,
+            seed=seed_value,
             open_browser=not args.no_browser,
+            daily_key=daily_key_value,
         )
         return 0
 
     save_mgr = SaveManager(data_dir)
     career = save_mgr.load_career()
-    engine = GameEngine(seed=args.seed, career_profile=career)
+    engine = GameEngine(seed=seed_value, career_profile=career)
+    engine.daily_key = daily_key_value
     save_mgr.mark_autosave_baseline(engine)
+    if args.daily:
+        print(f"DAILY RUN {daily_key_value} // seed {seed_value}")
 
     # Batch script execution mode
     if args.commands:
@@ -1142,6 +1160,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     menu_action = show_main_menu(engine, save_mgr)
     if menu_action == "quit":
         return 0
+    if menu_action == "daily":
+        daily_key_value, daily_seed = daily_run()
+        career = save_mgr.load_career()
+        engine = GameEngine(seed=daily_seed, career_profile=career)
+        engine.daily_key = daily_key_value
+        save_mgr.mark_autosave_baseline(engine)
+        print(f"DAILY RUN {daily_key_value} // seed {daily_seed}")
     if menu_action == "load":
         slot = choose_load_slot(save_mgr)
         loaded = save_mgr.load(slot) if slot else None

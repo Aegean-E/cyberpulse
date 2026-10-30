@@ -123,6 +123,7 @@ class CareerProfile:
     purchased_upgrades: List[str] = field(default_factory=list)
     run_history: List[Dict[str, Any]] = field(default_factory=list)
     achievements: List[str] = field(default_factory=list)
+    daily_best: Dict[str, int] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -140,6 +141,15 @@ class CareerProfile:
         data_clean["achievements"] = list(dict.fromkeys(
             str(achievement) for achievement in achievements if isinstance(achievement, str)
         ))
+        daily_best = data_clean.get("daily_best")
+        if not isinstance(daily_best, dict):
+            daily_best = {}
+        cleaned_daily = {
+            str(day): int(value)
+            for day, value in daily_best.items()
+            if isinstance(day, str) and isinstance(value, (int, float)) and not isinstance(value, bool)
+        }
+        data_clean["daily_best"] = dict(sorted(cleaned_daily.items())[-30:])
         return cls(**data_clean)
 
 

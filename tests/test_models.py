@@ -163,6 +163,18 @@ class TestModels(unittest.TestCase):
         self.assertEqual(restored.alias, "OldTimer")
         self.assertEqual(restored.run_history, [])
         self.assertEqual(restored.achievements, [])
+        self.assertEqual(restored.daily_best, {})
+
+    def test_career_daily_best_drops_malformed_values(self):
+        restored = CareerProfile.from_dict({
+            "daily_best": {
+                "2026-10-30": 450,
+                "2026-10-31": "bad",
+                "2026-11-01": 120.9,
+            },
+        })
+
+        self.assertEqual(restored.daily_best, {"2026-10-30": 450, "2026-11-01": 120})
 
     def test_career_history_drops_malformed_entries_and_keeps_recent(self):
         history = [{"outcome": "victory", "seed": index} for index in range(25)]

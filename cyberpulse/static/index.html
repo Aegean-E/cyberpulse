@@ -78,6 +78,7 @@
       <span class="grid-chip" id="grid-clock">DAY 1 08:00</span>
       <span class="grid-chip" id="grid-shift">MORNING</span>
       <span class="grid-chip shift-chip" id="grid-shift-effect" title="Shift doctrine">STANDARD POSTURE</span>
+      <span class="grid-chip daily-chip" id="grid-daily" style="display: none;">DAILY RUN</span>
       <span class="grid-chip alert-chip" id="grid-alert">GRID ALERT 10%</span>
       <span class="grid-chip market-chip" id="grid-market">MARKET x1.000</span>
       <span class="grid-chip hunter-chip" id="grid-hunter" style="display: none;">RADAR CLEAR</span>
@@ -367,6 +368,10 @@
           <div class="dossier-row"><span class="k">BEST COMBO</span> <span class="v" id="dossier-combo">x0</span></div>
           <div class="dossier-row"><span class="k">HARDWARE</span> <span class="v" id="dossier-upgrades">None</span></div>
         </div>
+        <div class="dossier-daily">
+          <div class="dossier-history-title">DAILY BESTS</div>
+          <div class="dossier-daily-list" id="dossier-daily"></div>
+        </div>
         <div class="dossier-achievements">
           <div class="dossier-history-title">MILESTONES</div>
           <div class="achievement-grid" id="dossier-achievements"></div>
@@ -558,6 +563,7 @@
         <button class="action-btn hidden" id="menu-load-run">CONTINUE RUN</button>
         <button class="hack-btn menu-primary" id="menu-jack-in">JACK IN</button>
         <button class="action-btn" id="menu-new-run">NEW RUN</button>
+        <button class="action-btn" id="menu-daily-run">DAILY RUN</button>
         <button class="action-btn" id="menu-story">STORY</button>
         <button class="action-btn" id="menu-contacts">OPERATIVES</button>
         <button class="action-btn" id="menu-career">CAREER</button>

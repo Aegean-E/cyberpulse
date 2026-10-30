@@ -6,6 +6,7 @@ import socket
 import tempfile
 import threading
 import unittest
+from unittest import mock
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -807,6 +808,14 @@ class TestCyberdeckSaveLoadSession(unittest.TestCase):
         self.assertEqual(auto[0]["trace"], 17)
         self.assertTrue(self.session.save_mgr.autosave_file.exists())
 
+    def test_reset_can_start_a_daily_run(self):
+        with mock.patch("cyberpulse.server.daily_run", return_value=("2026-10-30", 20261030)):
+            state = self.session.reset_game(daily=True)
+
+        self.assertEqual(state["daily_key"], "2026-10-30")
+        self.assertEqual(state["seed"], 20261030)
+        self.assertEqual(self.session.engine.daily_key, "2026-10-30")
+
     def test_manual_save_refuses_the_auto_slot(self):
         saved, message = self.session.save_run("auto")
 
@@ -947,6 +956,15 @@ class TestCyberdeckSaveSlotsAPI(unittest.TestCase):
         )
         with urllib.request.urlopen(req, timeout=3.0) as resp:
             return json.loads(resp.read().decode("utf-8"))
+
+    def test_daily_reset_over_http(self):
+        with mock.patch("cyberpulse.server.daily_run", return_value=("2026-10-30", 20261030)):
+            res = self._post({"action": "reset", "daily": True})
+
+        self.assertTrue(res["ok"], res.get("message"))
+        self.assertEqual(res["state"]["daily_key"], "2026-10-30")
+        self.assertEqual(res["state"]["seed"], 20261030)
+        self.assertIn("Daily run 2026-10-30", res["message"])
 
     def test_name_rename_and_delete_over_http(self):
         saved = self._post({"action": "save", "slot": 3, "name": "Night Run"})

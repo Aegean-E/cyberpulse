@@ -167,6 +167,7 @@ class SaveManager:
         data = {
             "seed": engine.seed,
             "run_id": getattr(engine, "run_id", uuid.uuid4().hex),
+            "daily_key": getattr(engine, "daily_key", ""),
             "deck": engine.deck.to_dict(),
             "state": engine.state.to_dict(),
             "nodes": {nid: n.to_dict() for nid, n in engine.nodes.items()},
@@ -217,6 +218,7 @@ class SaveManager:
         try:
             engine = GameEngine(seed=data["seed"])
             engine.run_id = str(data.get("run_id") or getattr(engine, "run_id", uuid.uuid4().hex))
+            engine.daily_key = str(data.get("daily_key") or "")
             engine.deck = CyberDeck.from_dict(data["deck"])
             engine.state = GameState.from_dict(data["state"])
             engine.nodes = {nid: Node.from_dict(ndata) for nid, ndata in data["nodes"].items()}

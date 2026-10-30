@@ -1143,6 +1143,32 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(profile.run_history[-1]["turns"], 9)
         self.assertEqual(profile.run_history[-1]["seed"], self.engine.seed)
 
+    def test_settle_career_records_daily_best_and_history_tag(self):
+        from cyberpulse.models import CareerProfile
+
+        self.engine.daily_key = "2026-10-30"
+        self.engine.state.is_victory = True
+        self.engine.state.unbanked_creds = 250
+        profile = CareerProfile()
+
+        self.engine.settle_career(profile)
+
+        self.assertEqual(profile.daily_best["2026-10-30"], 250)
+        self.assertEqual(profile.run_history[-1]["daily_key"], "2026-10-30")
+        self.assertEqual(self.engine.run_summary()["daily_key"], "2026-10-30")
+
+    def test_settle_career_keeps_the_best_daily_gain(self):
+        from cyberpulse.models import CareerProfile
+
+        self.engine.daily_key = "2026-10-30"
+        self.engine.state.is_victory = True
+        self.engine.state.unbanked_creds = 250
+        profile = CareerProfile(daily_best={"2026-10-30": 900})
+
+        self.engine.settle_career(profile)
+
+        self.assertEqual(profile.daily_best["2026-10-30"], 900)
+
     def test_settle_career_banks_victory_loot_once(self):
         from cyberpulse.models import CareerProfile
 

@@ -4060,3 +4060,14 @@ body {
 }
 .achievement-badge.unlocked .achievement-name { color: var(--c-primary); }
 .achievement-desc { font-size: 7px; line-height: 1.35; color: var(--c-text-dim); }
+.grid-chip.daily-chip {
+  color: var(--c-warning);
+  border-color: var(--c-warning-glow);
+  box-shadow: inset 0 0 10px hsla(45, 100%, 50%, 0.1);
+}
+.dossier-daily {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--c-border);
+}
+.dossier-daily-list { display: flex; flex-direction: column; gap: 6px; max-height: 130px; overflow-y: auto; }

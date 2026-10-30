@@ -388,4 +388,16 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. Cover catalog integrity, threshold rules, de-duplication, old-career defaults, persistence, CLI display and the API payload with tests.
 - **Consequences**: The dossier now carries a permanent mastery ladder, and rare outcomes remain visible after the run ends. Career files stay compatible and unlocks are idempotent. Test suite: 366 tests, 100% green.
 
+### ADR-029: Daily Runs: Date-Derived Seeds and Per-Day Best Gains
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: Runs are deterministic by seed, but the game offered no common daily challenge. Players had no reason to return on a given date or compare a fixed seed with their own best, and the run archive could not distinguish a daily attempt from an ordinary run.
+- **Decision**:
+  1. Add `cyberpulse/daily.py` with `daily_key(day)` (ISO date), `daily_seed(day)` (`YYYYMMDD`) and `daily_run(day)`. The date is resolved once when a daily run starts, so crossing midnight does not change an active run.
+  2. Add `GameEngine.daily_key`, persisted in save payloads and restored on load. Old saves load with an empty key. Web sessions accept an initial daily key for `--web --daily`.
+  3. Start daily runs from `python -m cyberpulse.cli --daily`, main-menu option 7, or the Web **DAILY RUN** button. `CyberdeckSession.reset_game(daily=True)` and the `reset` API action resolve the date and seed; the API returns the key and a daily-specific message.
+  4. At settlement, record `max(existing, gained)` under the day key in `CareerProfile.daily_best`, capped to the 30 most recent dates. Tag the run-history record with `daily_key`, show a HUD/ticker chip and run-legacy tag, and show the last five daily bests in the career dossier.
+  5. Sanitize malformed daily keys/values on career load; cover key/seed determinism, save/load persistence, settlement max behavior, CLI `--daily`, session/API reset, and the Web payload with tests.
+- **Consequences**: Players get a fresh date-seeded challenge each day with a persistent personal best, while ordinary seeded runs and old saves are unaffected. Daily keys remain stable inside a run, and no network or clock service is required. Test suite: 374 tests, 100% green.
+
 

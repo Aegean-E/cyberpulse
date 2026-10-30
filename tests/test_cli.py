@@ -230,6 +230,14 @@ class TestCLI(unittest.TestCase):
         self.assertFalse((self.temp_dir / "savegame_slot2.json").exists())
         self.assertFalse((self.temp_dir / "autosave.json").exists())
 
+    def test_daily_flag_uses_the_date_seed(self):
+        with mock.patch("cyberpulse.cli.daily_run", return_value=("2026-10-30", 20261030)):
+            code, out = self.run_cli("--daily", "--exec", "status")
+
+        self.assertEqual(code, 0)
+        self.assertIn("DAILY RUN 2026-10-30", out)
+        self.assertIn("seed 20261030", out)
+
     def test_career_dossier_lists_recent_runs(self):
         batch_cmds = "hack node_proxy_a;jackout;career"
         code, out = self.run_cli("--seed", "1337", "--auto-solve", "--exec", batch_cmds)

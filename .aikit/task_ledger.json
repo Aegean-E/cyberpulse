@@ -1,60 +1,16 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-milestones",
+    "task_id": "task-cyberpulse-daily-run",
     "last_phase": "in_progress",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1793371918.269522,
-    "owner": "opencode:milestones-1",
-    "started_by": "opencode:milestones-1",
-    "continuations": [],
-    "completed_at": 1793372007.4086814
+    "active_phase": 4,
+    "status": "in_progress",
+    "updated_at": 1793372632.4765494,
+    "owner": "opencode:daily-run-1",
+    "started_by": "opencode:daily-run-1",
+    "continuations": []
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-autosave-slots",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[4/6] Session/API slots green: slot param, saves payload, autosave, settlement purge, 49 server tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793364321.945436,
-      "timestamp_str": "2026-10-30 15:45:21",
-      "agent": "opencode:autosave-slots-1"
-    },
-    {
-      "task_id": "task-cyberpulse-autosave-slots",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[5/6] Web slot panel added; full suite green at 337 tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793364440.8072405,
-      "timestamp_str": "2026-10-30 15:47:20",
-      "agent": "opencode:autosave-slots-1"
-    },
-    {
-      "task_id": "task-cyberpulse-autosave-slots",
-      "phase": "in_progress",
-      "phase_num": 4,
-      "description": "[6/6] Autosave and three manual slots complete; project gate 5/5, 341 tests; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793364712.5691192,
-      "timestamp_str": "2026-10-30 15:51:52",
-      "agent": "opencode:autosave-slots-1"
-    },
-    {
-      "task_id": "task-cyberpulse-autosave-slots",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-autosave-slots' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793364750.4871893,
-      "timestamp_str": "2026-10-30 15:52:30",
-      "agent": "opencode:autosave-slots-1"
-    },
     {
       "task_id": "task-cyberpulse-slot-manage",
       "phase": "in_progress",
@@ -245,6 +201,56 @@
       "timestamp": 1793372007.408683,
       "timestamp_str": "2026-10-30 17:53:27",
       "agent": "opencode:milestones-1"
+    },
+    {
+      "task_id": "task-cyberpulse-daily-run",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/4] Add a deterministic Daily Run with per-day best results in the career dossier",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793372334.1470504,
+      "timestamp_str": "2026-10-30 17:58:54",
+      "agent": "opencode:daily-run-1",
+      "impact_assessment": {
+        "why": "Runs are seed-driven but the game offers no shared daily challenge; players have no reason to return on a given day or compare a fixed seed.",
+        "benefits": "A date-derived seed creates a fresh challenge every day, daily bests add a personal leaderboard, and the run archive gains a meaningful tag.",
+        "risks": "contract: engine/save state gains daily_key and career.json gains daily_best; dependency: none; concurrency: date is resolved once at run start; state: old saves and careers must default cleanly and a daily run must survive save/load.",
+        "mitigation": "Resolve the date at reset/start only, persist the key with the save, sanitize and cap daily bests on read, and cover determinism, persistence, settlement, CLI and API paths with tests."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-daily-run",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[2/4] Daily key/seed, save persistence and per-day best settlement green; 181 tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793372379.2557464,
+      "timestamp_str": "2026-10-30 17:59:39",
+      "agent": "opencode:daily-run-1"
+    },
+    {
+      "task_id": "task-cyberpulse-daily-run",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[3/4] Daily CLI flag/menu, API reset, Web button, HUD chip and dossier bests green; 374 tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793372574.7458596,
+      "timestamp_str": "2026-10-30 18:02:54",
+      "agent": "opencode:daily-run-1"
+    },
+    {
+      "task_id": "task-cyberpulse-daily-run",
+      "phase": "in_progress",
+      "phase_num": 4,
+      "description": "[4/4] Daily runs complete; project gate 5/5, 374 tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793372632.4765494,
+      "timestamp_str": "2026-10-30 18:03:52",
+      "agent": "opencode:daily-run-1"
     }
   ]
 }

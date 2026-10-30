@@ -42,7 +42,7 @@
 | `cash_out` / `jackout` | Disconnect and bank all unbanked credits; trace 50%+ adds an ICE surge, and 85%+ can burn the run at the extraction point | Loss aversion & push-your-luck extraction |
 | `shop` | Open the Black Market vendor to inspect permanent hardware upgrades | Anticipation of reward & meta-progression |
 | `buy <item_id>` | Purchase permanent cyberdeck upgrades with banked career credits | Long-term investment & competence scaling |
-| `career` | View lifetime operative dossier, breach stats, best neural combo, installed cyberware, milestone badges, and the last five settled runs | Identity, pride & meta-game mastery |
+| `career` | View lifetime operative dossier, breach stats, best neural combo, installed cyberware, milestone badges, daily bests, and the last five settled runs | Identity, pride & meta-game mastery |
 | `status` | Display cyberdeck specs, unbanked credits, and active syndicate contract | HUD awareness & contract progress tracking |
 | `save [1\|2\|3] [name]` | Atomically persist the live run to a manual slot with an optional run label (default slot 1) | Power-loss protection & parallel runs |
 | `load [1\|2\|3\|auto]` | Restore a manual slot or the autosave checkpoint | Resumption fidelity |
