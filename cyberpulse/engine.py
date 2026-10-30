@@ -941,6 +941,16 @@ class GameEngine:
             self.state.is_game_over = True
             self.state.combo_streak = 0
             lost_loot = self.state.unbanked_creds
+            covered = 0
+            if not already_over and self.deck.extraction_insurance and lost_loot > 0:
+                covered = lost_loot // 2
+                if covered:
+                    lost_loot -= covered
+                    self.deck.cryptocreds += covered
+                    self.deck.extraction_insurance = False
+                    self.state.message_log.append(
+                        f"🛡️ Dead Man's Switch banked {covered} unbanked Creds before the ICE burned the link."
+                    )
             self.state.unbanked_creds = 0
             if not already_over:
                 self.state.lost_creds = lost_loot

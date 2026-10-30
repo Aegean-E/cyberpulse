@@ -545,9 +545,10 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
 
             if action == "shop_buy":
                 item_id = payload.get("item_id")
+                item = shop.catalog.get(item_id)
                 multiplier = engine.world_summary()["market_multiplier"]
                 ok, msg = shop.purchase(engine.deck, item_id, price_multiplier=multiplier)
-                if ok:
+                if ok and (item is None or item.category != "consumable"):
                     profile = save_mgr.load_career()
                     profile.purchased_upgrades.append(item_id)
                     profile.banked_creds = engine.deck.cryptocreds

@@ -57,6 +57,14 @@ CATALOG: Dict[str, ShopItem] = {
         category="exploit",
         max_level=1,
     ),
+    "dead_mans_switch": ShopItem(
+        item_id="dead_mans_switch",
+        name="Dead Man's Switch",
+        description="One-use failsafe: a lockout banks 50% of your unbanked loot",
+        cost=150,
+        category="consumable",
+        max_level=1,
+    ),
 }
 
 
@@ -87,6 +95,8 @@ class BlackMarketShop:
                 cur_lvl = deck.ram_boost_level
             elif item.item_id == "ice_dampener":
                 cur_lvl = deck.ice_dampener_level
+            elif item.item_id == "dead_mans_switch":
+                cur_lvl = 1 if deck.extraction_insurance else 0
             else:
                 cur_lvl = 1 if item_id in deck.exploits else 0
 
@@ -100,6 +110,7 @@ class BlackMarketShop:
                 "base_cost": item.cost,
                 "current_level": cur_lvl,
                 "max_level": item.max_level,
+                "category": item.category,
                 "can_buy": can_buy,
             })
         return items
@@ -138,6 +149,13 @@ class BlackMarketShop:
             deck.cryptocreds -= cost
             deck.ice_dampener_level += 1
             return True, f"🛠️ Installed {item.name}! Trace mitigation active (Lvl {deck.ice_dampener_level})."
+
+        if item.item_id == "dead_mans_switch":
+            if deck.extraction_insurance:
+                return False, "Dead Man's Switch is already armed for this run."
+            deck.cryptocreds -= cost
+            deck.extraction_insurance = True
+            return True, "🛡️ Dead Man's Switch armed: a lockout will bank 50% of unbanked loot."
 
         if item.category == "exploit":
             if item.item_id in deck.exploits:

@@ -2394,9 +2394,12 @@ async function openShopModal() {
     const card = document.createElement("div");
     card.className = "shop-item-card";
 
-    const statusText = item.max_level > 1
+    let statusText = item.max_level > 1
       ? `Level ${item.current_level}/${item.max_level}`
       : (item.current_level > 0 ? "LOADED IN FIRMWARE" : "AVAILABLE");
+    if (item.category === "consumable") {
+      statusText = item.current_level > 0 ? "ARMED" : "ONE USE";
+    }
 
     card.innerHTML = `
       <div class="shop-item-info">

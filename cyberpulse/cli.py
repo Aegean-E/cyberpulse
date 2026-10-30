@@ -83,7 +83,8 @@ def print_hud(engine: GameEngine) -> None:
         print(f"[*] Jackout ICE: +{risk['surge']}% surge (projected trace {risk['projected_trace']}%){lethal}")
     print(f"[*] Deck:       CPU: {engine.deck.cpu_cycles}/{engine.deck.max_cpu} | RAM: {engine.deck.ram_mb}MB | Creds: {engine.deck.cryptocreds}{unbanked_str}")
     print(f"[*] Stance:     {engine.deck.operating_stance.upper()} | Proxies: {len(engine.deck.proxy_chain)}/3 | Threat Intel: {engine.deck.threat_intel_count}")
-    print(f"[*] Upgrades:   ICE Dampener: Lvl {engine.deck.ice_dampener_level} | Overclock: Lvl {engine.deck.overclock_level}")
+    insurance = " | Dead Man's Switch: ARMED" if engine.deck.extraction_insurance else ""
+    print(f"[*] Upgrades:   ICE Dampener: Lvl {engine.deck.ice_dampener_level} | Overclock: Lvl {engine.deck.overclock_level}{insurance}")
     exploits_str = ', '.join(engine.deck.exploits) if engine.deck.exploits else "None"
     print(f"[*] Exploits:   {exploits_str}")
     if engine.deck.active_daemons:
@@ -890,9 +891,10 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         if len(parts) < 2:
             print("Usage: buy <item_id> (e.g. `buy overclock_cpu`)")
             return True
+        item = shop.catalog.get(parts[1])
         ok, msg = shop.purchase(engine.deck, parts[1], price_multiplier=engine.world_summary()["market_multiplier"])
         print(msg)
-        if ok:
+        if ok and (item is None or item.category != "consumable"):
             profile = save_mgr.load_career()
             profile.purchased_upgrades.append(parts[1])
             profile.banked_creds = engine.deck.cryptocreds

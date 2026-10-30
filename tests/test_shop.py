@@ -50,6 +50,22 @@ class TestShop(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("maximum level", msg)
 
+    def test_dead_mans_switch_is_a_one_use_consumable(self):
+        items = {item["item_id"]: item for item in self.shop.list_available(self.deck)}
+        self.assertIn("dead_mans_switch", items)
+        self.assertEqual(items["dead_mans_switch"]["category"], "consumable")
+
+        ok, message = self.shop.purchase(self.deck, "dead_mans_switch")
+
+        self.assertTrue(ok)
+        self.assertIn("armed", message.lower())
+        self.assertTrue(self.deck.extraction_insurance)
+        self.assertEqual(self.deck.cryptocreds, 350)
+
+        again, message = self.shop.purchase(self.deck, "dead_mans_switch")
+        self.assertFalse(again)
+        self.assertIn("already", message.lower())
+
     def test_market_markup_raises_prices(self):
         items = self.shop.list_available(self.deck, price_multiplier=1.20)
         overclock = next(it for it in items if it["item_id"] == "overclock_cpu")

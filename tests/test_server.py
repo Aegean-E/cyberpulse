@@ -68,6 +68,25 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertTrue(all(node["node_type"] == "DATA_VAULT" for node in side_nodes))
         self.assertTrue(all(node["ip_address"].startswith("10.0.9.") for node in side_nodes))
 
+    def test_buying_a_consumable_does_not_persist_a_career_upgrade(self):
+        session = self.server.RequestHandlerClass.server_session
+        old_creds = session.engine.deck.cryptocreds
+        old_insurance = session.engine.deck.extraction_insurance
+        session.engine.deck.cryptocreds = 1000
+        try:
+            status, res = self._post("/api/action", {
+                "action": "shop_buy",
+                "item_id": "dead_mans_switch",
+            })
+            self.assertEqual(status, 200)
+            self.assertTrue(res["ok"], res.get("message"))
+            self.assertTrue(session.engine.deck.extraction_insurance)
+            profile = session.save_mgr.load_career()
+            self.assertNotIn("dead_mans_switch", profile.purchased_upgrades)
+        finally:
+            session.engine.deck.cryptocreds = old_creds
+            session.engine.deck.extraction_insurance = old_insurance
+
     def test_get_shop(self):
         status, data = self._get("/api/shop")
         self.assertEqual(status, 200)

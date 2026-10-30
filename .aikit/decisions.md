@@ -433,4 +433,16 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   4. Add `is_next_day` to the daily helper module and cover first participation, consecutive days, same-day repeats, gaps, bad keys, old-career defaults, and the CLI dossier.
 - **Consequences**: The daily challenge gains a retention signal and a durable best, while same-day experimentation cannot farm the streak. No save schema change is required and ordinary runs are unaffected. Test suite: 383 tests, 100% green.
 
+### ADR-033: Dead Man's Switch: One-Use Lockout Insurance
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: A trace lockout wipes all unbanked loot. The push-your-luck loop had no way to price that risk mid-run, and the Black Market only sold permanent hardware and exploits, leaving no consumable decision.
+- **Decision**:
+  1. Add `extraction_insurance` to `CyberDeck` (default false, persisted in saves; old saves load uninsured).
+  2. Add a `dead_mans_switch` Black Market item (150 CR, category `consumable`, max level 1). Its shop status reads `ONE USE`/`ARMED`; buying it while already armed is refused.
+  3. On the first lockout of a run, if insured and unbanked loot is positive, bank `lost_loot // 2` into `deck.cryptocreds`, reduce `state.lost_creds` to the actual lost amount, clear the insurance, and log the payout. Existing lockout messaging still reports the remainder.
+  4. Exclude consumables from career persistence in both CLI and Web shop purchases, so the switch never becomes a permanent upgrade or a fake exploit.
+  5. Cover shop purchase/arming, lockout payout, save round-trip, CLI career exclusion and the HTTP purchase path with tests.
+- **Consequences**: Players gain a meaningful mid-run risk tradeoff and a new Black Market choice, while old saves, career progression and uninsured lockouts behave exactly as before. Test suite: 388 tests, 100% green.
+
 

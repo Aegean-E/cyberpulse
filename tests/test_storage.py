@@ -72,6 +72,16 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(loaded.deck.threat_intel_count, 3)
         self.assertIn("node_proxy_a", loaded.state.probed_nodes)
 
+    def test_save_preserves_extraction_insurance(self):
+        engine = GameEngine(seed=42)
+        engine.deck.extraction_insurance = True
+
+        self.save_mgr.save(engine)
+        loaded = self.save_mgr.load()
+
+        self.assertIsNotNone(loaded)
+        self.assertTrue(loaded.deck.extraction_insurance)
+
     def test_load_backfills_story_for_old_save(self):
         engine = GameEngine(seed=42)
         engine.state.quests = []

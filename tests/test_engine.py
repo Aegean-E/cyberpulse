@@ -1257,6 +1257,20 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(engine.state.seed, 42)
         self.assertTrue(engine.state.active_contract.contract_id.startswith("cnt_042"))
 
+    def test_dead_mans_switch_banks_half_the_unbanked_loot_on_lockout(self):
+        self.engine.deck.extraction_insurance = True
+        self.engine.state.unbanked_creds = 200
+        self.engine.state.trace_percent = 99
+
+        self.engine.add_trace(10)
+
+        self.assertTrue(self.engine.state.is_game_over)
+        self.assertEqual(self.engine.deck.cryptocreds, 200)
+        self.assertEqual(self.engine.state.unbanked_creds, 0)
+        self.assertEqual(self.engine.state.lost_creds, 100)
+        self.assertFalse(self.engine.deck.extraction_insurance)
+        self.assertTrue(any("Dead Man's Switch" in line for line in self.engine.state.message_log))
+
     def test_lockout_summary_reports_lost_unbanked_credits(self):
         self.engine.state.unbanked_creds = 137
         self.engine.state.trace_percent = 99

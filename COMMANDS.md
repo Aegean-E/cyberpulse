@@ -40,7 +40,7 @@
 | `contact <handle> [talk\|job\|favor\|ally\|defy]` | Talk to an operative, accept their job, spend a one-time favor, or make Agent Zero's Act III alliance choice | Character interaction & story branching |
 | `accept <quest_id>` | Accept an available side quest from the mission board | Player-authored goals & autonomy |
 | `cash_out` / `jackout` | Disconnect and bank all unbanked credits; trace 50%+ adds an ICE surge, and 85%+ can burn the run at the extraction point | Loss aversion & push-your-luck extraction |
-| `shop` | Open the Black Market vendor to inspect permanent hardware upgrades | Anticipation of reward & meta-progression |
+| `shop` | Open the Black Market vendor for permanent hardware upgrades and one-use consumables such as the Dead Man's Switch | Anticipation of reward & meta-progression |
 | `buy <item_id>` | Purchase permanent cyberdeck upgrades with banked career credits | Long-term investment & competence scaling |
 | `career` | View lifetime operative dossier, breach stats, best neural combo, installed cyberware, milestone badges, daily streak/bests, and the last five settled runs | Identity, pride & meta-game mastery |
 | `status` | Display cyberdeck specs, unbanked credits, and active syndicate contract | HUD awareness & contract progress tracking |

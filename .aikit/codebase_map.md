@@ -9,8 +9,8 @@
 - **Total Python Modules**: `30`
 - **Total Classes**: `65`
 - **Total Top-Level Functions**: `78`
-- **Total Class Methods**: `614`
-- **Total Source Lines**: `13944`
+- **Total Class Methods**: `619`
+- **Total Source Lines**: `14043`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1224` lines (`57049` bytes)
+**Size**: `1226` lines (`57244` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -89,7 +89,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3485` lines (`163171` bytes)
+**Size**: `3495` lines (`163693` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -202,7 +202,7 @@
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `671` lines (`24281` bytes)
+**Size**: `672` lines (`24320` bytes)
 
 **Classes:**
 - `class NodeType`
@@ -336,7 +336,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `835` lines (`37952` bytes)
+**Size**: `836` lines (`38053` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -368,7 +368,7 @@
 ### [`cyberpulse/shop.py`](cyberpulse/shop.py)
 > *Black market cyberdeck upgrades and exploit vendor for CyberPulse.*
 
-**Size**: `149` lines (`5497` bytes)
+**Size**: `167` lines (`6276` bytes)
 
 **Classes:**
 - `class ShopItem`
@@ -510,7 +510,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `531` lines (`22315` bytes)
+**Size**: `539` lines (`22712` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -542,6 +542,7 @@
   - Method `.test_replay_rejects_an_out_of_range_index()`
   - Method `.test_daily_flag_uses_the_date_seed()`
   - Method `.test_daily_career_dossier_shows_the_streak()`
+  - Method `.test_dead_mans_switch_does_not_become_a_career_upgrade()`
   - Method `.test_career_dossier_lists_recent_runs()`
   - Method `.test_jackout_command()`
   - Method `.test_shop_and_buy_command()`
@@ -579,7 +580,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `1900` lines (`80223` bytes)
+**Size**: `1914` lines (`80884` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -667,6 +668,7 @@
   - Method `.test_settle_career_banks_victory_loot_once()`
   - Method `.test_exploit_lockout_does_not_claim_root_access()`
   - Method `.test_float_seed_is_coerced()`
+  - Method `.test_dead_mans_switch_banks_half_the_unbanked_loot_on_lockout()`
   - Method `.test_lockout_summary_reports_lost_unbanked_credits()`
   - Method `.test_run_summary_reflects_legacy()`
   - Method `.test_settle_career_records_best_combo_on_failure()`
@@ -847,7 +849,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `1011` lines (`44065` bytes)
+**Size**: `1030` lines (`44979` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -856,6 +858,7 @@
   - Method `._get(path)`
   - Method `._post(path, payload)`
   - Method `.test_get_state()`
+  - Method `.test_buying_a_consumable_does_not_persist_a_career_upgrade()`
   - Method `.test_get_shop()`
   - Method `.test_get_world_state_and_grid_fields()`
   - Method `.test_market_markup_reaches_shop_endpoint()`
@@ -929,7 +932,7 @@
 ### [`tests/test_shop.py`](tests/test_shop.py)
 > *Unit tests for Black Market Shop in CyberPulse.*
 
-**Size**: `78` lines (`3142` bytes)
+**Size**: `94` lines (`3836` bytes)
 
 **Classes:**
 - `class TestShop`
@@ -939,6 +942,7 @@
   - Method `.test_purchase_ice_dampener()`
   - Method `.test_purchase_insufficient_funds()`
   - Method `.test_purchase_max_level()`
+  - Method `.test_dead_mans_switch_is_a_one_use_consumable()`
   - Method `.test_market_markup_raises_prices()`
   - Method `.test_market_discount_lowers_prices()`
   - Method `.test_invalid_market_multiplier_falls_back_to_base_price()`
@@ -948,7 +952,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `533` lines (`20489` bytes)
+**Size**: `543` lines (`20801` bytes)
 
 **Classes:**
 - `class TestStorage`
@@ -957,6 +961,7 @@
   - Method `.test_load_nonexistent()`
   - Method `.test_save_preserves_story_quests_and_contacts()`
   - Method `.test_save_preserves_tactical_deck_state()`
+  - Method `.test_save_preserves_extraction_insurance()`
   - Method `.test_load_backfills_story_for_old_save()`
   - Method `.test_career_save_and_load()`
   - Method `.test_corrupt_primary_does_not_overwrite_a_good_backup()`

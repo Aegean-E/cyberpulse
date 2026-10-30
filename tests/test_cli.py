@@ -262,6 +262,14 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("Daily Streak:     1 (Best: 1)", out)
 
+    def test_dead_mans_switch_does_not_become_a_career_upgrade(self):
+        batch_cmds = "hack node_proxy_a;move node_proxy_a;jackout;buy dead_mans_switch;career"
+        code, out = self.run_cli("--seed", "1337", "--auto-solve", "--exec", batch_cmds)
+
+        self.assertEqual(code, 0)
+        self.assertIn("Dead Man's Switch armed", out)
+        self.assertIn("Hardware Rig:     None", out)
+
     def test_career_dossier_lists_recent_runs(self):
         batch_cmds = "hack node_proxy_a;jackout;career"
         code, out = self.run_cli("--seed", "1337", "--auto-solve", "--exec", batch_cmds)

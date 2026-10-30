@@ -427,6 +427,7 @@ class CyberDeck:
     operating_stance: str = OperatingStance.BALANCED
     proxy_chain: List[str] = field(default_factory=list)
     threat_intel_count: int = 0
+    extraction_insurance: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         res = asdict(self)
