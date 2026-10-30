@@ -3,24 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-hall-filters",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793377186.7789938,
     "owner": "opencode:hall-filters-1",
     "started_by": "opencode:hall-filters-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793377237.5852778
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-rival-netrunner",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-rival-netrunner' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793374717.1625783,
-      "timestamp_str": "2026-10-30 18:38:37",
-      "agent": "opencode:rival-netrunner-1"
-    },
     {
       "task_id": "task-cyberpulse-run-score",
       "phase": "in_progress",
@@ -254,6 +245,16 @@
       "status": "in_progress",
       "timestamp": 1793377186.7789938,
       "timestamp_str": "2026-10-30 19:19:46",
+      "agent": "opencode:hall-filters-1"
+    },
+    {
+      "task_id": "task-cyberpulse-hall-filters",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-hall-filters' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793377237.5852804,
+      "timestamp_str": "2026-10-30 19:20:37",
       "agent": "opencode:hall-filters-1"
     }
   ]
