@@ -1,6 +1,7 @@
 """Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback."""
 
 import random
+import time
 import uuid
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -214,6 +215,7 @@ class GameEngine:
     LOCKDOWN_TURNS = 2
     FAILURE_TRACE_STACK = 4
     MAX_FAILURE_TRACE = 30
+    MAX_RUN_HISTORY = 20
     # Black ICE surge when pulling the jack: a hot connection is a final gamble.
     EXTRACTION_SURGE_BANDS = ((85, 15), (70, 10), (50, 5))
 
@@ -2345,6 +2347,29 @@ class GameEngine:
         gained = max(0, self.deck.cryptocreds - profile.banked_creds)
         profile.banked_creds = self.deck.cryptocreds
         profile.lifetime_creds += gained
+
+        if self.state.is_victory:
+            outcome = "victory"
+        elif self.state.is_jacked_out:
+            outcome = "jackout"
+        else:
+            outcome = "lockout"
+        contract = self.state.active_contract
+        history = profile.run_history if isinstance(profile.run_history, list) else []
+        history.append({
+            "outcome": outcome,
+            "run_id": self.run_id,
+            "seed": self.seed,
+            "turns": self.state.turns_elapsed,
+            "creds": self.deck.cryptocreds,
+            "gained": gained,
+            "best_combo": self.state.best_combo,
+            "story_act": self.state.story_act,
+            "quests_done": sum(1 for quest in self.state.quests if getattr(quest, "completed", False)),
+            "contract_completed": bool(contract and contract.completed),
+            "finished_at": time.time(),
+        })
+        profile.run_history = history[-self.MAX_RUN_HISTORY:]
         self.run_settled = True
         return True
 

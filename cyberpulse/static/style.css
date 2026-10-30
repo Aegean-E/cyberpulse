@@ -3986,3 +3986,43 @@ body {
 }
 .save-slot-actions { flex-wrap: wrap; justify-content: flex-end; }
 .save-slot-actions .danger-action { color: var(--c-danger); border-color: var(--c-danger-glow); }
+.dossier-history {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--c-border);
+}
+.dossier-history-title {
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+  color: var(--c-primary);
+}
+.dossier-history-list { display: flex; flex-direction: column; gap: 6px; max-height: 190px; overflow-y: auto; }
+.dossier-run-row {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 8px;
+  background: hsla(220, 30%, 4%, 0.55);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+}
+.run-outcome {
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--c-text-dim);
+}
+.run-outcome.victory { color: var(--c-primary); }
+.run-outcome.jackout { color: var(--c-accent); }
+.run-outcome.lockout { color: var(--c-danger); }
+.run-meta { font-size: 8px; letter-spacing: 0.8px; color: var(--c-text-main); }
+.run-time { font-size: 8px; letter-spacing: 0.6px; color: var(--c-text-dim); white-space: nowrap; }
+@media (max-width: 560px) {
+  .dossier-run-row { grid-template-columns: 1fr; gap: 3px; }
+  .run-time { white-space: normal; }
+}

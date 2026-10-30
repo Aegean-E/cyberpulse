@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import time
 from pathlib import Path
 
 # Ensure project root is in sys.path when executed directly as a script
@@ -237,6 +238,25 @@ def print_career(profile: CareerProfile) -> None:
     print(f"[*] Best Neural Combo: x{profile.best_combo}")
     upgrades = ', '.join(profile.purchased_upgrades) if profile.purchased_upgrades else "None"
     print(f"[*] Hardware Rig:     {upgrades}")
+    print("--------------------------------------------------------------------------")
+    print("RECENT RUNS:")
+    history = profile.run_history[-5:] if isinstance(profile.run_history, list) else []
+    if not history:
+        print("   (no settled runs yet; finish a run to record a legacy)")
+    for record in reversed(history):
+        outcome = str(record.get("outcome", "unknown")).upper()
+        finished = record.get("finished_at")
+        stamp = "--"
+        if isinstance(finished, (int, float)):
+            try:
+                stamp = time.strftime("%Y-%m-%d %H:%M", time.localtime(float(finished)))
+            except (ValueError, OSError, OverflowError):  # hygiene: allow malformed timestamp shows as --
+                pass
+        print(
+            f"   * {outcome:<8} SEED {record.get('seed', '?')}  "
+            f"TURN {record.get('turns', 0)}  {record.get('creds', 0)} CR  "
+            f"COMBO x{record.get('best_combo', 0)}  {stamp}"
+        )
     print("+==========================================================================+")
 
 

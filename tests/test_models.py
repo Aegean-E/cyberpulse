@@ -157,6 +157,22 @@ class TestModels(unittest.TestCase):
         self.assertEqual(restored.banked_creds, 1200)
         self.assertEqual(restored.current_streak, 3)
 
+    def test_old_career_payload_defaults_to_empty_run_history(self):
+        restored = CareerProfile.from_dict({"alias": "OldTimer", "banked_creds": 55})
+
+        self.assertEqual(restored.alias, "OldTimer")
+        self.assertEqual(restored.run_history, [])
+
+    def test_career_history_drops_malformed_entries_and_keeps_recent(self):
+        history = [{"outcome": "victory", "seed": index} for index in range(25)]
+        history.insert(3, "not-a-record")
+
+        restored = CareerProfile.from_dict({"run_history": history})
+
+        self.assertEqual(len(restored.run_history), 20)
+        self.assertEqual(restored.run_history[-1]["seed"], 24)
+        self.assertTrue(all(isinstance(entry, dict) for entry in restored.run_history))
+
     def test_apply_career_profile(self):
         deck = CyberDeck()
         profile = CareerProfile(

@@ -2374,6 +2374,21 @@ async function openShopModal() {
   document.getElementById("modal-shop").classList.remove("hidden");
 }
 
+function formatRunStamp(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "--";
+  try {
+    return new Date(value * 1000).toLocaleString([], {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch (_) {
+    return "--";
+  }
+}
+
 async function openCareerModal() {
   sfx.click();
   const data = await apiGet("/api/career");
@@ -2390,6 +2405,41 @@ async function openCareerModal() {
   document.getElementById("dossier-upgrades").textContent = data.purchased_upgrades.length > 0
     ? data.purchased_upgrades.join(", ")
     : "Standard Factory Rig";
+
+  const historyEl = document.getElementById("dossier-history");
+  if (historyEl) {
+    historyEl.innerHTML = "";
+    const history = Array.isArray(data.run_history)
+      ? data.run_history.slice(-6).reverse()
+      : [];
+    if (!history.length) {
+      const empty = document.createElement("span");
+      empty.className = "empty-chips";
+      empty.textContent = "No settled runs yet. Jack out or burn a deck to record a legacy.";
+      historyEl.appendChild(empty);
+    } else {
+      history.forEach((record) => {
+        const row = document.createElement("div");
+        row.className = "dossier-run-row";
+        const outcome = String(record.outcome || "unknown").toLowerCase();
+        const chip = document.createElement("span");
+        chip.className = `run-outcome ${outcome}`;
+        chip.textContent = outcome.toUpperCase();
+        const meta = document.createElement("span");
+        meta.className = "run-meta";
+        const seed = record.seed !== undefined ? record.seed : "?";
+        const turns = record.turns !== undefined ? record.turns : 0;
+        const creds = record.creds !== undefined ? record.creds : 0;
+        const combo = record.best_combo !== undefined ? record.best_combo : 0;
+        meta.textContent = `SEED ${seed} · TURN ${turns} · ${creds} CR · COMBO x${combo}`;
+        const time = document.createElement("span");
+        time.className = "run-time";
+        time.textContent = formatRunStamp(record.finished_at);
+        row.append(chip, meta, time);
+        historyEl.appendChild(row);
+      });
+    }
+  }
 
   document.getElementById("modal-career").classList.remove("hidden");
 }

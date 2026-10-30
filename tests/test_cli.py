@@ -230,6 +230,16 @@ class TestCLI(unittest.TestCase):
         self.assertFalse((self.temp_dir / "savegame_slot2.json").exists())
         self.assertFalse((self.temp_dir / "autosave.json").exists())
 
+    def test_career_dossier_lists_recent_runs(self):
+        batch_cmds = "hack node_proxy_a;jackout;career"
+        code, out = self.run_cli("--seed", "1337", "--auto-solve", "--exec", batch_cmds)
+
+        self.assertEqual(code, 0)
+        self.assertIn("RECENT RUNS", out)
+        self.assertIn("JACKOUT", out)
+        self.assertIn("SEED 1337", out)
+        self.assertIn("COMBO x1", out)
+
     def test_jackout_command(self):
         # Hack proxy a, then jack out safely
         batch_cmds = "hack node_proxy_a;jackout;career"

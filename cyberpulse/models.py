@@ -121,13 +121,19 @@ class CareerProfile:
     best_streak: int = 0
     best_combo: int = 0
     purchased_upgrades: List[str] = field(default_factory=list)
+    run_history: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "CareerProfile":
-        return cls(**data)
+        data_clean = dict(data)
+        history = data_clean.get("run_history")
+        if not isinstance(history, list):
+            history = []
+        data_clean["run_history"] = [entry for entry in history if isinstance(entry, dict)][-20:]
+        return cls(**data_clean)
 
 
 class FirewallPolicy:

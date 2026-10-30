@@ -1,91 +1,16 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-slot-manage",
+    "task_id": "task-cyberpulse-run-history",
     "last_phase": "in_progress",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1793370183.068319,
-    "owner": "opencode:slot-manage-1",
-    "started_by": "opencode:slot-manage-1",
-    "continuations": [],
-    "completed_at": 1793370212.330047
+    "active_phase": 4,
+    "status": "in_progress",
+    "updated_at": 1793371323.616835,
+    "owner": "opencode:run-history-1",
+    "started_by": "opencode:run-history-1",
+    "continuations": []
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-procedural-subnet",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[2/3] Seeded side-subnet generator, reciprocal anchors, Web matrix slots, docs and tests implemented",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793320818.3495464,
-      "timestamp_str": "2026-10-30 03:40:18",
-      "agent": "opencode:subnet-1",
-      "handoff": {
-        "state": "network.py/app.js/tests/README/ADR-023 edited, HEAD c4622d8",
-        "next": "run the project gate and commit",
-        "evidence": "318 tests green"
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-procedural-subnet",
-      "phase": "phase 4",
-      "phase_num": 4,
-      "description": "[3/3] Project gate green: 5/5 (test, mechanics, hygiene, guidelines, secrets), 318 tests. checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793320823.7802362,
-      "timestamp_str": "2026-10-30 03:40:23",
-      "agent": "opencode:subnet-1",
-      "handoff": {
-        "next": "commit the feature when authorized",
-        "evidence": "5/5 gates, 318 tests, no findings"
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-procedural-subnet",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-procedural-subnet' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793320828.410457,
-      "timestamp_str": "2026-10-30 03:40:28",
-      "agent": "opencode:subnet-1"
-    },
-    {
-      "task_id": "task-cyberpulse-web-save-load",
-      "phase": "phase 2",
-      "phase_num": 2,
-      "description": "[1/3] Give the Web Cyberdeck the terminal's atomic save/load parity",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793356500.0139544,
-      "timestamp_str": "2026-10-30 13:35:00",
-      "agent": "opencode:save-load-1",
-      "impact_assessment": {
-        "why": "The Web Cyberdeck is the default launcher but holds the run only in server memory: closing the server loses the run, while the terminal already has crash-safe save/load. The server persists career stats but never the run.",
-        "benefits": "Players can bank a long run from the browser, resume the exact seeded state including pending puzzles and RNG, and see a CONTINUE action only when a save exists.",
-        "risks": "contract: storage schema and CLI semantics unchanged; dependency: none; concurrency: save/load run under the existing session lock; state: load replaces the session engine and clears the transient puzzle UI.",
-        "mitigation": "Reuse SaveManager, refuse terminal saves, expose has_save in the state payload, add API and session tests, and run the full project gate."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-web-save-load",
-      "phase": "phase 3",
-      "phase_num": 3,
-      "description": "[2/3] Session save/load with ownership guard, API actions, has_save payload, SAVE and CONTINUE RUN controls, tests and ADR-024",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793356746.801071,
-      "timestamp_str": "2026-10-30 13:39:06",
-      "agent": "opencode:save-load-1",
-      "handoff": {
-        "state": "server.py/storage.py/app.js/index.html/tests/README/ADR edited, HEAD 987187a",
-        "next": "verify and commit",
-        "evidence": "323 tests green"
-      }
-    },
     {
       "task_id": "task-cyberpulse-web-save-load",
       "phase": "phase 4",
@@ -263,6 +188,67 @@
       "timestamp": 1793370212.330048,
       "timestamp_str": "2026-10-30 17:23:32",
       "agent": "opencode:slot-manage-1"
+    },
+    {
+      "task_id": "task-cyberpulse-run-history",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/4] Record every settled run in the career dossier and surface it in CLI and Web",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793371092.194707,
+      "timestamp_str": "2026-10-30 17:38:12",
+      "agent": "opencode:run-history-1",
+      "impact_assessment": {
+        "why": "The career profile tracks totals and best combo, but the RUN LEGACY moment disappears when the next run starts; players have no record of seeds, outcomes or per-run performance.",
+        "benefits": "A persistent run archive makes progression legible, gives slot labels context, and rewards replaying different seeds and story outcomes.",
+        "risks": "contract: career.json gains an additive run_history field consumed by CLI/Web; dependency: none; concurrency: settlement remains one-shot under the existing guard; state: old careers must load with an empty history and the archive must stay bounded.",
+        "mitigation": "Append inside settle_career after the one-shot guard, cap the list, default missing fields on read, and cover victory/lockout records, old-career loading, capping, persistence and both displays with tests."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-run-history",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[2/4] Career model and settlement history green: capped records, old-career defaults, persistence",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793371134.244418,
+      "timestamp_str": "2026-10-30 17:38:54",
+      "agent": "opencode:run-history-1"
+    },
+    {
+      "task_id": "task-cyberpulse-run-history",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[3/4] Terminal dossier history green; 40 CLI tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793371172.3701956,
+      "timestamp_str": "2026-10-30 17:39:32",
+      "agent": "opencode:run-history-1"
+    },
+    {
+      "task_id": "task-cyberpulse-run-history",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[3/4] Web dossier history green; full suite 358 tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793371235.180589,
+      "timestamp_str": "2026-10-30 17:40:35",
+      "agent": "opencode:run-history-1"
+    },
+    {
+      "task_id": "task-cyberpulse-run-history",
+      "phase": "in_progress",
+      "phase_num": 4,
+      "description": "[4/4] Career run archive complete; project gate 5/5, 359 tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793371323.616835,
+      "timestamp_str": "2026-10-30 17:42:03",
+      "agent": "opencode:run-history-1"
     }
   ]
 }

@@ -9,8 +9,8 @@
 - **Total Python Modules**: `26`
 - **Total Classes**: `62`
 - **Total Top-Level Functions**: `70`
-- **Total Class Methods**: `582`
-- **Total Source Lines**: `13179`
+- **Total Class Methods**: `588`
+- **Total Source Lines**: `13312`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1146` lines (`53239` bytes)
+**Size**: `1166` lines (`54224` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -60,7 +60,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3427` lines (`160570` bytes)
+**Size**: `3452` lines (`161554` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -173,7 +173,7 @@
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `629` lines (`22374` bytes)
+**Size**: `635` lines (`22693` bytes)
 
 **Classes:**
 - `class NodeType`
@@ -462,7 +462,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `487` lines (`20499` bytes)
+**Size**: `497` lines (`20892` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -490,6 +490,7 @@
   - Method `.test_batch_commands_autosave_state_changes()`
   - Method `.test_invalid_save_slot_reports_usage()`
   - Method `.test_jackout_purges_owned_slots_and_autosave()`
+  - Method `.test_career_dossier_lists_recent_runs()`
   - Method `.test_jackout_command()`
   - Method `.test_shop_and_buy_command()`
   - Method `.test_career_progression_across_sessions()`
@@ -513,7 +514,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `1780` lines (`75621` bytes)
+**Size**: `1818` lines (`77197` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -591,6 +592,8 @@
   - Method `.test_failure_message_reports_dampened_trace_cost()`
   - Method `.test_stacked_puzzle_failures_add_escalating_trace()`
   - Method `.test_resecure_clears_host_lockdown()`
+  - Method `.test_settle_career_appends_a_run_history_record()`
+  - Method `.test_settle_career_history_is_capped_and_records_lockout()`
   - Method `.test_settle_career_banks_victory_loot_once()`
   - Method `.test_exploit_lockout_does_not_claim_root_access()`
   - Method `.test_float_seed_is_coerced()`
@@ -697,7 +700,7 @@
 ### [`tests/test_models.py`](tests/test_models.py)
 > *Unit tests for CyberPulse domain models.*
 
-**Size**: `262` lines (`10576` bytes)
+**Size**: `278` lines (`11315` bytes)
 
 **Classes:**
 - `class TestModels`
@@ -709,6 +712,8 @@
   - Method `.test_game_state_backfills_missing_lost_creds()`
   - Method `.test_bounty_contract_objective_inference_and_deadline_roundtrip()`
   - Method `.test_career_profile_roundtrip()`
+  - Method `.test_old_career_payload_defaults_to_empty_run_history()`
+  - Method `.test_career_history_drops_malformed_entries_and_keeps_recent()`
   - Method `.test_apply_career_profile()`
   - Method `.test_firewall_and_antivirus_models()`
   - Method `.test_exploit_payload_and_employee_models()`
@@ -870,7 +875,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `477` lines (`18245` bytes)
+**Size**: `495` lines (`18853` bytes)
 
 **Classes:**
 - `class TestStorage`
@@ -881,6 +886,7 @@
   - Method `.test_save_preserves_tactical_deck_state()`
   - Method `.test_load_backfills_story_for_old_save()`
   - Method `.test_career_save_and_load()`
+  - Method `.test_career_run_history_round_trips()`
   - Method `.test_career_default_fallback()`
   - Method `.test_old_career_payload_uses_best_combo_default()`
   - Method `.test_load_corrupted_save_with_backup_recovery()`

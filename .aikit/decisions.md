@@ -364,4 +364,16 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   6. Cover name normalization and capping, label preservation across saves, rename preserving timestamp/progress, missing-slot refusal, delete isolation, CLI commands, session semantics, and the HTTP round trip.
 - **Consequences**: The slot archive now works as a labeled library: players can distinguish parallel runs, relabel old checkpoints without touching them, and clear stale ones. Legacy saves without metadata keep their original display timestamp when renamed. No save schema break occurs; the new field is additive and optional. Test suite: 353 tests, 100% green.
 
+### ADR-027: Career Run Archive: Bounded Per-Run History in the Dossier
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: The career profile kept totals, streaks, best combo and upgrades, but the RUN LEGACY moment vanished as soon as the next run started. Players could not compare seeds, recall which run produced a combo or contract clear, or see their recent outcomes after a break.
+- **Decision**:
+  1. Add an additive `run_history` list to `CareerProfile`, defaulting to an empty list so old career files keep loading. Sanitize non-list payloads on read.
+  2. Append one record inside `settle_career` after the existing one-shot guard, so duplicate settlement cannot double-record. The record captures outcome (`victory`, `jackout`, `lockout`), `run_id`, seed, turns, banked credits, net gain, best combo, story act, completed quests, contract completion and finish time.
+  3. Cap the archive at the 20 most recent runs in `GameEngine.MAX_RUN_HISTORY`, bounding `career.json` growth.
+  4. Show the last five records in the terminal career dossier and the last six (newest first) in the Web career dossier, including a timestamp and outcome color.
+  5. Cover victory and lockout records, capping, old-career defaults, persistence, and both display paths with tests.
+- **Consequences**: The dossier now preserves the arc of recent runs and gives seed/outcome context to the save archive, while old careers remain valid and career files stay bounded. Test suite: 359 tests, 100% green.
+
 

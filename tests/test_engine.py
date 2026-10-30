@@ -1101,6 +1101,44 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(node.failed_attempts, 0)
         self.assertEqual(node.lockdown_until_turn, -1)
 
+    def test_settle_career_appends_a_run_history_record(self):
+        from cyberpulse.models import CareerProfile
+
+        self.engine.state.story_act = 4
+        self.engine.state.turns_elapsed = 17
+        self.engine.state.best_combo = 6
+        self.engine.complete_breach("node_central_core")
+        self.engine.state.unbanked_creds = 500
+        profile = CareerProfile()
+
+        self.engine.settle_career(profile)
+
+        self.assertEqual(len(profile.run_history), 1)
+        record = profile.run_history[0]
+        self.assertEqual(record["outcome"], "victory")
+        self.assertEqual(record["seed"], self.engine.seed)
+        self.assertEqual(record["run_id"], self.engine.run_id)
+        self.assertEqual(record["turns"], 17)
+        self.assertEqual(record["best_combo"], 6)
+        self.assertEqual(record["story_act"], 4)
+        self.assertEqual(record["creds"], 600)
+        self.assertGreater(record["finished_at"], 0)
+
+    def test_settle_career_history_is_capped_and_records_lockout(self):
+        from cyberpulse.models import CareerProfile
+
+        profile = CareerProfile()
+        profile.run_history = [{"outcome": "victory"} for _ in range(20)]
+        self.engine.state.is_game_over = True
+        self.engine.state.turns_elapsed = 9
+
+        self.engine.settle_career(profile)
+
+        self.assertEqual(len(profile.run_history), 20)
+        self.assertEqual(profile.run_history[-1]["outcome"], "lockout")
+        self.assertEqual(profile.run_history[-1]["turns"], 9)
+        self.assertEqual(profile.run_history[-1]["seed"], self.engine.seed)
+
     def test_settle_career_banks_victory_loot_once(self):
         from cyberpulse.models import CareerProfile
 
