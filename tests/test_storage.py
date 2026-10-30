@@ -26,6 +26,8 @@ class TestStorage(unittest.TestCase):
         engine.daily_key = "2026-10-30"
         engine.difficulty = "hard"
         engine.daily_modifier = "thin_ice"
+        engine.allegiance = "street"
+        engine.allegiance_shop_discount = 0.05
 
         path = self.save_mgr.save(engine)
         self.assertTrue(path.exists())
@@ -38,6 +40,8 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(loaded.daily_key, "2026-10-30")
         self.assertEqual(loaded.difficulty, "hard")
         self.assertEqual(loaded.daily_modifier, "thin_ice")
+        self.assertEqual(loaded.allegiance, "street")
+        self.assertAlmostEqual(loaded.allegiance_shop_discount, 0.05)
 
     def test_load_nonexistent(self):
         self.assertIsNone(self.save_mgr.load())

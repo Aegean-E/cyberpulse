@@ -1323,6 +1323,43 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(profile.faction_standing["street"], 11)
         self.assertEqual(engine.run_summary()["factions"]["syndicate"], 12)
 
+    def test_faction_allegiance_changes_economics_and_standing_growth(self):
+        from cyberpulse.models import CareerProfile
+
+        syndicate = GameEngine(seed=2, allegiance="syndicate")
+        street = GameEngine(seed=2, allegiance="street")
+        neutral = GameEngine(seed=2)
+        self.assertGreater(syndicate.allegiance_contract_bonus, neutral.allegiance_contract_bonus)
+        self.assertGreater(street.allegiance_shop_discount, neutral.allegiance_shop_discount)
+        self.assertLess(street.shop_price_multiplier(), neutral.shop_price_multiplier())
+
+        syndicate_contract = syndicate.state.active_contract
+        syndicate_contract.bonus_creds = 0
+        syndicate_contract.rush_turn = 0
+        neutral_contract = neutral.state.active_contract
+        neutral_contract.bonus_creds = 0
+        neutral_contract.rush_turn = 0
+        for engine in (syndicate, neutral):
+            contact = engine._find_contact(engine.state.active_contract.giver)
+            if contact:
+                contact.trust = 0
+        self.assertGreater(
+            syndicate._contract_payout(syndicate_contract)[0],
+            neutral._contract_payout(neutral_contract)[0],
+        )
+
+        profile = CareerProfile()
+        syndicate.state.active_contract.completed = True
+        syndicate.state.is_victory = True
+        syndicate.settle_career(profile)
+        self.assertEqual(profile.faction_standing["syndicate"], 3)
+        self.assertEqual(profile.faction_standing["street"], 1)
+
+        street_profile = CareerProfile()
+        street.state.is_victory = True
+        street.settle_career(street_profile)
+        self.assertEqual(street_profile.faction_standing["street"], 2)
+
     def test_settle_career_awards_faction_rank_promotions_once(self):
         from cyberpulse.models import CareerProfile
 

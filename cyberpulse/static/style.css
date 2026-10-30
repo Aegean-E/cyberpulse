@@ -4205,3 +4205,7 @@ body {
   border-color: var(--c-danger-glow);
   font-size: 8px;
 }
+.grid-chip.allegiance-chip {
+  color: var(--c-accent);
+  border-color: var(--c-accent-glow);
+}

@@ -338,6 +338,12 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("[x] SCAN", out)
 
+    def test_allegiance_flag_reaches_the_hud(self):
+        code, out = self.run_cli("--allegiance", "syndicate", "--exec", "status")
+
+        self.assertEqual(code, 0)
+        self.assertIn("Allegiance: SYNDICATE", out)
+
     def test_difficulty_flag_reaches_the_hud(self):
         code, out = self.run_cli("--difficulty", "hard", "--exec", "status")
 

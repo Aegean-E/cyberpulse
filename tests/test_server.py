@@ -1023,6 +1023,20 @@ class TestCyberdeckSaveSlotsAPI(unittest.TestCase):
         with urllib.request.urlopen(req, timeout=3.0) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
+    def test_reset_accepts_faction_allegiance(self):
+        res = self._post({
+            "action": "reset",
+            "allegiance": "street",
+            "difficulty": "normal",
+        })
+
+        self.assertTrue(res["ok"], res.get("message"))
+        self.assertEqual(res["state"]["allegiance"], "street")
+        self.assertLess(
+            res["state"]["shop_items"][0]["cost"],
+            self._post({"action": "reset", "allegiance": "none"})["state"]["shop_items"][0]["cost"],
+        )
+
     def test_invalid_or_named_difficulty_reset(self):
         res = self._post({"action": "reset", "difficulty": "hard"})
 

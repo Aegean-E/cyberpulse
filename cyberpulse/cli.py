@@ -79,6 +79,7 @@ def print_hud(engine: GameEngine) -> None:
     print(f"[*] Location:   {curr.name} | {curr.hostname} ({curr.ip_address}) [{curr.node_id}]")
     print(f"[*] Local Rig:  {engine.deck.local_hostname} ({engine.deck.local_ip}) [{engine.deck.model_name}]")
     print(f"[*] Trace:      {trace_bar} | Turns: {engine.state.turns_elapsed} | Difficulty: {engine.difficulty.upper()}")
+    print(f"[*] Allegiance: {engine.allegiance.upper()}")
     risk = engine.extraction_risk()
     if risk["surge"]:
         lethal = " ⚠ LETHAL EXTRACTION" if risk["lethal"] else ""
@@ -441,6 +442,8 @@ def print_run_summary(engine: GameEngine) -> None:
         print(f"[*] Milestones:  {', '.join(summary['achievements_unlocked'])}")
     if summary.get("daily_key"):
         print(f"[*] Daily:       {summary['daily_key']}")
+    if summary.get("allegiance") and summary["allegiance"] != "none":
+        print(f"[*] Allegiance:  {summary['allegiance'].upper()}")
     for promotion in summary.get("rank_ups", []):
         print(
             f"[*] Promotion:   {promotion['faction'].upper()} -> {promotion['rank']} "
@@ -1280,6 +1283,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         "--difficulty", choices=("easy", "normal", "hard"), default="normal",
         help="Run difficulty (default: normal)",
     )
+    parser.add_argument(
+        "--allegiance", choices=("none", "syndicate", "street"), default="none",
+        help="Starting faction patron (default: none)",
+    )
     parser.add_argument("--daily", action="store_true", help="Start the deterministic daily challenge for today")
     parser.add_argument("--data-dir", type=Path, default=None, help="Savegame data directory")
     parser.add_argument("--exec", dest="commands", default=None, help="Execute semicolon-separated commands and exit")
@@ -1307,6 +1314,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             daily_key=daily_key_value,
             difficulty=args.difficulty,
             daily_modifier=daily_modifier_id,
+            allegiance=args.allegiance,
         )
         return 0
 
@@ -1317,6 +1325,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         career_profile=career,
         difficulty=args.difficulty,
         daily_modifier=daily_modifier_id,
+        allegiance=args.allegiance,
     )
     engine.daily_key = daily_key_value
     save_mgr.mark_autosave_baseline(engine)
@@ -1359,6 +1368,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             career_profile=career,
             difficulty=args.difficulty,
             daily_modifier=daily_mod.modifier_id,
+            allegiance=args.allegiance,
         )
         engine.daily_key = daily_key_value
         save_mgr.mark_autosave_baseline(engine)

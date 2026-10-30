@@ -14,7 +14,12 @@ from typing import Any, Dict, List, Optional, Set
 
 from cyberpulse.daily import modifier_by_id
 from cyberpulse.difficulty import normalize_difficulty
-from cyberpulse.factions import normalize_standing
+from cyberpulse.factions import (
+    allegiance_contract_bonus,
+    allegiance_shop_discount,
+    normalize_allegiance,
+    normalize_standing,
+)
 from cyberpulse.engine import GameEngine
 from cyberpulse.models import CareerProfile, CyberDeck, GameState, Node
 from cyberpulse.puzzles import puzzle_from_dict
@@ -183,6 +188,7 @@ class SaveManager:
             "daily_key": getattr(engine, "daily_key", ""),
             "daily_modifier": getattr(engine, "daily_modifier", ""),
             "difficulty": getattr(engine, "difficulty", "normal"),
+            "allegiance": getattr(engine, "allegiance", "none"),
             "faction_standing": normalize_standing(getattr(engine, "faction_standing", {})),
             "deck": engine.deck.to_dict(),
             "state": engine.state.to_dict(),
@@ -238,6 +244,9 @@ class SaveManager:
             modifier = modifier_by_id(data.get("daily_modifier", ""))
             engine.daily_modifier = modifier.modifier_id if modifier else ""
             engine.difficulty = normalize_difficulty(data.get("difficulty", "normal"))
+            engine.allegiance = normalize_allegiance(data.get("allegiance", "none"))
+            engine.allegiance_contract_bonus = allegiance_contract_bonus(engine.allegiance)
+            engine.allegiance_shop_discount = allegiance_shop_discount(engine.allegiance)
             snapshot = data.get("faction_standing")
             if isinstance(snapshot, dict):
                 engine.faction_standing = normalize_standing(snapshot)

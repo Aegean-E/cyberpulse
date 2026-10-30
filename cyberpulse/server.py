@@ -52,6 +52,7 @@ class CyberdeckSession:
         daily_key: str = "",
         difficulty: str = "normal",
         daily_modifier: str = "",
+        allegiance: str = "none",
     ):
         self.data_dir = data_dir or (Path.cwd() / ".cyberpulse")
         self.save_mgr = SaveManager(self.data_dir)
@@ -62,6 +63,7 @@ class CyberdeckSession:
             career_profile=self.career,
             difficulty=difficulty,
             daily_modifier=daily_modifier,
+            allegiance=allegiance,
         )
         self.engine.daily_key = str(daily_key or "")
         self.active_puzzle: Optional[Any] = None
@@ -97,6 +99,7 @@ class CyberdeckSession:
             "daily_key": getattr(self.engine, "daily_key", ""),
             "daily_modifier": self.engine.daily_modifier_summary(),
             "difficulty": self.engine.difficulty,
+            "allegiance": self.engine.allegiance,
             "state": self.engine.state.to_dict(),
             "deck": self.engine.deck.to_dict(),
             "extraction_risk": self.engine.extraction_risk(),
@@ -131,6 +134,7 @@ class CyberdeckSession:
         seed: Optional[int] = None,
         daily: bool = False,
         difficulty: str = "normal",
+        allegiance: str = "none",
     ) -> Dict[str, Any]:
         new_daily_key = ""
         modifier_id = ""
@@ -145,6 +149,7 @@ class CyberdeckSession:
             career_profile=self.career,
             difficulty=normalize_difficulty(difficulty),
             daily_modifier=modifier_id,
+            allegiance=allegiance,
         )
         self.engine.daily_key = new_daily_key
         self.active_puzzle = None
@@ -757,7 +762,10 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                         return
                 daily = bool(payload.get("daily"))
                 difficulty = payload.get("difficulty", "normal")
-                state = self.server_session.reset_game(seed, daily=daily, difficulty=difficulty)
+                allegiance = payload.get("allegiance", "none")
+                state = self.server_session.reset_game(
+                    seed, daily=daily, difficulty=difficulty, allegiance=allegiance
+                )
                 message = (
                     f"Daily run {state['daily_key']} started."
                     if daily else "Neural link reset."
@@ -877,6 +885,7 @@ def create_server(
     daily_key: str = "",
     difficulty: str = "normal",
     daily_modifier: str = "",
+    allegiance: str = "none",
 ) -> ThreadingHTTPServer:
     """Instantiate and configure the ThreadingHTTPServer for CyberPulse Web Cyberdeck."""
     session = CyberdeckSession(
@@ -885,6 +894,7 @@ def create_server(
         daily_key=daily_key,
         difficulty=difficulty,
         daily_modifier=daily_modifier,
+        allegiance=allegiance,
     )
 
     class CustomHandler(CyberdeckHTTPHandler):
@@ -904,6 +914,7 @@ def run_web(
     daily_key: str = "",
     difficulty: str = "normal",
     daily_modifier: str = "",
+    allegiance: str = "none",
 ) -> None:
     """Launch the Web Cyberdeck server and optionally launch default system web browser."""
     import webbrowser
@@ -911,6 +922,7 @@ def run_web(
     server = create_server(
         host=host, port=port, data_dir=data_dir, seed=seed,
         daily_key=daily_key, difficulty=difficulty, daily_modifier=daily_modifier,
+        allegiance=allegiance,
     )
     url = f"http://{host}:{port}"
     print(f"\n+==========================================================================+")

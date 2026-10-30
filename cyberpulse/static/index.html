@@ -79,6 +79,7 @@
       <span class="grid-chip" id="grid-shift">MORNING</span>
       <span class="grid-chip shift-chip" id="grid-shift-effect" title="Shift doctrine">STANDARD POSTURE</span>
       <span class="grid-chip difficulty-chip" id="grid-difficulty">DIFFICULTY NORMAL</span>
+      <span class="grid-chip allegiance-chip" id="grid-allegiance" style="display: none;">INDEPENDENT</span>
       <span class="grid-chip daily-chip" id="grid-daily" style="display: none;">DAILY RUN</span>
       <span class="grid-chip rival-chip" id="grid-rival" style="display: none;">RIVAL</span>
       <span class="grid-chip alert-chip" id="grid-alert">GRID ALERT 10%</span>
@@ -621,6 +622,14 @@
           <option value="easy">EASY // +2 CPU, -20% trace, +10% pay</option>
           <option value="normal" selected>NORMAL // baseline</option>
           <option value="hard">HARD // +15 alert, +20% trace, -10% pay</option>
+        </select>
+      </label>
+      <label class="main-menu-difficulty">
+        <span>ALLEGIANCE</span>
+        <select id="allegiance-select" aria-label="Faction allegiance">
+          <option value="none" selected>INDEPENDENT // no patron</option>
+          <option value="syndicate">SYNDICATE // +10% contract pay</option>
+          <option value="street">STREET // +5% shop discount</option>
         </select>
       </label>
       <div class="main-menu-actions">

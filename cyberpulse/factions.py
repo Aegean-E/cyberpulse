@@ -3,6 +3,7 @@
 from typing import Any, Dict
 
 FACTIONS = ("syndicate", "street")
+ALLEGIANCES = ("none", "syndicate", "street")
 MAX_STANDING = 100
 RANKS = {
     "syndicate": (
@@ -22,6 +23,22 @@ SYNDICATE_PAY_PER_POINT = 0.01
 SYNDICATE_PAY_CAP = 0.20
 STREET_SHOP_PER_POINT = 0.01
 STREET_SHOP_CAP = 0.15
+
+
+def normalize_allegiance(value: Any = "none") -> str:
+    """Return a supported run allegiance, defaulting unknown values to none."""
+    key = str(value or "").strip().lower()
+    return key if key in ALLEGIANCES else "none"
+
+
+def allegiance_contract_bonus(allegiance: Any = "none") -> float:
+    """Return the Syndicate patron contract bonus."""
+    return 0.10 if normalize_allegiance(allegiance) == "syndicate" else 0.0
+
+
+def allegiance_shop_discount(allegiance: Any = "none") -> float:
+    """Return the Street patron Black Market discount."""
+    return 0.05 if normalize_allegiance(allegiance) == "street" else 0.0
 
 
 def normalize_standing(data: Any) -> Dict[str, int]:

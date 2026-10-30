@@ -597,4 +597,16 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   4. Add `CHANGELOG.md` for the 0.4.0 release, covering save slots, history, milestones, dailies, difficulty, rival, insurance, tutorial, preferences, factions/ranks and the reset workflow, plus the storage/faction fixes.
 - **Consequences**: Release metadata cannot drift silently, support can query the installed version, and the release history is legible. Test suite: 439 tests, 100% green.
 
+### ADR-047: Run Allegiance: Syndicate Patron Pay and Street Patron Discounts
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: ADR-041/045 made standing and ranks permanent, but every run advanced both factions automatically. Players had no way to declare a patron or specialize a run, so the ranks lacked a role-play choice.
+- **Decision**:
+  1. Add `none`, `syndicate` and `street` allegiances with normalization to `none` for unknown values. Store the choice on the engine, persist it in saves and run history, and accept it on reset/CLI.
+  2. Syndicate patrons gain +10% contract pay and one extra Syndicate standing per completed contract. Street patrons gain +5% Black Market discount and one extra Street standing per victory/jackout. Independent runs keep the existing baseline.
+  3. Apply patron economics through the central contract-payout and shop-multiplier methods; keep the standing snapshot immutable across load.
+  4. Expose the choice in the CLI (`--allegiance`), Web main-menu selector, HUD chip, run banner and state payload.
+  5. Cover normalization, economics, standing growth, save/load, CLI and reset API.
+- **Consequences**: Each run now has a faction identity and a start-of-run tradeoff, while old saves default to Independent and the existing standing caps stay intact. Test suite: 443 tests, 100% green.
+
 

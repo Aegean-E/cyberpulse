@@ -9,7 +9,10 @@ from cyberpulse.achievements import achievement_names, evaluate_achievements
 from cyberpulse.daily import is_next_day, modifier_by_id
 from cyberpulse.difficulty import contract_multiplier, normalize_difficulty, trace_multiplier
 from cyberpulse.factions import (
+    allegiance_contract_bonus,
+    allegiance_shop_discount,
     contract_bonus,
+    normalize_allegiance,
     normalize_standing,
     rank_up_reward,
     street_discount,
@@ -238,9 +241,13 @@ class GameEngine:
         career_profile: Optional[CareerProfile] = None,
         difficulty: str = "normal",
         daily_modifier: str = "",
+        allegiance: str = "none",
     ):
         self.seed = int(seed)
         self.difficulty = normalize_difficulty(difficulty)
+        self.allegiance = normalize_allegiance(allegiance)
+        self.allegiance_contract_bonus = allegiance_contract_bonus(self.allegiance)
+        self.allegiance_shop_discount = allegiance_shop_discount(self.allegiance)
         self.faction_standing = normalize_standing(
             career_profile.faction_standing if career_profile else {}
         )
@@ -774,6 +781,7 @@ class GameEngine:
             "daily_key": getattr(self, "daily_key", ""),
             "rival": self.rival_summary(),
             "difficulty": self.difficulty,
+            "allegiance": self.allegiance,
             "factions": dict(self.faction_standing),
             "daily_modifier": self.daily_modifier_summary(),
             "rank_ups": self.last_rank_ups,
@@ -1046,7 +1054,8 @@ class GameEngine:
     def shop_price_multiplier(self) -> float:
         """Return the live market index after the Street standing discount."""
         market = self.world_summary()["market_multiplier"]
-        return market * max(0.5, 1.0 - self.street_standing_discount)
+        discount = self.street_standing_discount + self.allegiance_shop_discount
+        return market * max(0.5, 1.0 - discount)
 
     def daily_modifier_summary(self) -> Optional[Dict[str, Any]]:
         """Return the active daily modifier for HUD and archive display."""
@@ -2024,7 +2033,7 @@ class GameEngine:
             (contract.reward_creds + trust_bonus + rush_bonus)
             * contract_multiplier(self.difficulty)
             * daily_factor
-            * (1.0 + self.contract_standing_bonus)
+            * (1.0 + self.contract_standing_bonus + self.allegiance_contract_bonus)
         ))
         return total, trust_bonus, rush_bonus
 
@@ -2564,9 +2573,13 @@ class GameEngine:
         old_standing = normalize_standing(profile.faction_standing)
         standing = normalize_standing(profile.faction_standing)
         if contract and contract.completed:
-            standing = update_standing(standing, "syndicate", 2)
+            standing = update_standing(
+                standing, "syndicate", 3 if self.allegiance == "syndicate" else 2
+            )
         if outcome in ("victory", "jackout"):
-            standing = update_standing(standing, "street", 1)
+            standing = update_standing(
+                standing, "street", 2 if self.allegiance == "street" else 1
+            )
         profile.faction_standing = standing
         self.faction_standing = standing
         rank_ups: List[Dict[str, Any]] = []
@@ -2614,6 +2627,7 @@ class GameEngine:
             "daily_key": daily_key,
             "daily_modifier": self.daily_modifier,
             "difficulty": self.difficulty,
+            "allegiance": self.allegiance,
             "factions": dict(standing),
             "rank_ups": list(rank_ups),
             "score": score_info["score"],

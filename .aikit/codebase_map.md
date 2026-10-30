@@ -8,9 +8,9 @@
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `41`
 - **Total Classes**: `73`
-- **Total Top-Level Functions**: `94`
-- **Total Class Methods**: `686`
-- **Total Source Lines**: `15661`
+- **Total Top-Level Functions**: `97`
+- **Total Class Methods**: `690`
+- **Total Source Lines**: `15796`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1397` lines (`64652` bytes)
+**Size**: `1407` lines (`65131` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -108,11 +108,11 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3737` lines (`174158` bytes)
+**Size**: `3751` lines (`174822` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
-  - Method `.__init__(seed, career_profile, difficulty, daily_modifier)`
+  - Method `.__init__(seed, career_profile, difficulty, daily_modifier, allegiance)`
   - Method `.get_current_node()`
   - Method `._mark_probed(node_id)` - *Record that the runner has mapped a host's services (survives save/load).*
   - Method `._find_quest(quest_id)`
@@ -228,9 +228,12 @@
 ### [`cyberpulse/factions.py`](cyberpulse/factions.py)
 > *Faction standing normalization and bounded reputation bonuses.*
 
-**Size**: `85` lines (`2854` bytes)
+**Size**: `102` lines (`3524` bytes)
 
 **Functions:**
+- `def normalize_allegiance(value)` - *Return a supported run allegiance, defaulting unknown values to none.*
+- `def allegiance_contract_bonus(allegiance)` - *Return the Syndicate patron contract bonus.*
+- `def allegiance_shop_discount(allegiance)` - *Return the Street patron Black Market discount.*
 - `def normalize_standing(data)` - *Return a clean two-faction standing map with non-negative capped integers.*
 - `def update_standing(standing, faction, delta)` - *Add reputation to one faction and return a normalized copy.*
 - `def rank_for(faction, standing)` - *Return (rank index, rank name, promotion reward) for a faction standing.*
@@ -400,14 +403,14 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `937` lines (`41830` bytes)
+**Size**: `949` lines (`42264` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
-  - Method `.__init__(data_dir, seed, daily_key, difficulty, daily_modifier)`
+  - Method `.__init__(data_dir, seed, daily_key, difficulty, daily_modifier, allegiance)`
   - Method `.settle_run_if_finished()` - *Persist a victory/lockout exactly once as soon as the run reaches a terminal state.*
   - Method `.get_full_state()` - *Aggregate complete runtime state for frontend rendering.*
-  - Method `.reset_game(seed, daily, difficulty)`
+  - Method `.reset_game(seed, daily, difficulty, allegiance)`
   - Method `.save_run(slot, name)` - *Persist the live run to a manual slot with the terminal's atomic manager.*
   - Method `.rename_save(slot, name)` - *Rename an existing manual checkpoint without changing the run.*
   - Method `.reset_career()` - *Back up and delete the career plus all saves, then start a fresh run.*
@@ -426,8 +429,8 @@
 
 **Functions:**
 - `def coerce_seed(value)` - *Convert API/CLI seed input to an integer, rejecting non-finite or non-numeric values.*
-- `def create_server(host, port, data_dir, seed, daily_key, difficulty, daily_modifier)` - *Instantiate and configure the ThreadingHTTPServer for CyberPulse Web Cyberdeck.*
-- `def run_web(host, port, data_dir, seed, open_browser, daily_key, difficulty, daily_modifier)` - *Launch the Web Cyberdeck server and optionally launch default system web browser.*
+- `def create_server(host, port, data_dir, seed, daily_key, difficulty, daily_modifier, allegiance)` - *Instantiate and configure the ThreadingHTTPServer for CyberPulse Web Cyberdeck.*
+- `def run_web(host, port, data_dir, seed, open_browser, daily_key, difficulty, daily_modifier, allegiance)` - *Launch the Web Cyberdeck server and optionally launch default system web browser.*
 
 ---
 
@@ -449,7 +452,7 @@
 ### [`cyberpulse/storage.py`](cyberpulse/storage.py)
 > *Crash-resilient savegame and career profile storage engine for CyberPulse.*
 
-**Size**: `409` lines (`17827` bytes)
+**Size**: `418` lines (`18255` bytes)
 
 **Classes:**
 - `class SaveManager` - *Manages atomic saving and loading of game states and career profiles.*
@@ -592,7 +595,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `641` lines (`26832` bytes)
+**Size**: `647` lines (`27054` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -628,6 +631,7 @@
   - Method `.test_alias_command_persists_and_shows_in_the_dossier()`
   - Method `.test_hall_command_filters_by_difficulty()`
   - Method `.test_tutorial_command_lists_the_first_run_steps()`
+  - Method `.test_allegiance_flag_reaches_the_hud()`
   - Method `.test_difficulty_flag_reaches_the_hud()`
   - Method `.test_daily_flag_uses_the_date_seed()`
   - Method `.test_daily_career_dossier_shows_the_streak()`
@@ -684,7 +688,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `2102` lines (`88568` bytes)
+**Size**: `2139` lines (`90265` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -774,6 +778,7 @@
   - Method `.test_settle_career_banks_victory_loot_once()`
   - Method `.test_exploit_lockout_does_not_claim_root_access()`
   - Method `.test_faction_standing_applies_bonuses_and_grows_on_settlement()`
+  - Method `.test_faction_allegiance_changes_economics_and_standing_growth()`
   - Method `.test_settle_career_awards_faction_rank_promotions_once()`
   - Method `.test_daily_modifiers_apply_starting_conditions_and_multipliers()`
   - Method `.test_difficulty_changes_trace_and_starting_state()`
@@ -843,13 +848,14 @@
 ### [`tests/test_factions.py`](tests/test_factions.py)
 > *Unit tests for faction standing normalization and bonuses.*
 
-**Size**: `47` lines (`1630` bytes)
+**Size**: `59` lines (`2246` bytes)
 
 **Classes:**
 - `class TestFactions`
   - Method `.test_normalize_standing_drops_unknown_and_invalid_values()`
   - Method `.test_bonuses_are_capped()`
   - Method `.test_ranks_follow_standing_thresholds()`
+  - Method `.test_allegiance_normalization_and_bonuses()`
   - Method `.test_update_standing_clamps_growth()`
 
 ---
@@ -1003,7 +1009,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `1088` lines (`47616` bytes)
+**Size**: `1102` lines (`48117` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -1080,6 +1086,7 @@
   - Method `.setUpClass()`
   - Method `.tearDownClass()`
   - Method `._post(payload)`
+  - Method `.test_reset_accepts_faction_allegiance()`
   - Method `.test_invalid_or_named_difficulty_reset()`
   - Method `.test_daily_reset_over_http()`
   - Method `.test_name_rename_and_delete_over_http()`
@@ -1110,7 +1117,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `628` lines (`24307` bytes)
+**Size**: `632` lines (`24515` bytes)
 
 **Classes:**
 - `class TestStorage`

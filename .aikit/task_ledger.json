@@ -1,55 +1,16 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-release-040",
+    "task_id": "task-cyberpulse-faction-allegiance",
     "last_phase": "in_progress",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1793379346.8404818,
-    "owner": "opencode:release-040-1",
-    "started_by": "opencode:release-040-1",
-    "continuations": [],
-    "completed_at": 1793379388.0246813
+    "active_phase": 4,
+    "status": "in_progress",
+    "updated_at": 1793379760.48923,
+    "owner": "opencode:faction-allegiance-1",
+    "started_by": "opencode:faction-allegiance-1",
+    "continuations": []
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-faction-standing",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-faction-standing' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793378004.6254437,
-      "timestamp_str": "2026-10-30 19:33:24",
-      "agent": "opencode:faction-standing-1"
-    },
-    {
-      "task_id": "task-cyberpulse-faction-snapshot",
-      "phase": "in_progress",
-      "phase_num": 2,
-      "description": "[1/2] Preserve the run-start faction snapshot across save and load",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793378087.1431794,
-      "timestamp_str": "2026-10-30 19:34:47",
-      "agent": "opencode:faction-snapshot-1",
-      "impact_assessment": {
-        "why": "Standing bonuses are snapshotted at run start, but SaveManager.load rebuilds the engine without the snapshot, so a loaded run loses its contract and shop bonuses.",
-        "benefits": "Save/load now preserves the exact run economics, and a later career change cannot retroactively alter a checkpointed run.",
-        "risks": "contract: save payload gains an additive faction_standing snapshot; dependency: none; concurrency: atomic save; state: old saves without the field must fall back to the current career standing.",
-        "mitigation": "Persist the normalized snapshot, restore it with recomputed bonuses, fall back to career standing for legacy saves, and cover snapshot-versus-later-career behavior with a regression test."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-faction-snapshot",
-      "phase": "in_progress",
-      "phase_num": 2,
-      "description": "[2/2] Faction snapshot persistence complete; project gate 5/5, 427 tests; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793378162.4374633,
-      "timestamp_str": "2026-10-30 19:36:02",
-      "agent": "opencode:faction-snapshot-1"
-    },
     {
       "task_id": "task-cyberpulse-faction-snapshot",
       "phase": "completed",
@@ -255,6 +216,45 @@
       "timestamp": 1793379388.0246854,
       "timestamp_str": "2026-10-30 19:56:28",
       "agent": "opencode:release-040-1"
+    },
+    {
+      "task_id": "task-cyberpulse-faction-allegiance",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/4] Add run allegiance with Syndicate contract and Street shop patron bonuses",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793379468.5582123,
+      "timestamp_str": "2026-10-30 19:57:48",
+      "agent": "opencode:faction-allegiance-1",
+      "impact_assessment": {
+        "why": "Faction standing is automatic; players cannot declare a patron or shape which faction their run advances, so the new ranks lack a role-play choice.",
+        "benefits": "Allegiance gives each run a faction identity, adds a meaningful start-of-run decision, and makes patron standing and economics diverge from a neutral run.",
+        "risks": "contract: engine/save/history gain an allegiance field and reset accepts one; dependency: none; concurrency: one run; state: old saves must default to none and patron bonuses must stack within existing caps.",
+        "mitigation": "Normalize unknown allegiances to none, apply patron bonuses only through central payout/shop/standing paths, persist the field, and cover neutral/Syndicate/Street behavior plus legacy saves."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-faction-allegiance",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[3/3] Allegiance engine, persistence, CLI/API and Web selector green; 443 tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793379701.5391893,
+      "timestamp_str": "2026-10-30 20:01:41",
+      "agent": "opencode:faction-allegiance-1"
+    },
+    {
+      "task_id": "task-cyberpulse-faction-allegiance",
+      "phase": "in_progress",
+      "phase_num": 4,
+      "description": "[4/4] Faction allegiance complete; project gate 5/5, 443 tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793379760.48923,
+      "timestamp_str": "2026-10-30 20:02:40",
+      "agent": "opencode:faction-allegiance-1"
     }
   ]
 }

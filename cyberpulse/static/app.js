@@ -773,6 +773,15 @@ function renderHUD(data) {
     difficultyChip.classList.toggle("easy", difficulty === "easy");
   }
 
+  const allegianceChip = document.getElementById("grid-allegiance");
+  if (allegianceChip) {
+    const allegiance = String(data.allegiance || "none").toLowerCase();
+    allegianceChip.textContent = allegiance === "none"
+      ? "INDEPENDENT"
+      : `PATRON ${allegiance.toUpperCase()}`;
+    allegianceChip.style.display = allegiance === "none" ? "none" : "";
+  }
+
   const rivalChip = document.getElementById("grid-rival");
   if (rivalChip) {
     const rival = data.rival;
@@ -887,6 +896,9 @@ function buildRunStats(summary, gState) {
   }
   if (summary.difficulty) {
     stats.push({ label: "DIFFICULTY", value: String(summary.difficulty).toUpperCase() });
+  }
+  if (summary.allegiance && summary.allegiance !== "none") {
+    stats.push({ label: "PATRON", value: String(summary.allegiance).toUpperCase() });
   }
   if (summary.daily_modifier && summary.daily_modifier.name) {
     stats.push({ label: "DAILY MOD", value: summary.daily_modifier.name });
@@ -1198,11 +1210,17 @@ function selectedDifficulty() {
   return select ? select.value : "normal";
 }
 
+function selectedAllegiance() {
+  const select = document.getElementById("allegiance-select");
+  return select ? select.value : "none";
+}
+
 async function handleReset() {
   sfx.click();
   const res = await apiPost("/api/action", {
     action: "reset",
     difficulty: selectedDifficulty(),
+    allegiance: selectedAllegiance(),
   });
   if (res && res.ok) {
     addTerminalLog("Rebooted terminal with fresh cyberspace seed.", "info");
@@ -1241,6 +1259,7 @@ async function handleDailyReset() {
     action: "reset",
     daily: true,
     difficulty: selectedDifficulty(),
+    allegiance: selectedAllegiance(),
   });
   if (res && res.ok) {
     document.getElementById("modal-main-menu").classList.add("hidden");
