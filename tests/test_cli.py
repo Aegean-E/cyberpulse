@@ -259,6 +259,8 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("Syndicate 0", out)
         self.assertIn("Street 0", out)
+        self.assertIn("Associate", out)
+        self.assertIn("Lookout", out)
 
     def test_reset_career_requires_confirmation_and_backs_up(self):
         from cyberpulse.engine import GameEngine

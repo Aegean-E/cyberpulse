@@ -4,6 +4,20 @@ from typing import Any, Dict
 
 FACTIONS = ("syndicate", "street")
 MAX_STANDING = 100
+RANKS = {
+    "syndicate": (
+        (0, "Associate", 0),
+        (10, "Fixer", 100),
+        (25, "Broker", 250),
+        (50, "Kingpin", 500),
+    ),
+    "street": (
+        (0, "Lookout", 0),
+        (10, "Runner", 100),
+        (25, "Ghost", 250),
+        (50, "Legend", 500),
+    ),
+}
 SYNDICATE_PAY_PER_POINT = 0.01
 SYNDICATE_PAY_CAP = 0.20
 STREET_SHOP_PER_POINT = 0.01
@@ -36,6 +50,27 @@ def update_standing(standing: Any, faction: str, delta: int) -> Dict[str, int]:
             amount = 0
         clean[faction] = max(0, min(MAX_STANDING, clean[faction] + amount))
     return clean
+
+
+def rank_for(faction: str, standing: Any) -> tuple:
+    """Return (rank index, rank name, promotion reward) for a faction standing."""
+    clean = normalize_standing({faction: (standing if not isinstance(standing, dict) else standing.get(faction, 0))})
+    value = clean.get(faction, 0)
+    table = RANKS.get(faction, RANKS["syndicate"])
+    current = table[0]
+    for index, entry in enumerate(table):
+        if value >= entry[0]:
+            current = (index, entry[1], entry[2])
+    return current
+
+
+def rank_up_reward(faction: str, old_standing: Any, new_standing: Any) -> tuple:
+    """Return (rank name, reward) when a settlement crosses a rank threshold."""
+    old_index = rank_for(faction, old_standing)[0]
+    new_index, name, reward = rank_for(faction, new_standing)
+    if new_index <= old_index:
+        return None, 0
+    return name, reward
 
 
 def contract_bonus(standing: Any) -> float:

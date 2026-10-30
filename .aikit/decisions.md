@@ -574,4 +574,16 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   4. Cover Hard versus Normal, streak thresholds, faction thresholds, catalog length and duplicate-settlement behavior.
 - **Consequences**: The newer progression systems now feed the same permanent mastery ladder, without new commands or save fields. Test suite: 434 tests, 100% green.
 
+### ADR-045: Faction Ranks and One-Time Promotion Rewards
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: ADR-041 made standing a linear percentage with no named identity or milestone payoff. Players could not see their rank, and crossing a major threshold felt the same as any other point.
+- **Decision**:
+  1. Add rank tables in `factions.py`: Syndicate Associate/Fixer/Broker/Kingpin at 0/10/25/50; Street Lookout/Runner/Ghost/Legend at the same thresholds.
+  2. Add `rank_for` and `rank_up_reward`; ranks derive from standing, so they need no separate persistence.
+  3. During settlement, compare old and new rank indices after standing growth. For each crossed threshold, award a one-time 100/250/500 CR bonus, add it to banked and lifetime credits, and record `{faction, rank, reward}` in the run history and summary.
+  4. Display ranks in the terminal dossier, Web faction panel, run legacy and Web banner promotion count; expose ranks in `/api/career`.
+  5. Cover thresholds, rewards, duplicate settlement, CLI and API display.
+- **Consequences**: Faction investment now has named status and a one-time payoff, while the standing snapshot and existing bonuses remain unchanged. Test suite: 436 tests, 100% green.
+
 

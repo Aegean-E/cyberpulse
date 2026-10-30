@@ -20,6 +20,7 @@ from cyberpulse.achievements import achievement_status
 from cyberpulse.daily import daily_modifier, daily_run
 from cyberpulse.difficulty import normalize_difficulty
 from cyberpulse.engine import GameEngine
+from cyberpulse.factions import rank_for
 from cyberpulse.models import CareerProfile, NodeStatus, NodeType
 from cyberpulse.puzzles import BufferPuzzle, FrequencyPuzzle, HashCrackPuzzle
 from cyberpulse.shop import BlackMarketShop
@@ -289,6 +290,11 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
             profile = self.server_session.save_mgr.load_career()
             payload = profile.to_dict()
             payload["achievement_catalog"] = achievement_status(profile)
+            payload["faction_ranks"] = {
+                faction: rank_for(faction, standing)[1]
+                for faction, standing in (profile.faction_standing or {}).items()
+                if faction in ("syndicate", "street")
+            }
             self.send_json_response(payload)
             return
 

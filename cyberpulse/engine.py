@@ -11,6 +11,7 @@ from cyberpulse.difficulty import contract_multiplier, normalize_difficulty, tra
 from cyberpulse.factions import (
     contract_bonus,
     normalize_standing,
+    rank_up_reward,
     street_discount,
     update_standing,
 )
@@ -251,6 +252,7 @@ class GameEngine:
         self.run_id = uuid.uuid4().hex
         self.daily_key = ""
         self.last_unlocked_achievements: List[str] = []
+        self.last_rank_ups: List[Dict[str, Any]] = []
         self.last_run_score: Optional[int] = None
         self.last_score_breakdown: Optional[Dict[str, int]] = None
         self.last_hall_rank: Optional[int] = None
@@ -774,6 +776,7 @@ class GameEngine:
             "difficulty": self.difficulty,
             "factions": dict(self.faction_standing),
             "daily_modifier": self.daily_modifier_summary(),
+            "rank_ups": self.last_rank_ups,
             "score": self.last_run_score,
             "score_breakdown": self.last_score_breakdown,
             "hall_rank": self.last_hall_rank,
@@ -2558,6 +2561,7 @@ class GameEngine:
         else:
             outcome = "lockout"
         contract = self.state.active_contract
+        old_standing = normalize_standing(profile.faction_standing)
         standing = normalize_standing(profile.faction_standing)
         if contract and contract.completed:
             standing = update_standing(standing, "syndicate", 2)
@@ -2565,6 +2569,18 @@ class GameEngine:
             standing = update_standing(standing, "street", 1)
         profile.faction_standing = standing
         self.faction_standing = standing
+        rank_ups: List[Dict[str, Any]] = []
+        reward_total = 0
+        for faction in ("syndicate", "street"):
+            rank_name, reward = rank_up_reward(faction, old_standing, standing)
+            if rank_name:
+                rank_ups.append({"faction": faction, "rank": rank_name, "reward": reward})
+                reward_total += reward
+        if reward_total:
+            self.deck.cryptocreds += reward_total
+            profile.banked_creds = self.deck.cryptocreds
+            profile.lifetime_creds += reward_total
+        self.last_rank_ups = rank_ups
 
         new_achievements = evaluate_achievements(self, profile)
         profile.achievements = list(dict.fromkeys([
@@ -2599,6 +2615,7 @@ class GameEngine:
             "daily_modifier": self.daily_modifier,
             "difficulty": self.difficulty,
             "factions": dict(standing),
+            "rank_ups": list(rank_ups),
             "score": score_info["score"],
             "score_breakdown": score_info["breakdown"],
             "finished_at": time.time(),

@@ -1,55 +1,16 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-milestone-expansion",
+    "task_id": "task-cyberpulse-faction-ranks",
     "last_phase": "in_progress",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1793378774.0882869,
-    "owner": "opencode:milestone-expansion-1",
-    "started_by": "opencode:milestone-expansion-1",
-    "continuations": [],
-    "completed_at": 1793378817.0932038
+    "active_phase": 4,
+    "status": "in_progress",
+    "updated_at": 1793379110.3569832,
+    "owner": "opencode:faction-ranks-1",
+    "started_by": "opencode:faction-ranks-1",
+    "continuations": []
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-hall-filters",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-hall-filters' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793377237.5852804,
-      "timestamp_str": "2026-10-30 19:20:37",
-      "agent": "opencode:hall-filters-1"
-    },
-    {
-      "task_id": "task-cyberpulse-profile-settings",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[3/3] Alias command/API, Web alias editor and persisted preferences green; 420 tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793377528.7193117,
-      "timestamp_str": "2026-10-30 19:25:28",
-      "agent": "opencode:profile-settings-1"
-    },
-    {
-      "task_id": "task-cyberpulse-profile-settings",
-      "phase": "in_progress",
-      "phase_num": 2,
-      "description": "[1/3] Add a persistent career alias and remembered Web presentation preferences",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793377554.0213513,
-      "timestamp_str": "2026-10-30 19:25:54",
-      "agent": "opencode:profile-settings-1",
-      "impact_assessment": {
-        "why": "The dossier alias was fixed at ZeroCool and the Web theme, audio and CRT controls reset on every reload, so players could not personalize their identity or keep a preferred presentation.",
-        "benefits": "A lasting handle improves ownership of the dossier, persisted preferences reduce repeated setup, and reduced-motion support improves accessibility.",
-        "risks": "contract: alias mutations touch career.json, while Web preferences stay client-side; dependency: none; concurrency: single-user profile saves; state: old careers must sanitize to ZeroCool and unavailable localStorage must fall back silently.",
-        "mitigation": "Normalize the alias on read and write, cap it at 24 characters, save profile atomically, wrap preference storage in try/catch, and cover CLI, API, normalization and default paths with tests."
-      }
-    },
     {
       "task_id": "task-cyberpulse-profile-settings",
       "phase": "in_progress",
@@ -255,6 +216,45 @@
       "timestamp": 1793378817.0932057,
       "timestamp_str": "2026-10-30 19:46:57",
       "agent": "opencode:milestone-expansion-1"
+    },
+    {
+      "task_id": "task-cyberpulse-faction-ranks",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/3] Add faction ranks, promotions and one-time credit rewards at settlement",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793378933.8764062,
+      "timestamp_str": "2026-10-30 19:48:53",
+      "agent": "opencode:faction-ranks-1",
+      "impact_assessment": {
+        "why": "Faction standing only produced a linear percentage; the dossier had no rank identity or milestone payoff for long-term investment.",
+        "benefits": "Named ranks give Syndicate and Street standing visible status, and one-time promotion rewards make the first major thresholds feel earned.",
+        "risks": "contract: run summaries/history gain rank-up data and settlement awards credits; dependency: none; concurrency: one-shot settlement; state: promotions must only fire on threshold crossing and old saves must remain compatible.",
+        "mitigation": "Derive ranks from standing, compare old/new rank indices inside settlement, award only crossed tiers, store the promotion list, and cover thresholds, rewards, display and persistence."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-faction-ranks",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[3/3] Rank titles, promotions, rewards and CLI/Web display green; 436 tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793379059.9493527,
+      "timestamp_str": "2026-10-30 19:50:59",
+      "agent": "opencode:faction-ranks-1"
+    },
+    {
+      "task_id": "task-cyberpulse-faction-ranks",
+      "phase": "in_progress",
+      "phase_num": 4,
+      "description": "[3/3] Faction ranks complete; project gate 5/5, 436 tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793379110.3569832,
+      "timestamp_str": "2026-10-30 19:51:50",
+      "agent": "opencode:faction-ranks-1"
     }
   ]
 }

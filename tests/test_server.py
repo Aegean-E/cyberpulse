@@ -168,6 +168,8 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertIn("banked_creds", data)
         self.assertEqual(len(data["achievement_catalog"]), 16)
         self.assertTrue(all("unlocked" in entry for entry in data["achievement_catalog"]))
+        self.assertEqual(data["faction_ranks"]["syndicate"], "Associate")
+        self.assertEqual(data["faction_ranks"]["street"], "Lookout")
 
     def test_action_scan_and_spoof(self):
         # Scan

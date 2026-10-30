@@ -15,6 +15,7 @@ from typing import List, Optional
 from cyberpulse.achievements import ACHIEVEMENTS, achievement_names
 from cyberpulse.daily import daily_modifier, daily_run
 from cyberpulse.engine import GameEngine
+from cyberpulse.factions import rank_for
 from cyberpulse.models import CareerProfile, CyberDeck, NodeStatus, NodeType
 from cyberpulse.puzzles import BufferPuzzle, FrequencyPuzzle, HashCrackPuzzle
 from cyberpulse.shop import BlackMarketShop
@@ -300,7 +301,13 @@ def print_career(profile: CareerProfile) -> None:
     standing = profile.faction_standing if isinstance(profile.faction_standing, dict) else {}
     syndicate = int(standing.get("syndicate", 0) or 0)
     street = int(standing.get("street", 0) or 0)
-    print(f"[*] Factions:         Syndicate {syndicate} (+{min(20, syndicate)}% contract pay) | Street {street} (-{min(15, street)}% shop)")
+    syndicate_rank = rank_for("syndicate", syndicate)[1]
+    street_rank = rank_for("street", street)[1]
+    print(
+        f"[*] Factions:         Syndicate {syndicate} [{syndicate_rank}] "
+        f"(+{min(20, syndicate)}% contract pay) | Street {street} [{street_rank}] "
+        f"(-{min(15, street)}% shop)"
+    )
     print(f"[*] Daily Streak:     {profile.daily_streak} (Best: {profile.best_daily_streak})")
     daily = profile.daily_best if isinstance(profile.daily_best, dict) else {}
     if daily:
@@ -433,6 +440,11 @@ def print_run_summary(engine: GameEngine) -> None:
         print(f"[*] Milestones:  {', '.join(summary['achievements_unlocked'])}")
     if summary.get("daily_key"):
         print(f"[*] Daily:       {summary['daily_key']}")
+    for promotion in summary.get("rank_ups", []):
+        print(
+            f"[*] Promotion:   {promotion['faction'].upper()} -> {promotion['rank']} "
+            f"(+{promotion['reward']} CR)"
+        )
     if summary.get("score") is not None:
         rank = f" | HALL #{summary['hall_rank']}" if summary.get("hall_rank") else ""
         print(f"[*] Score:       {summary['score']:,}{rank}")

@@ -891,6 +891,10 @@ function buildRunStats(summary, gState) {
   if (summary.daily_modifier && summary.daily_modifier.name) {
     stats.push({ label: "DAILY MOD", value: summary.daily_modifier.name });
   }
+  const promotions = Array.isArray(summary.rank_ups) ? summary.rank_ups.length : 0;
+  if (promotions) {
+    stats.push({ label: "PROMOTIONS", value: `+${promotions}` });
+  }
   return stats;
 }
 
@@ -2671,11 +2675,12 @@ async function openCareerModal() {
     const syndicate = Number(standing.syndicate || 0);
     const street = Number(standing.street || 0);
     factionsEl.innerHTML = "";
+    const ranks = data.faction_ranks || {};
     const rows = [
-      ["SYNDICATE", syndicate, `+${Math.min(20, syndicate)}% contract pay`],
-      ["STREET", street, `-${Math.min(15, street)}% shop prices`],
+      ["SYNDICATE", syndicate, ranks.syndicate || "Associate", `+${Math.min(20, syndicate)}% contract pay`],
+      ["STREET", street, ranks.street || "Lookout", `-${Math.min(15, street)}% shop prices`],
     ];
-    rows.forEach(([name, value, bonus]) => {
+    rows.forEach(([name, value, rank, bonus]) => {
       const row = document.createElement("div");
       row.className = "dossier-run-row";
       const chip = document.createElement("span");
@@ -2683,7 +2688,7 @@ async function openCareerModal() {
       chip.textContent = name;
       const meta = document.createElement("span");
       meta.className = "run-meta";
-      meta.textContent = `STANDING ${value} · ${bonus}`;
+      meta.textContent = `${rank} · STANDING ${value} · ${bonus}`;
       row.append(chip, meta);
       factionsEl.appendChild(row);
     });

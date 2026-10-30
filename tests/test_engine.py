@@ -1323,6 +1323,28 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(profile.faction_standing["street"], 11)
         self.assertEqual(engine.run_summary()["factions"]["syndicate"], 12)
 
+    def test_settle_career_awards_faction_rank_promotions_once(self):
+        from cyberpulse.models import CareerProfile
+
+        profile = CareerProfile(faction_standing={"syndicate": 9, "street": 0})
+        contract = self.engine.state.active_contract
+        contract.completed = True
+        self.engine.state.is_victory = True
+
+        self.engine.settle_career(profile)
+
+        self.assertEqual(profile.faction_standing["syndicate"], 11)
+        self.assertEqual(profile.faction_standing["street"], 1)
+        self.assertEqual(profile.banked_creds, 200)
+        self.assertEqual(self.engine.deck.cryptocreds, 200)
+        self.assertEqual(profile.lifetime_creds, 200)
+        self.assertEqual(self.engine.last_rank_ups, [
+            {"faction": "syndicate", "rank": "Fixer", "reward": 100},
+        ])
+        self.assertEqual(self.engine.run_summary()["rank_ups"][0]["rank"], "Fixer")
+        self.assertFalse(self.engine.settle_career(profile))
+        self.assertEqual(profile.banked_creds, 200)
+
     def test_daily_modifiers_apply_starting_conditions_and_multipliers(self):
         hot = GameEngine(seed=1, daily_modifier="hot_grid")
         blackout = GameEngine(seed=1, daily_modifier="blackout")

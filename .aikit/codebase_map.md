@@ -8,9 +8,9 @@
 ## 📊 Codebase Metrics
 - **Total Python Modules**: `40`
 - **Total Classes**: `72`
-- **Total Top-Level Functions**: `92`
-- **Total Class Methods**: `681`
-- **Total Source Lines**: `15518`
+- **Total Top-Level Functions**: `94`
+- **Total Class Methods**: `683`
+- **Total Source Lines**: `15623`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1383` lines (`64092` bytes)
+**Size**: `1395` lines (`64516` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -108,7 +108,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3720` lines (`173358` bytes)
+**Size**: `3737` lines (`174158` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -228,11 +228,13 @@
 ### [`cyberpulse/factions.py`](cyberpulse/factions.py)
 > *Faction standing normalization and bounded reputation bonuses.*
 
-**Size**: `50` lines (`1705` bytes)
+**Size**: `85` lines (`2854` bytes)
 
 **Functions:**
 - `def normalize_standing(data)` - *Return a clean two-faction standing map with non-negative capped integers.*
 - `def update_standing(standing, faction, delta)` - *Add reputation to one faction and return a normalized copy.*
+- `def rank_for(faction, standing)` - *Return (rank index, rank name, promotion reward) for a faction standing.*
+- `def rank_up_reward(faction, old_standing, new_standing)` - *Return (rank name, reward) when a settlement crosses a rank threshold.*
 - `def contract_bonus(standing)` - *Return the Syndicate contract-pay bonus (1% per point, capped at 20%).*
 - `def street_discount(standing)` - *Return the Street Black Market discount (1% per point, capped at 15%).*
 
@@ -398,7 +400,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `931` lines (`41542` bytes)
+**Size**: `937` lines (`41830` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -590,7 +592,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `639` lines (`26754` bytes)
+**Size**: `641` lines (`26832` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -682,7 +684,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `2080` lines (`87558` bytes)
+**Size**: `2102` lines (`88568` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -772,6 +774,7 @@
   - Method `.test_settle_career_banks_victory_loot_once()`
   - Method `.test_exploit_lockout_does_not_claim_root_access()`
   - Method `.test_faction_standing_applies_bonuses_and_grows_on_settlement()`
+  - Method `.test_settle_career_awards_faction_rank_promotions_once()`
   - Method `.test_daily_modifiers_apply_starting_conditions_and_multipliers()`
   - Method `.test_difficulty_changes_trace_and_starting_state()`
   - Method `.test_difficulty_multiplies_contract_payout()`
@@ -840,12 +843,13 @@
 ### [`tests/test_factions.py`](tests/test_factions.py)
 > *Unit tests for faction standing normalization and bonuses.*
 
-**Size**: `38` lines (`1137` bytes)
+**Size**: `47` lines (`1630` bytes)
 
 **Classes:**
 - `class TestFactions`
   - Method `.test_normalize_standing_drops_unknown_and_invalid_values()`
   - Method `.test_bonuses_are_capped()`
+  - Method `.test_ranks_follow_standing_thresholds()`
   - Method `.test_update_standing_clamps_growth()`
 
 ---
@@ -999,7 +1003,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `1086` lines (`47473` bytes)
+**Size**: `1088` lines (`47616` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
