@@ -3,25 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-faction-snapshot",
     "last_phase": "in_progress",
-    "active_phase": 2,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793378162.4374633,
     "owner": "opencode:faction-snapshot-1",
     "started_by": "opencode:faction-snapshot-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793378194.365023
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-first-run-tutorial",
-      "phase": "in_progress",
-      "phase_num": 4,
-      "description": "[4/4] First-run field manual complete; project gate 5/5, 413 tests; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793376529.5567415,
-      "timestamp_str": "2026-10-30 19:08:49",
-      "agent": "opencode:tutorial-1"
-    },
     {
       "task_id": "task-cyberpulse-first-run-tutorial",
       "phase": "completed",
@@ -254,6 +244,16 @@
       "status": "in_progress",
       "timestamp": 1793378162.4374633,
       "timestamp_str": "2026-10-30 19:36:02",
+      "agent": "opencode:faction-snapshot-1"
+    },
+    {
+      "task_id": "task-cyberpulse-faction-snapshot",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-faction-snapshot' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793378194.365024,
+      "timestamp_str": "2026-10-30 19:36:34",
       "agent": "opencode:faction-snapshot-1"
     }
   ]
