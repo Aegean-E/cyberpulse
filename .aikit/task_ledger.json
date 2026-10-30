@@ -3,24 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-faction-allegiance",
     "last_phase": "in_progress",
-    "active_phase": 4,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793379760.48923,
     "owner": "opencode:faction-allegiance-1",
     "started_by": "opencode:faction-allegiance-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793379807.8497777
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-faction-snapshot",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-faction-snapshot' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793378194.365024,
-      "timestamp_str": "2026-10-30 19:36:34",
-      "agent": "opencode:faction-snapshot-1"
-    },
     {
       "task_id": "task-cyberpulse-career-reset",
       "phase": "in_progress",
@@ -254,6 +245,16 @@
       "status": "in_progress",
       "timestamp": 1793379760.48923,
       "timestamp_str": "2026-10-30 20:02:40",
+      "agent": "opencode:faction-allegiance-1"
+    },
+    {
+      "task_id": "task-cyberpulse-faction-allegiance",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-faction-allegiance' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793379807.8497791,
+      "timestamp_str": "2026-10-30 20:03:27",
       "agent": "opencode:faction-allegiance-1"
     }
   ]
