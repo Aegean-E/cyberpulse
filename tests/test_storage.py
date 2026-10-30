@@ -92,6 +92,21 @@ class TestStorage(unittest.TestCase):
         backfilled = self.save_mgr.load()
         self.assertIsNotNone(backfilled.state.rival)
 
+    def test_save_restores_the_run_start_faction_snapshot(self):
+        profile = CareerProfile(faction_standing={"syndicate": 10, "street": 10})
+        self.save_mgr.save_career(profile)
+        engine = GameEngine(seed=42, career_profile=profile)
+        self.save_mgr.save(engine)
+
+        changed = CareerProfile(faction_standing={"syndicate": 20, "street": 20})
+        self.save_mgr.save_career(changed)
+        loaded = self.save_mgr.load()
+
+        self.assertIsNotNone(loaded)
+        self.assertEqual(loaded.faction_standing, {"syndicate": 10, "street": 10})
+        self.assertAlmostEqual(loaded.contract_standing_bonus, 0.10)
+        self.assertAlmostEqual(loaded.street_standing_discount, 0.10)
+
     def test_save_preserves_extraction_insurance(self):
         engine = GameEngine(seed=42)
         engine.deck.extraction_insurance = True

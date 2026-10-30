@@ -1035,6 +1035,11 @@ class GameEngine:
                 self.regenerate_cpu(1)
         return messages
 
+    def refresh_faction_bonuses(self) -> None:
+        """Recompute cached faction multipliers from the current standing snapshot."""
+        self.contract_standing_bonus = contract_bonus(self.faction_standing)
+        self.street_standing_discount = street_discount(self.faction_standing)
+
     def shop_price_multiplier(self) -> float:
         """Return the live market index after the Street standing discount."""
         market = self.world_summary()["market_multiplier"]

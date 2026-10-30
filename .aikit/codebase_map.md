@@ -9,8 +9,8 @@
 - **Total Python Modules**: `40`
 - **Total Classes**: `72`
 - **Total Top-Level Functions**: `92`
-- **Total Class Methods**: `668`
-- **Total Source Lines**: `15322`
+- **Total Class Methods**: `670`
+- **Total Source Lines**: `15348`
 
 ---
 
@@ -108,7 +108,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3715` lines (`173067` bytes)
+**Size**: `3720` lines (`173358` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -147,6 +147,7 @@
   - Method `.add_trace(raw_amount)` - *Increase system trace, mitigated by ICE dampeners. 100% triggers lockout & loss of loot.*
   - Method `.regenerate_cpu(amount)` - *Cool down cyberdeck processing units and recover CPU cycles.*
   - Method `.advance_turn()` - *Advance the run clock one turn: daemons harvest, then the living grid reacts.*
+  - Method `.refresh_faction_bonuses()` - *Recompute cached faction multipliers from the current standing snapshot.*
   - Method `.shop_price_multiplier()` - *Return the live market index after the Street standing discount.*
   - Method `.daily_modifier_summary()` - *Return the active daily modifier for HUD and archive display.*
   - Method `.tutorial_progress()` - *Return the first-run field manual with live completion flags.*
@@ -445,7 +446,7 @@
 ### [`cyberpulse/storage.py`](cyberpulse/storage.py)
 > *Crash-resilient savegame and career profile storage engine for CyberPulse.*
 
-**Size**: `385` lines (`16666` bytes)
+**Size**: `391` lines (`17060` bytes)
 
 **Classes:**
 - `class SaveManager` - *Manages atomic saving and loading of game states and career profiles.*
@@ -1096,7 +1097,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `584` lines (`22549` bytes)
+**Size**: `599` lines (`23260` bytes)
 
 **Classes:**
 - `class TestStorage`
@@ -1106,6 +1107,7 @@
   - Method `.test_save_preserves_story_quests_and_contacts()`
   - Method `.test_save_preserves_tactical_deck_state()`
   - Method `.test_save_preserves_rival_state_and_backfills_old_saves()`
+  - Method `.test_save_restores_the_run_start_faction_snapshot()`
   - Method `.test_save_preserves_extraction_insurance()`
   - Method `.test_load_backfills_story_for_old_save()`
   - Method `.test_career_save_and_load()`

@@ -1,45 +1,16 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-faction-standing",
+    "task_id": "task-cyberpulse-faction-snapshot",
     "last_phase": "in_progress",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1793377966.90793,
-    "owner": "opencode:faction-standing-1",
-    "started_by": "opencode:faction-standing-1",
-    "continuations": [],
-    "completed_at": 1793378004.6254416
+    "active_phase": 2,
+    "status": "in_progress",
+    "updated_at": 1793378162.4374633,
+    "owner": "opencode:faction-snapshot-1",
+    "started_by": "opencode:faction-snapshot-1",
+    "continuations": []
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-first-run-tutorial",
-      "phase": "in_progress",
-      "phase_num": 2,
-      "description": "[1/3] Add a first-run field manual tracking scan, probe, breach, loot and extraction",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793376298.4908662,
-      "timestamp_str": "2026-10-30 19:04:58",
-      "agent": "opencode:tutorial-1",
-      "impact_assessment": {
-        "why": "New players face 50 commands and many systems with only static help; there is no live checklist showing the core loop or what they have already done.",
-        "benefits": "A state-driven checklist teaches the loop in order, reduces first-run abandonment, and disappears once the player has settled a run.",
-        "risks": "contract: GameState gains a scanned flag and state payloads gain a tutorial list; dependency: none; concurrency: read-only progress; state: old saves default unscanned and established careers should never see the panel.",
-        "mitigation": "Derive each step from existing persisted state, set the scan flag only on a successful scan, hide the guide for any career with settled runs, and cover step transitions plus CLI/API payloads with tests."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-first-run-tutorial",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[3/3] First-run checklist engine, CLI manual and Web panel green; 413 tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793376447.3355043,
-      "timestamp_str": "2026-10-30 19:07:27",
-      "agent": "opencode:tutorial-1"
-    },
     {
       "task_id": "task-cyberpulse-first-run-tutorial",
       "phase": "in_progress",
@@ -256,6 +227,34 @@
       "timestamp": 1793378004.6254437,
       "timestamp_str": "2026-10-30 19:33:24",
       "agent": "opencode:faction-standing-1"
+    },
+    {
+      "task_id": "task-cyberpulse-faction-snapshot",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/2] Preserve the run-start faction snapshot across save and load",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793378087.1431794,
+      "timestamp_str": "2026-10-30 19:34:47",
+      "agent": "opencode:faction-snapshot-1",
+      "impact_assessment": {
+        "why": "Standing bonuses are snapshotted at run start, but SaveManager.load rebuilds the engine without the snapshot, so a loaded run loses its contract and shop bonuses.",
+        "benefits": "Save/load now preserves the exact run economics, and a later career change cannot retroactively alter a checkpointed run.",
+        "risks": "contract: save payload gains an additive faction_standing snapshot; dependency: none; concurrency: atomic save; state: old saves without the field must fall back to the current career standing.",
+        "mitigation": "Persist the normalized snapshot, restore it with recomputed bonuses, fall back to career standing for legacy saves, and cover snapshot-versus-later-career behavior with a regression test."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-faction-snapshot",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[2/2] Faction snapshot persistence complete; project gate 5/5, 427 tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793378162.4374633,
+      "timestamp_str": "2026-10-30 19:36:02",
+      "agent": "opencode:faction-snapshot-1"
     }
   ]
 }

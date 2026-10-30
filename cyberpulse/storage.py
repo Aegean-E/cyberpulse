@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from cyberpulse.daily import modifier_by_id
 from cyberpulse.difficulty import normalize_difficulty
+from cyberpulse.factions import normalize_standing
 from cyberpulse.engine import GameEngine
 from cyberpulse.models import CareerProfile, CyberDeck, GameState, Node
 from cyberpulse.puzzles import puzzle_from_dict
@@ -182,6 +183,7 @@ class SaveManager:
             "daily_key": getattr(engine, "daily_key", ""),
             "daily_modifier": getattr(engine, "daily_modifier", ""),
             "difficulty": getattr(engine, "difficulty", "normal"),
+            "faction_standing": normalize_standing(getattr(engine, "faction_standing", {})),
             "deck": engine.deck.to_dict(),
             "state": engine.state.to_dict(),
             "nodes": {nid: n.to_dict() for nid, n in engine.nodes.items()},
@@ -230,12 +232,16 @@ class SaveManager:
             return None
 
         try:
-            engine = GameEngine(seed=data["seed"])
+            engine = GameEngine(seed=data["seed"], career_profile=self.load_career())
             engine.run_id = str(data.get("run_id") or getattr(engine, "run_id", uuid.uuid4().hex))
             engine.daily_key = str(data.get("daily_key") or "")
             modifier = modifier_by_id(data.get("daily_modifier", ""))
             engine.daily_modifier = modifier.modifier_id if modifier else ""
             engine.difficulty = normalize_difficulty(data.get("difficulty", "normal"))
+            snapshot = data.get("faction_standing")
+            if isinstance(snapshot, dict):
+                engine.faction_standing = normalize_standing(snapshot)
+                engine.refresh_faction_bonuses()
             engine.deck = CyberDeck.from_dict(data["deck"])
             engine.state = GameState.from_dict(data["state"])
             engine.nodes = {nid: Node.from_dict(ndata) for nid, ndata in data["nodes"].items()}

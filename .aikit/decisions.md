@@ -541,4 +541,15 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. Cover normalization, caps, standing growth, effects, persistence, old-career defaults, CLI display and the shop API.
 - **Consequences**: Contracts and clean extraction now build a persistent identity that changes future pay and prices, but effects are capped and only apply from the next run. Existing saves and careers remain compatible. Test suite: 426 tests, 100% green.
 
+### ADR-042: Faction Snapshot Persistence Across Save/Load
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: ADR-041 snapshots faction standing at run start, but `SaveManager.load` rebuilt the engine without that snapshot. A loaded run lost its Syndicate/Street bonuses, and a later career change could silently alter the economics of an old checkpoint.
+- **Decision**:
+  1. Persist the normalized `faction_standing` snapshot in every save payload.
+  2. On load, construct the engine with the current career profile for legacy fallback, then overwrite the standing snapshot from the save and recompute cached bonuses through `refresh_faction_bonuses`.
+  3. Keep the older behavior for saves without the field: fall back to the current career standing.
+  4. Add a regression test that saves a run at standing 10/10, changes the career to 20/20, and verifies the loaded run still uses 10/10.
+- **Consequences**: Checkpointed runs retain their original contract and shop economics, while legacy saves remain loadable. No schema break occurs. Test suite: 427 tests, 100% green.
+
 
