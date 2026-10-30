@@ -376,4 +376,16 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. Cover victory and lockout records, capping, old-career defaults, persistence, and both display paths with tests.
 - **Consequences**: The dossier now preserves the arc of recent runs and gives seed/outcome context to the save archive, while old careers remain valid and career files stay bounded. Test suite: 359 tests, 100% green.
 
+### ADR-028: Career Milestones: Settlement-Evaluated Achievements and Dossier Badges
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: The dossier had totals and recent runs but no long-term goals. Players could clear many runs without a visible mastery ladder, and unusual outcomes such as a ghost victory or a black contract disappeared into the history list.
+- **Decision**:
+  1. Add a twelve-entry milestone catalog in `cyberpulse/achievements.py`: first extraction, five clears, x5/x10 combo, ghost victory, speed victory, black contract, three vaults, 50 turns, 1,000 banked credits, hot extraction, and Act V.
+  2. Store unlocked identifiers in `CareerProfile.achievements`, an additive list. Old or malformed career payloads default to an empty, de-duplicated list of strings.
+  3. Evaluate only inside `settle_career`, after the one-shot guard and after profile counters update, so re-settling cannot farm unlocks. Store the newly earned IDs on the engine and in the run-history record.
+  4. Surface new unlocks in the terminal `RUN LEGACY` summary, the terminal career dossier, the Web run banner (count) and the Web dossier (unlocked/locked badge grid). `/api/career` returns the catalog annotated with unlocked state.
+  5. Cover catalog integrity, threshold rules, de-duplication, old-career defaults, persistence, CLI display and the API payload with tests.
+- **Consequences**: The dossier now carries a permanent mastery ladder, and rare outcomes remain visible after the run ends. Career files stay compatible and unlocks are idempotent. Test suite: 366 tests, 100% green.
+
 

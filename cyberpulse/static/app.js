@@ -694,6 +694,10 @@ function buildRunStats(summary, gState) {
   if (questsTotal) {
     stats.push({ label: "MISSIONS", value: `${questsDone}/${questsTotal}` });
   }
+  const milestones = Array.isArray(summary.achievements_unlocked) ? summary.achievements_unlocked.length : 0;
+  if (milestones) {
+    stats.push({ label: "MILESTONES", value: `+${milestones}` });
+  }
   return stats;
 }
 
@@ -2405,6 +2409,31 @@ async function openCareerModal() {
   document.getElementById("dossier-upgrades").textContent = data.purchased_upgrades.length > 0
     ? data.purchased_upgrades.join(", ")
     : "Standard Factory Rig";
+
+  const achievementsEl = document.getElementById("dossier-achievements");
+  if (achievementsEl) {
+    achievementsEl.innerHTML = "";
+    const catalog = Array.isArray(data.achievement_catalog) ? data.achievement_catalog : [];
+    if (!catalog.length) {
+      const empty = document.createElement("span");
+      empty.className = "empty-chips";
+      empty.textContent = "Milestone catalog unavailable.";
+      achievementsEl.appendChild(empty);
+    }
+    catalog.forEach((entry) => {
+      const badge = document.createElement("div");
+      badge.className = `achievement-badge ${entry.unlocked ? "unlocked" : "locked"}`;
+      badge.title = entry.description || "";
+      const badgeName = document.createElement("span");
+      badgeName.className = "achievement-name";
+      badgeName.textContent = entry.name || entry.achievement_id || "MILESTONE";
+      const badgeDesc = document.createElement("span");
+      badgeDesc.className = "achievement-desc";
+      badgeDesc.textContent = entry.description || "";
+      badge.append(badgeName, badgeDesc);
+      achievementsEl.appendChild(badge);
+    });
+  }
 
   const historyEl = document.getElementById("dossier-history");
   if (historyEl) {

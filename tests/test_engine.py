@@ -1123,6 +1123,10 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(record["story_act"], 4)
         self.assertEqual(record["creds"], 600)
         self.assertGreater(record["finished_at"], 0)
+        self.assertIn("first_extraction", profile.achievements)
+        self.assertIn("combo_adept", profile.achievements)
+        self.assertIn("first_extraction", record["achievements"])
+        self.assertIn("First Extraction", self.engine.run_summary()["achievements_unlocked"])
 
     def test_settle_career_history_is_capped_and_records_lockout(self):
         from cyberpulse.models import CareerProfile
@@ -1157,6 +1161,8 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(self.engine.state.unbanked_creds, 0)
         self.assertFalse(self.engine.settle_career(profile))
         self.assertEqual(profile.successful_runs, 1)
+        self.assertEqual(len(profile.achievements), len(set(profile.achievements)))
+        self.assertEqual(len(profile.run_history), 1)
 
     def test_exploit_lockout_does_not_claim_root_access(self):
         self.engine.state.trace_percent = 99

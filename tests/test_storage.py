@@ -105,7 +105,7 @@ class TestStorage(unittest.TestCase):
         self.assertIn("overclock_cpu", restored.purchased_upgrades)
 
     def test_career_run_history_round_trips(self):
-        profile = CareerProfile(alias="Archivist")
+        profile = CareerProfile(alias="Archivist", achievements=["veteran", "ghost_protocol"])
         profile.run_history.append({
             "outcome": "jackout",
             "seed": 1337,
@@ -121,6 +121,7 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(len(restored.run_history), 1)
         self.assertEqual(restored.run_history[0]["outcome"], "jackout")
         self.assertEqual(restored.run_history[0]["creds"], 420)
+        self.assertEqual(restored.achievements, ["veteran", "ghost_protocol"])
 
     def test_career_default_fallback(self):
         fallback = self.save_mgr.load_career()

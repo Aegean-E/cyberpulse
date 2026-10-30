@@ -12,6 +12,7 @@ if str(project_root) not in sys.path:
 
 from typing import List, Optional
 
+from cyberpulse.achievements import ACHIEVEMENTS, achievement_names
 from cyberpulse.engine import GameEngine
 from cyberpulse.models import CareerProfile, CyberDeck, NodeStatus, NodeType
 from cyberpulse.puzzles import BufferPuzzle, FrequencyPuzzle, HashCrackPuzzle
@@ -238,6 +239,10 @@ def print_career(profile: CareerProfile) -> None:
     print(f"[*] Best Neural Combo: x{profile.best_combo}")
     upgrades = ', '.join(profile.purchased_upgrades) if profile.purchased_upgrades else "None"
     print(f"[*] Hardware Rig:     {upgrades}")
+    unlocked_names = achievement_names(profile.achievements or [])
+    print(f"[*] Milestones:       {len(unlocked_names)}/{len(ACHIEVEMENTS)}")
+    if unlocked_names:
+        print(f"     {', '.join(unlocked_names)}")
     print("--------------------------------------------------------------------------")
     print("RECENT RUNS:")
     history = profile.run_history[-5:] if isinstance(profile.run_history, list) else []
@@ -357,6 +362,8 @@ def print_run_summary(engine: GameEngine) -> None:
     print("+==========================================================================+")
     print(f"[*] Story:       {summary['story_title']}")
     print(f"[*] Best Combo:  x{summary['best_combo']} | Quests: {summary['quests_completed_count']}/{summary['quests_total']}")
+    if summary.get("achievements_unlocked"):
+        print(f"[*] Milestones:  {', '.join(summary['achievements_unlocked'])}")
     real_contacts = [c for c in summary["contacts"] if c["trust"] > 0 or c["favor_used"]]
     if real_contacts:
         print("[*] Operatives:  " + ", ".join(

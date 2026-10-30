@@ -5,6 +5,7 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from cyberpulse.achievements import achievement_names, evaluate_achievements
 from cyberpulse.models import (
     BountyContract,
     CareerProfile,
@@ -223,6 +224,7 @@ class GameEngine:
         self.seed = int(seed)
         # Identity of this specific run; save slots use it to purge every checkpoint on settlement.
         self.run_id = uuid.uuid4().hex
+        self.last_unlocked_achievements: List[str] = []
         self.rng = random.Random(self.seed)
         self.nodes: Dict[str, Node] = generate_network(self.seed)
         self.deck: CyberDeck = CyberDeck()
@@ -722,6 +724,7 @@ class GameEngine:
             ],
             "story_act": self.state.story_act,
             "story_title": f"{title} // {subtitle}",
+            "achievements_unlocked": achievement_names(self.last_unlocked_achievements),
         }
 
     def list_quests(self) -> List[Dict[str, Any]]:
@@ -2355,6 +2358,13 @@ class GameEngine:
         else:
             outcome = "lockout"
         contract = self.state.active_contract
+        new_achievements = evaluate_achievements(self, profile)
+        profile.achievements = list(dict.fromkeys([
+            *(profile.achievements if isinstance(profile.achievements, list) else []),
+            *new_achievements,
+        ]))
+        self.last_unlocked_achievements = new_achievements
+
         history = profile.run_history if isinstance(profile.run_history, list) else []
         history.append({
             "outcome": outcome,
@@ -2367,6 +2377,7 @@ class GameEngine:
             "story_act": self.state.story_act,
             "quests_done": sum(1 for quest in self.state.quests if getattr(quest, "completed", False)),
             "contract_completed": bool(contract and contract.completed),
+            "achievements": list(new_achievements),
             "finished_at": time.time(),
         })
         profile.run_history = history[-self.MAX_RUN_HISTORY:]

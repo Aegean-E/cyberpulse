@@ -162,6 +162,7 @@ class TestModels(unittest.TestCase):
 
         self.assertEqual(restored.alias, "OldTimer")
         self.assertEqual(restored.run_history, [])
+        self.assertEqual(restored.achievements, [])
 
     def test_career_history_drops_malformed_entries_and_keeps_recent(self):
         history = [{"outcome": "victory", "seed": index} for index in range(25)]

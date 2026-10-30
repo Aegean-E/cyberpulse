@@ -6,11 +6,11 @@
 ---
 
 ## 📊 Codebase Metrics
-- **Total Python Modules**: `26`
-- **Total Classes**: `62`
-- **Total Top-Level Functions**: `70`
-- **Total Class Methods**: `588`
-- **Total Source Lines**: `13312`
+- **Total Python Modules**: `28`
+- **Total Classes**: `64`
+- **Total Top-Level Functions**: `74`
+- **Total Class Methods**: `596`
+- **Total Source Lines**: `13556`
 
 ---
 
@@ -23,10 +23,26 @@
 
 ---
 
+### [`cyberpulse/achievements.py`](cyberpulse/achievements.py)
+> *Career milestone catalog and settlement-time evaluation.*
+
+**Size**: `113` lines (`4291` bytes)
+
+**Classes:**
+- `class Achievement` - *A permanent career milestone shown in the dossier.*
+
+**Functions:**
+- `def achievement_name(achievement_id)` - *Return a display name, falling back to the raw identifier.*
+- `def achievement_status(profile)` - *Return the catalog annotated with this profile's unlocked state.*
+- `def achievement_names(achievement_ids)` - *Map stored identifiers to display names in catalog order.*
+- `def evaluate_achievements(engine, profile)` - *Return newly earned milestone identifiers for a settled run.*
+
+---
+
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1166` lines (`54224` bytes)
+**Size**: `1173` lines (`54637` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -60,7 +76,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3452` lines (`161554` bytes)
+**Size**: `3463` lines (`162134` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -173,7 +189,7 @@
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `635` lines (`22693` bytes)
+**Size**: `642` lines (`23043` bytes)
 
 **Classes:**
 - `class NodeType`
@@ -307,7 +323,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `806` lines (`37088` bytes)
+**Size**: `809` lines (`37246` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -459,10 +475,28 @@
 
 ---
 
+### [`tests/test_achievements.py`](tests/test_achievements.py)
+> *Unit tests for career milestone evaluation and catalog integrity.*
+
+**Size**: `91` lines (`3326` bytes)
+
+**Classes:**
+- `class TestAchievements`
+  - Method `.setUp()`
+  - Method `.test_catalog_ids_are_unique_and_described()`
+  - Method `.test_catalog_status_marks_unlocked_entries()`
+  - Method `.test_combo_milestones_unlock_at_their_thresholds()`
+  - Method `.test_victory_conditions_unlock_ghost_and_speed()`
+  - Method `.test_contract_vault_and_economy_conditions()`
+  - Method `.test_hot_extraction_and_veteran_conditions()`
+  - Method `.test_unlocks_are_not_returned_twice()`
+
+---
+
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `497` lines (`20892` bytes)
+**Size**: `499` lines (`20980` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -514,7 +548,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `1818` lines (`77197` bytes)
+**Size**: `1824` lines (`77618` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -700,7 +734,7 @@
 ### [`tests/test_models.py`](tests/test_models.py)
 > *Unit tests for CyberPulse domain models.*
 
-**Size**: `278` lines (`11315` bytes)
+**Size**: `279` lines (`11367` bytes)
 
 **Classes:**
 - `class TestModels`
@@ -776,7 +810,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `991` lines (`43061` bytes)
+**Size**: `993` lines (`43215` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -875,7 +909,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `495` lines (`18853` bytes)
+**Size**: `496` lines (`18976` bytes)
 
 **Classes:**
 - `class TestStorage`

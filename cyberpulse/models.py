@@ -122,6 +122,7 @@ class CareerProfile:
     best_combo: int = 0
     purchased_upgrades: List[str] = field(default_factory=list)
     run_history: List[Dict[str, Any]] = field(default_factory=list)
+    achievements: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -133,6 +134,12 @@ class CareerProfile:
         if not isinstance(history, list):
             history = []
         data_clean["run_history"] = [entry for entry in history if isinstance(entry, dict)][-20:]
+        achievements = data_clean.get("achievements")
+        if not isinstance(achievements, list):
+            achievements = []
+        data_clean["achievements"] = list(dict.fromkeys(
+            str(achievement) for achievement in achievements if isinstance(achievement, str)
+        ))
         return cls(**data_clean)
 
 

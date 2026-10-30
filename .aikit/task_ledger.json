@@ -1,55 +1,16 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-run-history",
+    "task_id": "task-cyberpulse-milestones",
     "last_phase": "in_progress",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1793371323.616835,
-    "owner": "opencode:run-history-1",
-    "started_by": "opencode:run-history-1",
-    "continuations": [],
-    "completed_at": 1793371353.9509466
+    "active_phase": 4,
+    "status": "in_progress",
+    "updated_at": 1793371918.269522,
+    "owner": "opencode:milestones-1",
+    "started_by": "opencode:milestones-1",
+    "continuations": []
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-web-save-load",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-web-save-load' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793356762.9413853,
-      "timestamp_str": "2026-10-30 13:39:22",
-      "agent": "opencode:save-load-1"
-    },
-    {
-      "task_id": "task-cyberpulse-autosave-slots",
-      "phase": "in_progress",
-      "phase_num": 2,
-      "description": "[1/6] Add autosave and three named save slots across terminal and Web Cyberdeck",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793363781.8923187,
-      "timestamp_str": "2026-10-30 15:36:21",
-      "agent": "opencode:autosave-slots-1",
-      "impact_assessment": {
-        "why": "ADR-024 gave both interfaces one manual save file; players still lose progress if they forget to save and cannot keep more than one run.",
-        "benefits": "Crash-safe progress recovery, parallel runs, and a load menu that works in both interfaces without changing the campaign.",
-        "risks": "contract: save schema and load semantics shared by CLI, web and storage; dependency: none; concurrency: single-user local files with atomic writes; state: existing single savegame.json must keep loading and terminal anti-replay must survive.",
-        "mitigation": "Keep slot 1 mapped to the legacy files, add explicit auto/manual ownership metadata, migrate on read, and cover legacy load, slot isolation and settlement cleanup with failing-first tests."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-autosave-slots",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[2/6] Storage slots green: legacy slot 1, slots 2-3, auto slot, run-id purge, 25 storage tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793364126.898283,
-      "timestamp_str": "2026-10-30 15:42:06",
-      "agent": "opencode:autosave-slots-1"
-    },
     {
       "task_id": "task-cyberpulse-autosave-slots",
       "phase": "in_progress",
@@ -245,6 +206,45 @@
       "timestamp": 1793371353.950948,
       "timestamp_str": "2026-10-30 17:42:33",
       "agent": "opencode:run-history-1"
+    },
+    {
+      "task_id": "task-cyberpulse-milestones",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/4] Add career milestones evaluated at settlement and shown in the dossier and run legacy",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793371661.669547,
+      "timestamp_str": "2026-10-30 17:47:41",
+      "agent": "opencode:milestones-1",
+      "impact_assessment": {
+        "why": "The career dossier records totals and recent runs, but there are no long-term goals; a player can finish many runs without a visible mastery ladder.",
+        "benefits": "Permanent milestone badges give replay goals, make unusual outcomes legible, and turn the run archive into evidence of progress.",
+        "risks": "contract: career.json gains an additive achievements list and run summaries gain a field; dependency: none; concurrency: settlement remains one-shot; state: old careers must load unlocked-empty and unlocks must never duplicate.",
+        "mitigation": "Evaluate only inside settle_career after stats update, append unique IDs, sanitize old payloads, keep the catalog in one module, and cover unlock rules, deduplication, persistence, CLI and API display with tests."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-milestones",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[3/4] Milestone catalog, settlement unlocks, CLI dossier/run legacy and Web badges green; 366 tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793371859.9577355,
+      "timestamp_str": "2026-10-30 17:50:59",
+      "agent": "opencode:milestones-1"
+    },
+    {
+      "task_id": "task-cyberpulse-milestones",
+      "phase": "in_progress",
+      "phase_num": 4,
+      "description": "[4/4] Career milestones complete; project gate 5/5, 366 tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793371918.269522,
+      "timestamp_str": "2026-10-30 17:51:58",
+      "agent": "opencode:milestones-1"
     }
   ]
 }

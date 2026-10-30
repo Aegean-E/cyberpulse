@@ -16,6 +16,7 @@ project_root = Path(__file__).resolve().parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+from cyberpulse.achievements import achievement_status
 from cyberpulse.engine import GameEngine
 from cyberpulse.models import NodeStatus, NodeType
 from cyberpulse.puzzles import BufferPuzzle, FrequencyPuzzle, HashCrackPuzzle
@@ -218,7 +219,9 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
         if path == "/api/career":
             self.server_session.settle_run_if_finished()
             profile = self.server_session.save_mgr.load_career()
-            self.send_json_response(profile.to_dict())
+            payload = profile.to_dict()
+            payload["achievement_catalog"] = achievement_status(profile)
+            self.send_json_response(payload)
             return
 
         if path == "/api/workshop":

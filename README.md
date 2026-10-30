@@ -170,6 +170,7 @@ The full reference of 47 commands, with each one's action and simulation role, i
 - **Story, Quests & Operatives Persist**: Story act, log, quest progress, contact trust, and spent favors are stored in the savegame and backfilled for pre-story saves.
 - **Run Legacy & Epilogues**: Victory, jackout, and lockout produce a run summary with quest/contact progress, best combo, and a story epilogue shown in both CLI and Web. Career dossiers record the highest combo across runs.
 - **Career Run Archive**: Every settled run appends a bounded record to the career dossier with its outcome, seed, turns, banked credits, net gain, best combo, story act, quest count, contract completion and finish time. The terminal shows the last five runs and the Web dossier shows the last six, so the RUN LEGACY moment survives into the next session and different seeds are easy to compare.
+- **Career Milestones**: Twelve permanent achievements are evaluated once at settlement: first extraction, five clears, x5/x10 combos, ghost and speed victories, a black contract, three vaults, 50 turns, 1,000 banked credits, a hot extraction, and reaching Act V. New unlocks appear in the run legacy and persist as dossier badges in both interfaces.
 - **Branching Alliance**: The Act III Agent Zero choice is persisted in the savegame and changes trust, rewards, dialogue, and the epilogue; old saves default to no choice.
 - **Same-Origin Web Cyberdeck**: The REST API sends no wildcard CORS grant and serializes state mutations, keeping the local game session private to its own page.
 - **Dynamic Resource Loop**: Turn-based CPU cooling (+1/turn) and hardware RAM constraints (`security_level * 16` MB).
@@ -182,7 +183,7 @@ The full reference of 47 commands, with each one's action and simulation role, i
 - **Backward-Compatible World State**: Old saves without a world clock load with a fresh Day 1 world; the new fields are additive and atomic with the existing savegame.
 - **NetWatch Active Hunters & Pursuit Simulation**: Alert 60%+ mobilizes autonomous ICE hunters that track player location across network graph hops, trigger connection clashes on interception (+15% trace, -2 CPU), quarantine unmonitored daemons, and react to scent scrambling (`spoof`/`wipe_logs`) and countermeasures (`logic_bomb`/`ghost_protocol`). Only one hunter can hold the sector at a time; an intercepted hunter still counts as active, preventing a second clamp from stacking onto the first.
 - **Tactical Shift Dynamics & Downtime**: The four in-game shifts (Late Night, Morning, Afternoon, Evening) apply distinct modifiers to alert decay, re-secure chance, market bias, hunter deployment thresholds, and social-engineering odds (staff answer lures differently at 03:00 than at 09:00), so the clock carries real tactical weight. `lay_low`/`wait` trades 1-3 turns of grid movement (with its patrol, hunter, and ambient risk) for CPU recovery, exposed in both the CLI and the Web Cyberdeck shift chip.
-- **Fast Test Shield**: 100% test pass rate across 359 unit and integration tests in about five seconds via `python -m unittest discover`.
+- **Fast Test Shield**: 100% test pass rate across 366 unit and integration tests in about five seconds via `python -m unittest discover`.
 
 <!-- aegean:brand-assets:start -->
 ## 🎨 Brand Assets
