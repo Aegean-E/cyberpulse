@@ -3,24 +3,15 @@
   "active_task": {
     "task_id": "task-cyberpulse-profile-settings",
     "last_phase": "in_progress",
-    "active_phase": 3,
-    "status": "in_progress",
+    "active_phase": 5,
+    "status": "completed",
     "updated_at": 1793377574.7304063,
     "owner": "opencode:profile-settings-1",
     "started_by": "opencode:profile-settings-1",
-    "continuations": []
+    "continuations": [],
+    "completed_at": 1793377608.124974
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-run-score",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-run-score' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793375008.9755416,
-      "timestamp_str": "2026-10-30 18:43:28",
-      "agent": "opencode:run-score-1"
-    },
     {
       "task_id": "task-cyberpulse-difficulty",
       "phase": "in_progress",
@@ -254,6 +245,16 @@
       "status": "in_progress",
       "timestamp": 1793377574.7304063,
       "timestamp_str": "2026-10-30 19:26:14",
+      "agent": "opencode:profile-settings-1"
+    },
+    {
+      "task_id": "task-cyberpulse-profile-settings",
+      "phase": "completed",
+      "phase_num": 5,
+      "description": "Task 'task-cyberpulse-profile-settings' completed successfully.",
+      "status": "completed",
+      "timestamp": 1793377608.1249762,
+      "timestamp_str": "2026-10-30 19:26:48",
       "agent": "opencode:profile-settings-1"
     }
   ]
