@@ -233,6 +233,9 @@ function initUIEvents() {
   document.getElementById("btn-workshop-open").addEventListener("click", openWorkshopModal);
   document.getElementById("btn-shop-open").addEventListener("click", openShopModal);
   document.getElementById("btn-career-open").addEventListener("click", openCareerModal);
+  document.getElementById("btn-rival-open").addEventListener("click", openRivalModal);
+  document.getElementById("btn-counter-rival").addEventListener("click", handleCounterRival);
+  document.getElementById("grid-rival").addEventListener("click", openRivalModal);
   document.getElementById("btn-reset-run").addEventListener("click", handleReset);
   document.getElementById("btn-quests-open").addEventListener("click", openQuestsModal);
   document.getElementById("btn-contacts-open").addEventListener("click", openContactsModal);
@@ -306,6 +309,10 @@ function initUIEvents() {
   });
   document.getElementById("btn-close-career").addEventListener("click", () => {
     document.getElementById("modal-career").classList.add("hidden");
+    sfx.click();
+  });
+  document.getElementById("btn-close-rival").addEventListener("click", () => {
+    document.getElementById("modal-rival").classList.add("hidden");
     sfx.click();
   });
   document.getElementById("btn-close-saves").addEventListener("click", () => {
@@ -612,6 +619,16 @@ function renderHUD(data) {
       : "";
     dailyChip.textContent = dailyKey ? `DAILY ${dailyKey}${dailyStreak}` : "";
     dailyChip.style.display = dailyKey ? "" : "none";
+  }
+
+  const rivalChip = document.getElementById("grid-rival");
+  if (rivalChip) {
+    const rival = data.rival;
+    rivalChip.textContent = rival
+      ? `RIVAL ${rival.name} · ${rival.turns_until}T · ${rival.contracts_stolen} STOLEN`
+      : "";
+    rivalChip.style.display = rival ? "" : "none";
+    rivalChip.title = rival ? `${rival.tagline} ${rival.handle}` : "";
   }
 
   // Story beat and active objective
@@ -2566,6 +2583,47 @@ async function openCareerModal() {
   }
 
   document.getElementById("modal-career").classList.remove("hidden");
+}
+
+async function openRivalModal() {
+  sfx.click();
+  if (!state.data) {
+    await refreshFullState();
+  }
+  renderRivalModal();
+  document.getElementById("modal-rival").classList.remove("hidden");
+}
+
+function renderRivalModal() {
+  const rival = state.data && state.data.rival;
+  const cpu = state.data && state.data.deck ? state.data.deck.cpu_cycles : 0;
+  document.getElementById("rival-name").textContent = rival ? rival.name : "NO ACTIVE RIVAL";
+  document.getElementById("rival-handle").textContent = rival ? `@${rival.handle} // SKILL ${rival.skill}/3` : "";
+  document.getElementById("rival-tagline").textContent = rival ? rival.tagline : "";
+  document.getElementById("rival-skill").textContent = rival ? `${rival.skill}/3` : "0/3";
+  document.getElementById("rival-stolen").textContent = rival ? rival.contracts_stolen : 0;
+  document.getElementById("rival-next").textContent = rival ? `${rival.turns_until}T` : "--";
+  const counterBtn = document.getElementById("btn-counter-rival");
+  if (counterBtn) {
+    counterBtn.disabled = !rival || cpu < 2;
+    counterBtn.textContent = rival && cpu < 2 ? "COUNTER-TRACE (NEED 2 CPU)" : "COUNTER-TRACE (2 CPU)";
+  }
+}
+
+async function handleCounterRival() {
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "counter_rival" });
+  if (res && res.ok) {
+    sfx.success();
+    addTerminalLog(res.message || "Rival counter-traced.", "success");
+    state.data = res.state;
+    renderHUD(res.state);
+    renderRivalModal();
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || res.error || "Counter-trace failed.", "warn");
+    if (applyStateSnapshot(res)) renderRivalModal();
+  }
 }
 
 async function openRigModal() {

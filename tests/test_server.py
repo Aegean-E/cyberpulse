@@ -68,6 +68,22 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertTrue(all(node["node_type"] == "DATA_VAULT" for node in side_nodes))
         self.assertTrue(all(node["ip_address"].startswith("10.0.9.") for node in side_nodes))
 
+    def test_rival_state_and_counter_action(self):
+        session = self.server.RequestHandlerClass.server_session
+        rival = session.engine.state.rival
+        self.assertIsNotNone(rival)
+        rival.next_move_turn = session.engine.state.turns_elapsed + 8
+        session.engine.deck.cpu_cycles = 8
+        before = rival.next_move_turn
+
+        status, res = self._post("/api/action", {"action": "counter_rival"})
+
+        self.assertEqual(status, 200)
+        self.assertTrue(res["ok"], res.get("message"))
+        self.assertIn("Counter-traced", res["message"])
+        self.assertEqual(res["state"]["rival"]["next_move_turn"], before + 5)
+        self.assertEqual(res["state"]["deck"]["cpu_cycles"], 6)
+
     def test_buying_a_consumable_does_not_persist_a_career_upgrade(self):
         session = self.server.RequestHandlerClass.server_session
         old_creds = session.engine.deck.cryptocreds

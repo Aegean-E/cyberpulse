@@ -60,6 +60,7 @@ cyberpulse/
 │   ├── network.py            <- procedural network grid generator
 │   ├── puzzles.py            <- cyber-intrusion puzzle nodes & near-miss detection
 │   ├── rewards.py            <- variable-ratio loot tables & reward schedules
+│   ├── rivals.py             <- deterministic rival-netrunner generation
 │   ├── server.py             <- zero-dependency HTTP REST & cyberdeck server
 │   ├── shop.py               <- black market tech vendor & hardware catalog
 │   ├── story.py              <- story acts, quest blueprints, operative dialogue
@@ -81,6 +82,7 @@ cyberpulse/
     ├── test_network.py
     ├── test_puzzles.py
     ├── test_rewards.py
+    ├── test_rivals.py
     ├── test_server.py
     ├── test_shop.py
     ├── test_storage.py
@@ -147,7 +149,7 @@ python -m cyberpulse.cli --daily
 
 ### In-Game Commands (Authentic Simulation & Tactical Netrunning)
 
-The full reference of 48 commands, with each one's action and simulation role, is in [COMMANDS.md](COMMANDS.md).
+The full reference of 50 commands, with each one's action and simulation role, is in [COMMANDS.md](COMMANDS.md).
 
 ### 🕹️ Authentic Cyber Warfare Infiltration Workflow
 1. **Network Reconnaissance**: Discover network topology with `scan` or read host configuration files with `cat /etc/hosts`. Scan active network ports using `probe 192.168.1.10`.
@@ -172,6 +174,7 @@ The full reference of 48 commands, with each one's action and simulation role, i
 - **Run-Scoped Settlement Purge**: Every save carries a run identity. When a run settles, only that run's owned checkpoints and its autosave are removed; saves from other runs, or a save this interface never touched, survive. A finished run cannot be saved or replayed from its own checkpoints.
 - **Power-Loss Safe Savegames & Shadow Backup**: Uses atomic temporary file writes, `fsync`, `.bak` shadow recovery, and corruption quarantine to eliminate state loss risk. A primary is verified as JSON before it refreshes the shadow backup, so a corrupt save can never overwrite the last good recovery copy; non-finite timestamps and career values fall back or are dropped instead of crashing the archive.
 - **Dead Man's Switch**: The Black Market sells a 150 CR one-use failsafe. If trace reaches 100%, it banks 50% of the current unbanked loot before the ICE clears the rest and then expires. It is per-run, persists in saves, and is deliberately excluded from permanent career upgrades.
+- **Rival Netrunner**: Every run seeds a named rival (Vex, Marrow or Static) who works the same Syndicate board. On a scheduled turn they snatch a posted contract, post a news headline, and reschedule; an empty board makes them probe your link for trace instead. `counter_rival` burns 2 CPU to delay their next move by 5 turns. The Web HUD shows the rival chip and a rail modal with the same counter action; the rival persists through saves and old saves backfill one deterministically.
 - **Deterministic Save Integrity**: The reward RNG state and in-progress puzzle attempts/near-miss state are persisted, so save/load continues the exact seeded sequence instead of rerolling rewards or resetting attempts. Legacy saves without these fields fall back to the prior reseed behavior.
 - **Deterministic Run Settlement**: Victory and `jackout` both bank all unbanked loot; trace lockout records a failed run. CLI and Web Cyberdeck share the same one-shot career lifecycle, so rewards are never double-counted or silently lost.
 - **Persistent Puzzle Attempts & Consequential Failure**: Reopening a node resumes its remaining attempts, including across save/load, instead of granting a free retry. A fully burned script adds escalating trace, breaks the combo, raises host EDR alert, and seals the host for two turns (`HOST LOCKDOWN`), so the next attempt must wait for the grid to move or target another host.
@@ -193,7 +196,7 @@ The full reference of 48 commands, with each one's action and simulation role, i
 - **Backward-Compatible World State**: Old saves without a world clock load with a fresh Day 1 world; the new fields are additive and atomic with the existing savegame.
 - **NetWatch Active Hunters & Pursuit Simulation**: Alert 60%+ mobilizes autonomous ICE hunters that track player location across network graph hops, trigger connection clashes on interception (+15% trace, -2 CPU), quarantine unmonitored daemons, and react to scent scrambling (`spoof`/`wipe_logs`) and countermeasures (`logic_bomb`/`ghost_protocol`). Only one hunter can hold the sector at a time; an intercepted hunter still counts as active, preventing a second clamp from stacking onto the first.
 - **Tactical Shift Dynamics & Downtime**: The four in-game shifts (Late Night, Morning, Afternoon, Evening) apply distinct modifiers to alert decay, re-secure chance, market bias, hunter deployment thresholds, and social-engineering odds (staff answer lures differently at 03:00 than at 09:00), so the clock carries real tactical weight. `lay_low`/`wait` trades 1-3 turns of grid movement (with its patrol, hunter, and ambient risk) for CPU recovery, exposed in both the CLI and the Web Cyberdeck shift chip.
-- **Fast Test Shield**: 100% test pass rate across 388 unit and integration tests in about six seconds via `python -m unittest discover`.
+- **Fast Test Shield**: 100% test pass rate across 396 unit and integration tests in about seven seconds via `python -m unittest discover`.
 
 <!-- aegean:brand-assets:start -->
 ## 🎨 Brand Assets

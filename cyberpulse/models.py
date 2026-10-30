@@ -172,6 +172,36 @@ class CareerProfile:
         return cls(**data_clean)
 
 
+@dataclass
+class RivalNetrunner:
+    """A named competitor who works the same Syndicate board during a run."""
+    name: str
+    handle: str
+    skill: int
+    tagline: str = ""
+    next_move_turn: int = 6
+    contracts_stolen: int = 0
+    status: str = "active"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "RivalNetrunner":
+        clean = dict(data)
+        clean.setdefault("name", "Unknown")
+        clean.setdefault("handle", "unknown")
+        for field_name, default in (("skill", 1), ("next_move_turn", 6), ("contracts_stolen", 0)):
+            try:
+                clean[field_name] = int(clean.get(field_name, default))
+            except (TypeError, ValueError):
+                clean[field_name] = default
+        clean["skill"] = max(1, min(3, clean["skill"]))
+        clean["next_move_turn"] = max(1, clean["next_move_turn"])
+        clean["contracts_stolen"] = max(0, clean["contracts_stolen"])
+        return cls(**clean)
+
+
 class FirewallPolicy:
     ALLOW_ALL = "ALLOW_ALL"
     FILTER_PORTS = "FILTER_PORTS"
@@ -633,6 +663,7 @@ class GameState:
     contacts: List[ContactProfile] = field(default_factory=list)
     world: WorldState = field(default_factory=WorldState)
     probed_nodes: List[str] = field(default_factory=list)
+    rival: Optional[RivalNetrunner] = None
 
     def to_dict(self) -> Dict[str, Any]:
         res = asdict(self)
@@ -669,4 +700,7 @@ class GameState:
         world = data_clean.get("world")
         if isinstance(world, dict):
             data_clean["world"] = WorldState.from_dict(world)
+        rival = data_clean.get("rival")
+        if isinstance(rival, dict):
+            data_clean["rival"] = RivalNetrunner.from_dict(rival)
         return cls(**data_clean)

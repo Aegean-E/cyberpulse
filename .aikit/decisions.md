@@ -445,4 +445,16 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. Cover shop purchase/arming, lockout payout, save round-trip, CLI career exclusion and the HTTP purchase path with tests.
 - **Consequences**: Players gain a meaningful mid-run risk tradeoff and a new Black Market choice, while old saves, career progression and uninsured lockouts behave exactly as before. Test suite: 388 tests, 100% green.
 
+### ADR-034: Rival Netrunner: Contract Competition and Counter-Tracing
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: The living grid pressures the player through alert, hunters and deadlines, but no peer netrunner competes for the Syndicate board. Offers disappeared only by expiry or player choice, so the world lacked a social competitor.
+- **Decision**:
+  1. Add a persisted `RivalNetrunner` object to `GameState` with name, handle, skill, tagline, absolute next-move turn, stolen count and status. A seeded roster (Vex, Marrow, Static) generates one deterministically per run; old saves without a rival backfill one on load.
+  2. On a due turn inside `tick_world`, refresh the board and let the rival remove one posted offer, record a Syndicate headline, and schedule the next absolute turn from skill plus a seeded delay. If the board is empty, the rival probes the player's link for trace instead.
+  3. Add `counter_rival` (aliases `trace_rival`): costs 2 CPU, refuses without CPU or an active rival, and adds 5 turns to the rival's next move. Expose it through the terminal, the `counter_rival` API action and a Web modal.
+  4. Add a HUD rival chip, a RIVAL rail button/modal with status and counter action, and include the rival summary in every state payload and run summary.
+  5. Cover seeded generation, board theft, scheduling, counter cost/delay, save persistence, old-save backfill, CLI inspection/counter, and the HTTP action.
+- **Consequences**: The job board now has a visible peer antagonist and a CPU-priced counterplay loop, while existing saves gain a rival without losing progress. Test suite: 396 tests, 100% green.
+
 

@@ -72,6 +72,22 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(loaded.deck.threat_intel_count, 3)
         self.assertIn("node_proxy_a", loaded.state.probed_nodes)
 
+    def test_save_preserves_rival_state_and_backfills_old_saves(self):
+        engine = GameEngine(seed=42)
+        engine.state.rival.contracts_stolen = 2
+        self.save_mgr.save(engine)
+
+        loaded = self.save_mgr.load()
+
+        self.assertIsNotNone(loaded.state.rival)
+        self.assertEqual(loaded.state.rival.contracts_stolen, 2)
+
+        payload = json.loads(self.save_mgr.save_file.read_text(encoding="utf-8"))
+        payload["state"].pop("rival", None)
+        self.save_mgr.save_file.write_text(json.dumps(payload), encoding="utf-8")
+        backfilled = self.save_mgr.load()
+        self.assertIsNotNone(backfilled.state.rival)
+
     def test_save_preserves_extraction_insurance(self):
         engine = GameEngine(seed=42)
         engine.deck.extraction_insurance = True

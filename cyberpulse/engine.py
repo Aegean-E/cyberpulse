@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from cyberpulse.achievements import achievement_names, evaluate_achievements
 from cyberpulse.daily import is_next_day
+from cyberpulse.rivals import generate_rival
 from cyberpulse.models import (
     BountyContract,
     CareerProfile,
@@ -265,6 +266,7 @@ class GameEngine:
         self.state.story_log = list(STORY_LOG_SEED)
         self.state.quests = initial_quests()
         self.state.contacts = initial_contacts()
+        self.state.rival = generate_rival(self.seed)
         self._sync_story_quests()
         self.pending_puzzles: Dict[str, Any] = {}
         self.run_settled: bool = False
@@ -624,6 +626,8 @@ class GameEngine:
         # A swapped-in save may carry a different alert level than the fresh engine,
         # so resync the corporate posture baseline silently on the next grid pulse.
         self._last_alert_tier = None
+        if self.state.rival is None:
+            self.state.rival = generate_rival(self.seed)
         self._sync_story_quests()
         if not self.state.contract_offers:
             self._refresh_contract_offers()
@@ -728,6 +732,7 @@ class GameEngine:
             "story_title": f"{title} // {subtitle}",
             "achievements_unlocked": achievement_names(self.last_unlocked_achievements),
             "daily_key": getattr(self, "daily_key", ""),
+            "rival": self.rival_summary(),
         }
 
     def list_quests(self) -> List[Dict[str, Any]]:
@@ -982,6 +987,79 @@ class GameEngine:
                 self.regenerate_cpu(1)
         return messages
 
+    def rival_summary(self) -> Optional[Dict[str, Any]]:
+        """Return the active rival's public status for HUD and dossier display."""
+        rival = self.state.rival
+        if rival is None:
+            return None
+        return {
+            "name": rival.name,
+            "handle": rival.handle,
+            "skill": rival.skill,
+            "tagline": rival.tagline,
+            "status": rival.status,
+            "next_move_turn": rival.next_move_turn,
+            "turns_until": max(0, rival.next_move_turn - self.state.turns_elapsed),
+            "contracts_stolen": rival.contracts_stolen,
+        }
+
+    def counter_rival(self) -> Tuple[bool, str]:
+        """Burn CPU to trace the rival and postpone their next contract grab."""
+        rival = self.state.rival
+        if rival is None or rival.status != "active":
+            return False, "No active rival netrunner to counter."
+        if self.deck.cpu_cycles < 2:
+            return False, "Counter-trace needs 2 CPU cycles."
+        self.deck.cpu_cycles -= 2
+        rival.next_move_turn += 5
+        message = (
+            f"🛰️ [RIVAL] Counter-traced {rival.name}; their next board move is delayed "
+            f"by 5 turns (ETA {max(0, rival.next_move_turn - self.state.turns_elapsed)}T)."
+        )
+        self.state.message_log.append(message)
+        return True, message
+
+    def _tick_rival(self) -> List[str]:
+        """Let the rival compete for a posted contract, or probe when the board is empty."""
+        rival = self.state.rival
+        if rival is None or rival.status != "active":
+            return []
+        now = self.state.turns_elapsed
+        if now < rival.next_move_turn:
+            return []
+
+        self._refresh_contract_offers()
+        rng = world_rng(self.seed, now, f"rival:{rival.handle}")
+        if self.state.contract_offers:
+            offer = self.state.contract_offers.pop(rng.randrange(len(self.state.contract_offers)))
+            rival.contracts_stolen += 1
+            delay = max(4, 8 - rival.skill) + rng.randint(0, 2)
+            rival.next_move_turn = now + delay
+            message = (
+                f"🕶️ [RIVAL] {rival.name} ({rival.handle}) snatched '{offer.title}' "
+                f"from the job board; next move in ~{delay} turns."
+            )
+            record_news(
+                self.state.world,
+                now,
+                "Syndicate",
+                f"Rival runner {rival.name} claimed a Syndicate contract before the board could fill.",
+                tone="alert",
+            )
+            self.state.message_log.append(message)
+            return [message]
+
+        pressure = 2 + rival.skill
+        self.add_trace(pressure)
+        delay = max(4, 8 - rival.skill) + rng.randint(0, 2)
+        rival.next_move_turn = now + delay
+        message = (
+            f"🕶️ [RIVAL] {rival.name} pinged your link looking for work "
+            f"(+{pressure}% trace, next move in ~{delay} turns)."
+        )
+        self.state.message_log.append(message)
+        return [message]
+
     def lay_low(self, turns: int = 1) -> Tuple[bool, str]:
         """Ghost the connection for a few turns: recover CPU while the grid keeps moving."""
         if self.state.is_game_over:
@@ -1046,6 +1124,11 @@ class GameEngine:
         messages: List[str] = []
         self._decay_alert(profile.alert_decay_bonus)
         messages.extend(self._check_contract_clock())
+        rival_messages = self._tick_rival()
+        if rival_messages:
+            messages.extend(rival_messages)
+            if self.state.is_game_over:
+                return messages
 
         event = ambient_event_for(
             self.seed, self.state.turns_elapsed, world.alert_level, world.turns_since_event

@@ -90,6 +90,12 @@ def print_hud(engine: GameEngine) -> None:
     if engine.deck.active_daemons:
         print(f"[*] Daemons:    {len(engine.deck.active_daemons)} background listener(s) active")
     print(f"[*] Contract:   {contract_str}")
+    rival = engine.rival_summary()
+    if rival:
+        print(
+            f"[*] Rival:      {rival['name']} ({rival['handle']}) | "
+            f"stolen {rival['contracts_stolen']} | next move in {rival['turns_until']}T"
+        )
     if contract and not contract.completed and not contract.failed and contract.expires_turn:
         remaining = contract.expires_turn - engine.state.turns_elapsed
         clock = "EXPIRED" if remaining <= 0 else f"{remaining} turn(s) left"
@@ -511,7 +517,7 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
         if choice in ("6", "help", "how"):
             print("Commands: status, contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
             print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
-            print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career,")
+            print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, career,")
             print("          save [1-3] [name], load [1-3|auto], saves, rename, delete, replay, quit")
             print("Daily challenge: run `python -m cyberpulse.cli --daily` or choose 7.")
             continue
@@ -997,6 +1003,24 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         print_career(save_mgr.load_career())
         return True
 
+    if action in ("rival", "rivals"):
+        rival = engine.rival_summary()
+        if not rival:
+            print("No active rival netrunner on this grid.")
+        else:
+            print("\n+-------------------------------- RIVAL NETRUNNER ---------------------------+")
+            print(f"[*] Handle:    {rival['name']} ({rival['handle']}) // Skill {rival['skill']}/3")
+            print(f"[*] Activity:  {rival['contracts_stolen']} contract(s) stolen | next move in {rival['turns_until']} turn(s)")
+            print(f"[*] Profile:   {rival['tagline']}")
+            print("Counter with: counter_rival (costs 2 CPU, delays the next move by 5 turns)")
+            print("+----------------------------------------------------------------------------+")
+        return True
+
+    if action in ("counter_rival", "counter_rival_netrunner", "trace_rival"):
+        ok, msg = engine.counter_rival()
+        print(msg)
+        return True
+
     if action in ("replay", "seed"):
         if len(parts) < 2:
             print("Usage: replay <1-5>")
@@ -1101,7 +1125,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print(f"No checkpoint in {label}.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, career, status, save, load, saves, rename, delete, replay, quit")
+    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, career, status, save, load, saves, rename, delete, replay, quit")
     return True
 
 

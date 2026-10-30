@@ -79,6 +79,7 @@
       <span class="grid-chip" id="grid-shift">MORNING</span>
       <span class="grid-chip shift-chip" id="grid-shift-effect" title="Shift doctrine">STANDARD POSTURE</span>
       <span class="grid-chip daily-chip" id="grid-daily" style="display: none;">DAILY RUN</span>
+      <span class="grid-chip rival-chip" id="grid-rival" style="display: none;">RIVAL</span>
       <span class="grid-chip alert-chip" id="grid-alert">GRID ALERT 10%</span>
       <span class="grid-chip market-chip" id="grid-market">MARKET x1.000</span>
       <span class="grid-chip hunter-chip" id="grid-hunter" style="display: none;">RADAR CLEAR</span>
@@ -108,6 +109,9 @@
           </button>
           <button class="rail-btn info-action" id="btn-career-open" title="Career dossier [D]" aria-label="Career dossier">
             <span class="rail-glyph">◍</span><span class="rail-label">DOSSIER</span>
+          </button>
+          <button class="rail-btn reset-action" id="btn-rival-open" title="Rival netrunner status" aria-label="Rival netrunner">
+            <span class="rail-glyph">◈</span><span class="rail-label">RIVAL</span>
           </button>
         </div>
         <button class="rail-btn reset-action" id="btn-reset-run" title="Start a new seeded run" aria-label="New run">
@@ -534,6 +538,27 @@
       </div>
       <div class="contacts-intro">Every operative has a job and one favor. Trust grows as you work together and spend favors.</div>
       <div class="contacts-grid" id="contacts-grid"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="modal-rival">
+    <div class="modal-box rival-modal-box">
+      <div class="modal-header">
+        <span class="modal-title">RIVAL NETRUNNER</span>
+        <button class="modal-close" id="btn-close-rival">&times;</button>
+      </div>
+      <div class="rival-card">
+        <div class="rival-name" id="rival-name">NO ACTIVE RIVAL</div>
+        <div class="rival-handle" id="rival-handle"></div>
+        <div class="rival-tagline" id="rival-tagline"></div>
+        <div class="rival-stats">
+          <div class="rival-stat"><span class="k">SKILL</span><span class="v" id="rival-skill">0/3</span></div>
+          <div class="rival-stat"><span class="k">CONTRACTS STOLEN</span><span class="v" id="rival-stolen">0</span></div>
+          <div class="rival-stat"><span class="k">NEXT MOVE</span><span class="v" id="rival-next">--</span></div>
+        </div>
+        <p class="rival-hint">Counter-trace burns 2 CPU and delays the next contract grab by 5 turns.</p>
+        <button class="action-btn" id="btn-counter-rival">COUNTER-TRACE (2 CPU)</button>
+      </div>
     </div>
   </div>
 

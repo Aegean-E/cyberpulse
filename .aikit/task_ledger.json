@@ -1,49 +1,16 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-dead-mans-switch",
+    "task_id": "task-cyberpulse-rival-netrunner",
     "last_phase": "in_progress",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1793374160.1369112,
-    "owner": "opencode:dead-mans-switch-1",
-    "started_by": "opencode:dead-mans-switch-1",
-    "continuations": [],
-    "completed_at": 1793374185.9534838
+    "active_phase": 4,
+    "status": "in_progress",
+    "updated_at": 1793374685.2516258,
+    "owner": "opencode:rival-netrunner-1",
+    "started_by": "opencode:rival-netrunner-1",
+    "continuations": []
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-daily-run",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[3/4] Daily CLI flag/menu, API reset, Web button, HUD chip and dossier bests green; 374 tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793372574.7458596,
-      "timestamp_str": "2026-10-30 18:02:54",
-      "agent": "opencode:daily-run-1"
-    },
-    {
-      "task_id": "task-cyberpulse-daily-run",
-      "phase": "in_progress",
-      "phase_num": 4,
-      "description": "[4/4] Daily runs complete; project gate 5/5, 374 tests; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793372632.4765494,
-      "timestamp_str": "2026-10-30 18:03:52",
-      "agent": "opencode:daily-run-1"
-    },
-    {
-      "task_id": "task-cyberpulse-daily-run",
-      "phase": "completed",
-      "phase_num": 5,
-      "description": "Task 'task-cyberpulse-daily-run' completed successfully.",
-      "status": "completed",
-      "timestamp": 1793372664.2170405,
-      "timestamp_str": "2026-10-30 18:04:24",
-      "agent": "opencode:daily-run-1"
-    },
     {
       "task_id": "task-cyberpulse-replay-seeds",
       "phase": "in_progress",
@@ -250,6 +217,45 @@
       "timestamp": 1793374185.9534857,
       "timestamp_str": "2026-10-30 18:29:45",
       "agent": "opencode:dead-mans-switch-1"
+    },
+    {
+      "task_id": "task-cyberpulse-rival-netrunner",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/4] Add a seeded rival netrunner who steals posted contracts and can be countered",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793374402.3214152,
+      "timestamp_str": "2026-10-30 18:33:22",
+      "agent": "opencode:rival-netrunner-1",
+      "impact_assessment": {
+        "why": "The living grid pressures the player through alert and hunters, but no other netrunner competes for the Syndicate job board, so the world has no peer antagonist.",
+        "benefits": "A named rival creates urgency around offers, gives the job board a social competitor, and adds a new CPU-spending counterplay decision.",
+        "risks": "contract: GameState gains a persisted rival object and a new action/command; dependency: none; concurrency: one rival acts inside the turn loop; state: old saves must fabricate a rival cleanly and counterplay must not double-delay.",
+        "mitigation": "Generate the rival deterministically from the run seed, persist it through save/load, schedule actions on absolute turns, cap counter delays, and cover steal, empty-board, counter, old-save and API paths with tests."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-rival-netrunner",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[3/4] Rival generation, contract steal, counter action, CLI/API and Web modal green; 396 tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793374585.5237556,
+      "timestamp_str": "2026-10-30 18:36:25",
+      "agent": "opencode:rival-netrunner-1"
+    },
+    {
+      "task_id": "task-cyberpulse-rival-netrunner",
+      "phase": "in_progress",
+      "phase_num": 4,
+      "description": "[4/4] Rival netrunner complete; project gate 5/5, 396 tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793374685.2516258,
+      "timestamp_str": "2026-10-30 18:38:05",
+      "agent": "opencode:rival-netrunner-1"
     }
   ]
 }

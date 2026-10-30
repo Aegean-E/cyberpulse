@@ -4072,3 +4072,32 @@ body {
   border-top: 1px solid var(--c-border);
 }
 .dossier-daily-list { display: flex; flex-direction: column; gap: 6px; max-height: 130px; overflow-y: auto; }
+.grid-chip.rival-chip {
+  color: var(--c-danger);
+  border-color: var(--c-danger-glow);
+  cursor: pointer;
+}
+.rival-modal-box { max-width: 540px; }
+.rival-card { display: flex; flex-direction: column; gap: 10px; }
+.rival-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--c-danger);
+}
+.rival-handle { font-size: 9px; letter-spacing: 1.2px; color: var(--c-text-dim); }
+.rival-tagline { font-size: 10px; line-height: 1.5; color: var(--c-text-main); }
+.rival-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid var(--c-border);
+  border-bottom: 1px solid var(--c-border);
+}
+.rival-stat { display: flex; flex-direction: column; gap: 3px; }
+.rival-stat .k { font-size: 7px; letter-spacing: 1.4px; color: var(--c-text-dim); }
+.rival-stat .v { font-family: var(--font-display); font-size: 13px; color: var(--c-text-bright); }
+.rival-hint { margin: 0; font-size: 9px; line-height: 1.5; color: var(--c-text-dim); }
+#btn-counter-rival { align-self: flex-start; }

@@ -245,6 +245,14 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("Usage: replay <1-5>", out)
 
+    def test_rival_commands_inspect_and_counter(self):
+        code, out = self.run_cli("--seed", "1337", "--exec", "rival;counter_rival;rival")
+
+        self.assertEqual(code, 0)
+        self.assertIn("RIVAL NETRUNNER", out)
+        self.assertIn("Counter-traced", out)
+        self.assertIn("contract(s) stolen", out)
+
     def test_daily_flag_uses_the_date_seed(self):
         with mock.patch("cyberpulse.cli.daily_run", return_value=("2026-10-30", 20261030)):
             code, out = self.run_cli("--daily", "--exec", "status")

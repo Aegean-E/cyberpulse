@@ -35,6 +35,8 @@
 | `counter [method]` | Deploy tactical countermeasures against hunter (`logic_bomb`, `ghost_protocol`, `cpu_burst`) | Active counter-defense & hunter neutralization |
 | `story` | Show the current act, story log, and briefing | Narrative orientation & campaign immersion |
 | `contract` / `bounty` | Open the job board: active job plus offers; `accept_job <id>` takes one, `drop_offer <id>` passes one for 30 CR or a one-turn cooldown, `decline_contract` abandons the active job | Job choice, clock & risk/reward |
+| `rival` | Inspect the run's rival netrunner, stolen contract count, and next scheduled move | Peer-antagonist awareness |
+| `counter_rival` | Burn 2 CPU to trace the rival and delay their next contract grab by 5 turns | Counterplay & tempo decision |
 | `quests` / `missions` | Open the mission board with progress, rewards, and available jobs | Goal clarity & Zeigarnik completion pressure |
 | `contacts` / `crew` | List channels, trust tiers, tier dialogue, and favors; Inner Circle unlocks a second favor | Relationship tracking & social capital |
 | `contact <handle> [talk\|job\|favor\|ally\|defy]` | Talk to an operative, accept their job, spend a one-time favor, or make Agent Zero's Act III alliance choice | Character interaction & story branching |

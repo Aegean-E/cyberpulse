@@ -6,11 +6,11 @@
 ---
 
 ## 📊 Codebase Metrics
-- **Total Python Modules**: `30`
-- **Total Classes**: `65`
-- **Total Top-Level Functions**: `78`
-- **Total Class Methods**: `619`
-- **Total Source Lines**: `14043`
+- **Total Python Modules**: `32`
+- **Total Classes**: `67`
+- **Total Top-Level Functions**: `79`
+- **Total Class Methods**: `632`
+- **Total Source Lines**: `14333`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1226` lines (`57244` bytes)
+**Size**: `1250` lines (`58460` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -89,7 +89,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3495` lines (`163693` bytes)
+**Size**: `3578` lines (`167168` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -128,6 +128,9 @@
   - Method `.add_trace(raw_amount)` - *Increase system trace, mitigated by ICE dampeners. 100% triggers lockout & loss of loot.*
   - Method `.regenerate_cpu(amount)` - *Cool down cyberdeck processing units and recover CPU cycles.*
   - Method `.advance_turn()` - *Advance the run clock one turn: daemons harvest, then the living grid reacts.*
+  - Method `.rival_summary()` - *Return the active rival's public status for HUD and dossier display.*
+  - Method `.counter_rival()` - *Burn CPU to trace the rival and postpone their next contract grab.*
+  - Method `._tick_rival()` - *Let the rival compete for a posted contract, or probe when the board is empty.*
   - Method `.lay_low(turns)` - *Ghost the connection for a few turns: recover CPU while the grid keeps moving.*
   - Method `.tick_world()` - *Advance the in-game clock, alert, market, ambient events, and grid response.*
   - Method `._intrusion_footprint()` - *Count currently-breached hosts the corporation still has to clean up.*
@@ -202,7 +205,7 @@
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `672` lines (`24320` bytes)
+**Size**: `706` lines (`25537` bytes)
 
 **Classes:**
 - `class NodeType`
@@ -220,6 +223,9 @@
   - Method `.to_dict()`
   - Method `.from_dict(data)`
 - `class CareerProfile` - *Persistent meta-progression profile tracking permanent stats and upgrades.*
+  - Method `.to_dict()`
+  - Method `.from_dict(data)`
+- `class RivalNetrunner` - *A named competitor who works the same Syndicate board during a run.*
   - Method `.to_dict()`
   - Method `.from_dict(data)`
 - `class FirewallPolicy`
@@ -333,10 +339,20 @@
 
 ---
 
+### [`cyberpulse/rivals.py`](cyberpulse/rivals.py)
+> *Deterministic rival-netrunner generation.*
+
+**Size**: `40` lines (`1000` bytes)
+
+**Functions:**
+- `def generate_rival(seed)` - *Create the run's rival from a deterministic seed stream.*
+
+---
+
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `836` lines (`38053` bytes)
+**Size**: `842` lines (`38350` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -510,7 +526,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `539` lines (`22712` bytes)
+**Size**: `547` lines (`23033` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -540,6 +556,7 @@
   - Method `.test_jackout_purges_owned_slots_and_autosave()`
   - Method `.test_replay_starts_a_run_from_an_archived_seed()`
   - Method `.test_replay_rejects_an_out_of_range_index()`
+  - Method `.test_rival_commands_inspect_and_counter()`
   - Method `.test_daily_flag_uses_the_date_seed()`
   - Method `.test_daily_career_dossier_shows_the_streak()`
   - Method `.test_dead_mans_switch_does_not_become_a_career_upgrade()`
@@ -580,7 +597,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `1914` lines (`80884` bytes)
+**Size**: `1947` lines (`82072` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -669,6 +686,9 @@
   - Method `.test_exploit_lockout_does_not_claim_root_access()`
   - Method `.test_float_seed_is_coerced()`
   - Method `.test_dead_mans_switch_banks_half_the_unbanked_loot_on_lockout()`
+  - Method `.test_rival_steals_a_posted_contract_on_schedule()`
+  - Method `.test_counter_rival_delays_the_next_move_and_costs_cpu()`
+  - Method `.test_counter_rival_requires_cpu()`
   - Method `.test_lockout_summary_reports_lost_unbanked_credits()`
   - Method `.test_run_summary_reflects_legacy()`
   - Method `.test_settle_career_records_best_combo_on_failure()`
@@ -846,10 +866,22 @@
 
 ---
 
+### [`tests/test_rivals.py`](tests/test_rivals.py)
+> *Unit tests for deterministic rival generation.*
+
+**Size**: `30` lines (`942` bytes)
+
+**Classes:**
+- `class TestRivalGeneration`
+  - Method `.test_rival_is_deterministic_for_a_seed()`
+  - Method `.test_rival_fields_are_within_design_bounds()`
+
+---
+
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `1030` lines (`44979` bytes)
+**Size**: `1046` lines (`45696` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -858,6 +890,7 @@
   - Method `._get(path)`
   - Method `._post(path, payload)`
   - Method `.test_get_state()`
+  - Method `.test_rival_state_and_counter_action()`
   - Method `.test_buying_a_consumable_does_not_persist_a_career_upgrade()`
   - Method `.test_get_shop()`
   - Method `.test_get_world_state_and_grid_fields()`
@@ -952,7 +985,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `543` lines (`20801` bytes)
+**Size**: `559` lines (`21451` bytes)
 
 **Classes:**
 - `class TestStorage`
@@ -961,6 +994,7 @@
   - Method `.test_load_nonexistent()`
   - Method `.test_save_preserves_story_quests_and_contacts()`
   - Method `.test_save_preserves_tactical_deck_state()`
+  - Method `.test_save_preserves_rival_state_and_backfills_old_saves()`
   - Method `.test_save_preserves_extraction_insurance()`
   - Method `.test_load_backfills_story_for_old_save()`
   - Method `.test_career_save_and_load()`

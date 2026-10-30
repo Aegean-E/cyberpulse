@@ -90,6 +90,7 @@ class CyberdeckSession:
             "story": self.engine.story_summary(),
             "world": world,
             "run_summary": self.engine.run_summary(),
+            "rival": self.engine.rival_summary(),
             "quests": self.engine.list_quests(),
             "contacts": self.engine.list_contacts(),
             "shop_items": self.shop.list_available(self.engine.deck, price_multiplier=world["market_multiplier"]),
@@ -540,6 +541,11 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
             if action in ("counter", "counter_hunter"):
                 method = payload.get("method", "logic_bomb")
                 ok, msg = engine.counter_hunter(method=method)
+                self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action in ("counter_rival", "trace_rival"):
+                ok, msg = engine.counter_rival()
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
                 return
 

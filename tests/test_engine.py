@@ -1271,6 +1271,39 @@ class TestEngine(unittest.TestCase):
         self.assertFalse(self.engine.deck.extraction_insurance)
         self.assertTrue(any("Dead Man's Switch" in line for line in self.engine.state.message_log))
 
+    def test_rival_steals_a_posted_contract_on_schedule(self):
+        rival = self.engine.state.rival
+        self.assertIsNotNone(rival)
+        rival.next_move_turn = 1
+        offers_before = len(self.engine.state.contract_offers)
+
+        self.engine.advance_turn()
+
+        self.assertEqual(rival.contracts_stolen, 1)
+        self.assertEqual(len(self.engine.state.contract_offers), offers_before - 1)
+        self.assertGreater(rival.next_move_turn, 1)
+        self.assertTrue(any("snatched" in message for message in self.engine.state.message_log))
+
+    def test_counter_rival_delays_the_next_move_and_costs_cpu(self):
+        rival = self.engine.state.rival
+        rival.next_move_turn = 10
+        self.engine.deck.cpu_cycles = 8
+
+        ok, message = self.engine.counter_rival()
+
+        self.assertTrue(ok)
+        self.assertIn("Counter-traced", message)
+        self.assertEqual(self.engine.deck.cpu_cycles, 6)
+        self.assertEqual(rival.next_move_turn, 15)
+
+    def test_counter_rival_requires_cpu(self):
+        self.engine.deck.cpu_cycles = 1
+
+        ok, message = self.engine.counter_rival()
+
+        self.assertFalse(ok)
+        self.assertIn("2 CPU", message)
+
     def test_lockout_summary_reports_lost_unbanked_credits(self):
         self.engine.state.unbanked_creds = 137
         self.engine.state.trace_percent = 99
