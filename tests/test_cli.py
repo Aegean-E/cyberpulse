@@ -253,6 +253,12 @@ class TestCLI(unittest.TestCase):
         self.assertIn("Counter-traced", out)
         self.assertIn("contract(s) stolen", out)
 
+    def test_difficulty_flag_reaches_the_hud(self):
+        code, out = self.run_cli("--difficulty", "hard", "--exec", "status")
+
+        self.assertEqual(code, 0)
+        self.assertIn("Difficulty: HARD", out)
+
     def test_daily_flag_uses_the_date_seed(self):
         with mock.patch("cyberpulse.cli.daily_run", return_value=("2026-10-30", 20261030)):
             code, out = self.run_cli("--daily", "--exec", "status")

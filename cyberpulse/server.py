@@ -18,6 +18,7 @@ if str(project_root) not in sys.path:
 
 from cyberpulse.achievements import achievement_status
 from cyberpulse.daily import daily_run
+from cyberpulse.difficulty import normalize_difficulty
 from cyberpulse.engine import GameEngine
 from cyberpulse.models import NodeStatus, NodeType
 from cyberpulse.puzzles import BufferPuzzle, FrequencyPuzzle, HashCrackPuzzle
@@ -43,12 +44,20 @@ def coerce_seed(value: Any) -> int:
 class CyberdeckSession:
     """Encapsulates the stateful game session driving the Web Cyberdeck interface."""
 
-    def __init__(self, data_dir: Optional[Path] = None, seed: int = 1337, daily_key: str = ""):
+    def __init__(
+        self,
+        data_dir: Optional[Path] = None,
+        seed: int = 1337,
+        daily_key: str = "",
+        difficulty: str = "normal",
+    ):
         self.data_dir = data_dir or (Path.cwd() / ".cyberpulse")
         self.save_mgr = SaveManager(self.data_dir)
         self.shop = BlackMarketShop()
         self.career = self.save_mgr.load_career()
-        self.engine = GameEngine(seed=seed, career_profile=self.career)
+        self.engine = GameEngine(
+            seed=seed, career_profile=self.career, difficulty=difficulty
+        )
         self.engine.daily_key = str(daily_key or "")
         self.active_puzzle: Optional[Any] = None
         self.active_puzzle_node_id: Optional[str] = None
@@ -81,6 +90,7 @@ class CyberdeckSession:
         return {
             "seed": self.engine.seed,
             "daily_key": getattr(self.engine, "daily_key", ""),
+            "difficulty": self.engine.difficulty,
             "state": self.engine.state.to_dict(),
             "deck": self.engine.deck.to_dict(),
             "extraction_risk": self.engine.extraction_risk(),
@@ -107,14 +117,23 @@ class CyberdeckSession:
             },
         }
 
-    def reset_game(self, seed: Optional[int] = None, daily: bool = False) -> Dict[str, Any]:
+    def reset_game(
+        self,
+        seed: Optional[int] = None,
+        daily: bool = False,
+        difficulty: str = "normal",
+    ) -> Dict[str, Any]:
         new_daily_key = ""
         if daily:
             new_daily_key, new_seed = daily_run()
         else:
             new_seed = coerce_seed(seed) if seed is not None else (self.engine.seed + 1)
         self.career = self.save_mgr.load_career()
-        self.engine = GameEngine(seed=new_seed, career_profile=self.career)
+        self.engine = GameEngine(
+            seed=new_seed,
+            career_profile=self.career,
+            difficulty=normalize_difficulty(difficulty),
+        )
         self.engine.daily_key = new_daily_key
         self.active_puzzle = None
         self.active_puzzle_node_id = None
@@ -675,7 +694,8 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                         self.send_json_response({"ok": False, "error": "Seed must be a finite number"}, HTTPStatus.BAD_REQUEST)
                         return
                 daily = bool(payload.get("daily"))
-                state = self.server_session.reset_game(seed, daily=daily)
+                difficulty = payload.get("difficulty", "normal")
+                state = self.server_session.reset_game(seed, daily=daily, difficulty=difficulty)
                 message = (
                     f"Daily run {state['daily_key']} started."
                     if daily else "Neural link reset."
@@ -793,9 +813,12 @@ def create_server(
     data_dir: Optional[Path] = None,
     seed: int = 1337,
     daily_key: str = "",
+    difficulty: str = "normal",
 ) -> ThreadingHTTPServer:
     """Instantiate and configure the ThreadingHTTPServer for CyberPulse Web Cyberdeck."""
-    session = CyberdeckSession(data_dir=data_dir, seed=seed, daily_key=daily_key)
+    session = CyberdeckSession(
+        data_dir=data_dir, seed=seed, daily_key=daily_key, difficulty=difficulty
+    )
 
     class CustomHandler(CyberdeckHTTPHandler):
         server_session = session
@@ -812,11 +835,15 @@ def run_web(
     seed: int = 1337,
     open_browser: bool = True,
     daily_key: str = "",
+    difficulty: str = "normal",
 ) -> None:
     """Launch the Web Cyberdeck server and optionally launch default system web browser."""
     import webbrowser
 
-    server = create_server(host=host, port=port, data_dir=data_dir, seed=seed, daily_key=daily_key)
+    server = create_server(
+        host=host, port=port, data_dir=data_dir, seed=seed,
+        daily_key=daily_key, difficulty=difficulty,
+    )
     url = f"http://{host}:{port}"
     print(f"\n+==========================================================================+")
     print(f"|            >> CYBERPULSE // WEB CYBERDECK ONLINE <<                     |")

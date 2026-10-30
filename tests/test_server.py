@@ -992,6 +992,16 @@ class TestCyberdeckSaveSlotsAPI(unittest.TestCase):
         with urllib.request.urlopen(req, timeout=3.0) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
+    def test_invalid_or_named_difficulty_reset(self):
+        res = self._post({"action": "reset", "difficulty": "hard"})
+
+        self.assertTrue(res["ok"], res.get("message"))
+        self.assertEqual(res["state"]["difficulty"], "hard")
+        self.assertEqual(res["state"]["state"]["world"]["alert_level"], 25)
+
+        fallback = self._post({"action": "reset", "difficulty": "nightmare"})
+        self.assertEqual(fallback["state"]["difficulty"], "normal")
+
     def test_daily_reset_over_http(self):
         with mock.patch("cyberpulse.server.daily_run", return_value=("2026-10-30", 20261030)):
             res = self._post({"action": "reset", "daily": True})

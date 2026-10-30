@@ -621,6 +621,14 @@ function renderHUD(data) {
     dailyChip.style.display = dailyKey ? "" : "none";
   }
 
+  const difficultyChip = document.getElementById("grid-difficulty");
+  if (difficultyChip) {
+    const difficulty = String(data.difficulty || "normal").toLowerCase();
+    difficultyChip.textContent = `DIFFICULTY ${difficulty.toUpperCase()}`;
+    difficultyChip.classList.toggle("hard", difficulty === "hard");
+    difficultyChip.classList.toggle("easy", difficulty === "easy");
+  }
+
   const rivalChip = document.getElementById("grid-rival");
   if (rivalChip) {
     const rival = data.rival;
@@ -732,6 +740,9 @@ function buildRunStats(summary, gState) {
   if (typeof summary.score === "number") {
     const rank = summary.hall_rank ? ` #${summary.hall_rank}` : "";
     stats.push({ label: "SCORE", value: `${summary.score.toLocaleString()}${rank}` });
+  }
+  if (summary.difficulty) {
+    stats.push({ label: "DIFFICULTY", value: String(summary.difficulty).toUpperCase() });
   }
   return stats;
 }
@@ -1031,9 +1042,17 @@ async function handleJackout() {
   }
 }
 
+function selectedDifficulty() {
+  const select = document.getElementById("difficulty-select");
+  return select ? select.value : "normal";
+}
+
 async function handleReset() {
   sfx.click();
-  const res = await apiPost("/api/action", { action: "reset" });
+  const res = await apiPost("/api/action", {
+    action: "reset",
+    difficulty: selectedDifficulty(),
+  });
   if (res && res.ok) {
     addTerminalLog("Rebooted terminal with fresh cyberspace seed.", "info");
     state.data = res.state;
@@ -1067,7 +1086,11 @@ async function handleReplaySeed(seed) {
 
 async function handleDailyReset() {
   sfx.click();
-  const res = await apiPost("/api/action", { action: "reset", daily: true });
+  const res = await apiPost("/api/action", {
+    action: "reset",
+    daily: true,
+    difficulty: selectedDifficulty(),
+  });
   if (res && res.ok) {
     document.getElementById("modal-main-menu").classList.add("hidden");
     addTerminalLog(res.message || "Daily run started.", "info");
@@ -2508,7 +2531,8 @@ async function openCareerModal() {
         const outcome = String(entry.outcome || "unknown").toUpperCase();
         const seed = entry.seed !== undefined ? entry.seed : "?";
         const turns = entry.turns !== undefined ? entry.turns : 0;
-        meta.textContent = `${score} PTS · ${outcome} · SEED ${seed} · TURN ${turns}`;
+        const difficulty = String(entry.difficulty || "normal").toUpperCase();
+        meta.textContent = `${score} PTS · ${outcome} · ${difficulty} · SEED ${seed} · TURN ${turns}`;
         row.append(rank, meta);
         hallEl.appendChild(row);
       });
@@ -2599,7 +2623,8 @@ async function openCareerModal() {
         const turns = record.turns !== undefined ? record.turns : 0;
         const creds = record.creds !== undefined ? record.creds : 0;
         const combo = record.best_combo !== undefined ? record.best_combo : 0;
-        meta.textContent = `SEED ${seed} · TURN ${turns} · ${creds} CR · COMBO x${combo}`;
+        const difficulty = String(record.difficulty || "normal").toUpperCase();
+        meta.textContent = `${difficulty} · SEED ${seed} · TURN ${turns} · ${creds} CR · COMBO x${combo}`;
         const time = document.createElement("span");
         time.className = "run-time";
         time.textContent = formatRunStamp(record.finished_at);

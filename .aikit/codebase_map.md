@@ -6,11 +6,11 @@
 ---
 
 ## 📊 Codebase Metrics
-- **Total Python Modules**: `34`
-- **Total Classes**: `68`
-- **Total Top-Level Functions**: `80`
-- **Total Class Methods**: `638`
-- **Total Source Lines**: `14563`
+- **Total Python Modules**: `36`
+- **Total Classes**: `69`
+- **Total Top-Level Functions**: `83`
+- **Total Class Methods**: `645`
+- **Total Source Lines**: `14715`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1264` lines (`59229` bytes)
+**Size**: `1269` lines (`59578` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -86,14 +86,26 @@
 
 ---
 
+### [`cyberpulse/difficulty.py`](cyberpulse/difficulty.py)
+> *Difficulty normalization and run modifiers.*
+
+**Size**: `24` lines (`860` bytes)
+
+**Functions:**
+- `def normalize_difficulty(value)` - *Return a supported difficulty key, defaulting invalid input to normal.*
+- `def trace_multiplier(difficulty)` - *Return the trace gain multiplier for a difficulty.*
+- `def contract_multiplier(difficulty)` - *Return the contract payout multiplier for a difficulty.*
+
+---
+
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3630` lines (`169304` bytes)
+**Size**: `3650` lines (`170086` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
-  - Method `.__init__(seed, career_profile)`
+  - Method `.__init__(seed, career_profile, difficulty)`
   - Method `.get_current_node()`
   - Method `._mark_probed(node_id)` - *Record that the runner has mapped a host's services (survives save/load).*
   - Method `._find_quest(quest_id)`
@@ -362,14 +374,14 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `842` lines (`38350` bytes)
+**Size**: `869` lines (`38969` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
-  - Method `.__init__(data_dir, seed, daily_key)`
+  - Method `.__init__(data_dir, seed, daily_key, difficulty)`
   - Method `.settle_run_if_finished()` - *Persist a victory/lockout exactly once as soon as the run reaches a terminal state.*
   - Method `.get_full_state()` - *Aggregate complete runtime state for frontend rendering.*
-  - Method `.reset_game(seed, daily)`
+  - Method `.reset_game(seed, daily, difficulty)`
   - Method `.save_run(slot, name)` - *Persist the live run to a manual slot with the terminal's atomic manager.*
   - Method `.rename_save(slot, name)` - *Rename an existing manual checkpoint without changing the run.*
   - Method `.delete_save(slot)` - *Delete a checkpoint from the archive without touching the live run.*
@@ -386,8 +398,8 @@
 
 **Functions:**
 - `def coerce_seed(value)` - *Convert API/CLI seed input to an integer, rejecting non-finite or non-numeric values.*
-- `def create_server(host, port, data_dir, seed, daily_key)` - *Instantiate and configure the ThreadingHTTPServer for CyberPulse Web Cyberdeck.*
-- `def run_web(host, port, data_dir, seed, open_browser, daily_key)` - *Launch the Web Cyberdeck server and optionally launch default system web browser.*
+- `def create_server(host, port, data_dir, seed, daily_key, difficulty)` - *Instantiate and configure the ThreadingHTTPServer for CyberPulse Web Cyberdeck.*
+- `def run_web(host, port, data_dir, seed, open_browser, daily_key, difficulty)` - *Launch the Web Cyberdeck server and optionally launch default system web browser.*
 
 ---
 
@@ -409,7 +421,7 @@
 ### [`cyberpulse/storage.py`](cyberpulse/storage.py)
 > *Crash-resilient savegame and career profile storage engine for CyberPulse.*
 
-**Size**: `378` lines (`16197` bytes)
+**Size**: `381` lines (`16406` bytes)
 
 **Classes:**
 - `class SaveManager` - *Manages atomic saving and loading of game states and career profiles.*
@@ -536,7 +548,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `549` lines (`23113` bytes)
+**Size**: `555` lines (`23325` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -567,6 +579,7 @@
   - Method `.test_replay_starts_a_run_from_an_archived_seed()`
   - Method `.test_replay_rejects_an_out_of_range_index()`
   - Method `.test_rival_commands_inspect_and_counter()`
+  - Method `.test_difficulty_flag_reaches_the_hud()`
   - Method `.test_daily_flag_uses_the_date_seed()`
   - Method `.test_daily_career_dossier_shows_the_streak()`
   - Method `.test_dead_mans_switch_does_not_become_a_career_upgrade()`
@@ -604,10 +617,23 @@
 
 ---
 
+### [`tests/test_difficulty.py`](tests/test_difficulty.py)
+> *Unit tests for difficulty normalization and modifiers.*
+
+**Size**: `25` lines (`1039` bytes)
+
+**Classes:**
+- `class TestDifficulty`
+  - Method `.test_normalization_defaults_unknown_values()`
+  - Method `.test_trace_multipliers_order_by_difficulty()`
+  - Method `.test_contract_multipliers_favor_easy_and_tax_hard()`
+
+---
+
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `1984` lines (`83608` bytes)
+**Size**: `2014` lines (`84800` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -696,6 +722,8 @@
   - Method `.test_daily_streak_resets_after_a_gap()`
   - Method `.test_settle_career_banks_victory_loot_once()`
   - Method `.test_exploit_lockout_does_not_claim_root_access()`
+  - Method `.test_difficulty_changes_trace_and_starting_state()`
+  - Method `.test_difficulty_multiplies_contract_payout()`
   - Method `.test_float_seed_is_coerced()`
   - Method `.test_dead_mans_switch_banks_half_the_unbanked_loot_on_lockout()`
   - Method `.test_rival_steals_a_posted_contract_on_schedule()`
@@ -906,7 +934,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `1046` lines (`45696` bytes)
+**Size**: `1056` lines (`46159` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -981,6 +1009,7 @@
   - Method `.setUpClass()`
   - Method `.tearDownClass()`
   - Method `._post(payload)`
+  - Method `.test_invalid_or_named_difficulty_reset()`
   - Method `.test_daily_reset_over_http()`
   - Method `.test_name_rename_and_delete_over_http()`
   - Method `.test_named_slot_round_trip_and_autosave_payload()`
@@ -1010,7 +1039,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `572` lines (`22029` bytes)
+**Size**: `574` lines (`22116` bytes)
 
 **Classes:**
 - `class TestStorage`

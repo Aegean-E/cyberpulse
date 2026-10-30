@@ -12,6 +12,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
+from cyberpulse.difficulty import normalize_difficulty
 from cyberpulse.engine import GameEngine
 from cyberpulse.models import CareerProfile, CyberDeck, GameState, Node
 from cyberpulse.puzzles import puzzle_from_dict
@@ -178,6 +179,7 @@ class SaveManager:
             "seed": engine.seed,
             "run_id": getattr(engine, "run_id", uuid.uuid4().hex),
             "daily_key": getattr(engine, "daily_key", ""),
+            "difficulty": getattr(engine, "difficulty", "normal"),
             "deck": engine.deck.to_dict(),
             "state": engine.state.to_dict(),
             "nodes": {nid: n.to_dict() for nid, n in engine.nodes.items()},
@@ -229,6 +231,7 @@ class SaveManager:
             engine = GameEngine(seed=data["seed"])
             engine.run_id = str(data.get("run_id") or getattr(engine, "run_id", uuid.uuid4().hex))
             engine.daily_key = str(data.get("daily_key") or "")
+            engine.difficulty = normalize_difficulty(data.get("difficulty", "normal"))
             engine.deck = CyberDeck.from_dict(data["deck"])
             engine.state = GameState.from_dict(data["state"])
             engine.nodes = {nid: Node.from_dict(ndata) for nid, ndata in data["nodes"].items()}

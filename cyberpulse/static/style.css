@@ -4108,3 +4108,25 @@ body {
 }
 .dossier-hall-list { display: flex; flex-direction: column; gap: 6px; }
 .run-outcome.hall-rank { color: var(--c-warning); }
+.main-menu-difficulty {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 10px 0 2px;
+  font-size: 8px;
+  letter-spacing: 1.4px;
+  color: var(--c-text-dim);
+}
+.main-menu-difficulty select {
+  width: 100%;
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--c-text-bright);
+  background: hsla(220, 30%, 4%, 0.8);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+}
+.grid-chip.difficulty-chip { color: var(--c-text-main); }
+.grid-chip.difficulty-chip.easy { color: var(--c-primary); border-color: var(--c-primary-glow); }
+.grid-chip.difficulty-chip.hard { color: var(--c-danger); border-color: var(--c-danger-glow); }

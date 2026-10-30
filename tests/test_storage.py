@@ -24,6 +24,7 @@ class TestStorage(unittest.TestCase):
         engine.deck.cryptocreds = 850
         engine.state.trace_percent = 35
         engine.daily_key = "2026-10-30"
+        engine.difficulty = "hard"
 
         path = self.save_mgr.save(engine)
         self.assertTrue(path.exists())
@@ -34,6 +35,7 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(loaded.deck.cryptocreds, 850)
         self.assertEqual(loaded.state.trace_percent, 35)
         self.assertEqual(loaded.daily_key, "2026-10-30")
+        self.assertEqual(loaded.difficulty, "hard")
 
     def test_load_nonexistent(self):
         self.assertIsNone(self.save_mgr.load())

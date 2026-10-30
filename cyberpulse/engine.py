@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from cyberpulse.achievements import achievement_names, evaluate_achievements
 from cyberpulse.daily import is_next_day
+from cyberpulse.difficulty import contract_multiplier, normalize_difficulty, trace_multiplier
 from cyberpulse.rivals import generate_rival
 from cyberpulse.scoring import score_run
 from cyberpulse.models import (
@@ -223,8 +224,14 @@ class GameEngine:
     # Black ICE surge when pulling the jack: a hot connection is a final gamble.
     EXTRACTION_SURGE_BANDS = ((85, 15), (70, 10), (50, 5))
 
-    def __init__(self, seed: int = 1337, career_profile: Optional[CareerProfile] = None):
+    def __init__(
+        self,
+        seed: int = 1337,
+        career_profile: Optional[CareerProfile] = None,
+        difficulty: str = "normal",
+    ):
         self.seed = int(seed)
+        self.difficulty = normalize_difficulty(difficulty)
         # Identity of this specific run; save slots use it to purge every checkpoint on settlement.
         self.run_id = uuid.uuid4().hex
         self.daily_key = ""
@@ -271,6 +278,11 @@ class GameEngine:
         self.state.quests = initial_quests()
         self.state.contacts = initial_contacts()
         self.state.rival = generate_rival(self.seed)
+        if self.difficulty == "easy":
+            self.deck.max_cpu += 2
+            self.deck.cpu_cycles = self.deck.max_cpu
+        elif self.difficulty == "hard":
+            self.state.world.alert_level = min(100, self.state.world.alert_level + 15)
         self._sync_story_quests()
         self.pending_puzzles: Dict[str, Any] = {}
         self.run_settled: bool = False
@@ -737,6 +749,7 @@ class GameEngine:
             "achievements_unlocked": achievement_names(self.last_unlocked_achievements),
             "daily_key": getattr(self, "daily_key", ""),
             "rival": self.rival_summary(),
+            "difficulty": self.difficulty,
             "score": self.last_run_score,
             "score_breakdown": self.last_score_breakdown,
             "hall_rank": self.last_hall_rank,
@@ -897,8 +910,10 @@ class GameEngine:
 
         if reduction > 0:
             reduction = min(0.85, reduction)
-            return max(1, int(raw * (1.0 - reduction)))
-        return raw
+            amount = max(1, int(raw * (1.0 - reduction)))
+        else:
+            amount = raw
+        return max(1, int(round(amount * trace_multiplier(self.difficulty))))
 
     def extraction_surge(self) -> int:
         """Black ICE surge applied while pulling the jack, before the link is cut."""
@@ -1944,7 +1959,11 @@ class GameEngine:
             if contract.rush_turn and self.state.turns_elapsed <= contract.rush_turn
             else 0
         )
-        return contract.reward_creds + trust_bonus + rush_bonus, trust_bonus, rush_bonus
+        total = int(round(
+            (contract.reward_creds + trust_bonus + rush_bonus)
+            * contract_multiplier(self.difficulty)
+        ))
+        return total, trust_bonus, rush_bonus
 
     def _finalize_contract(self, contract: BountyContract, node: Node) -> str:
         """Pay a completed job once, reward its giver's trust, and dispatch the next job."""
@@ -2509,6 +2528,7 @@ class GameEngine:
             "contract_completed": bool(contract and contract.completed),
             "achievements": list(new_achievements),
             "daily_key": daily_key,
+            "difficulty": self.difficulty,
             "score": score_info["score"],
             "score_breakdown": score_info["breakdown"],
             "finished_at": time.time(),
@@ -2521,7 +2541,7 @@ class GameEngine:
             key: record[key]
             for key in (
                 "run_id", "score", "outcome", "seed", "turns", "creds",
-                "best_combo", "story_act", "daily_key", "finished_at",
+                "best_combo", "story_act", "daily_key", "difficulty", "finished_at",
             )
         }
         hall = profile.hall_of_fame if isinstance(profile.hall_of_fame, list) else []

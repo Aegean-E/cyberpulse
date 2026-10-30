@@ -1288,6 +1288,36 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(self.engine.nodes["node_proxy_a"].status, NodeStatus.DISCOVERED)
         self.assertTrue(self.engine.state.is_game_over)
 
+    def test_difficulty_changes_trace_and_starting_state(self):
+        easy = GameEngine(seed=1, difficulty="easy")
+        normal = GameEngine(seed=1, difficulty="normal")
+        hard = GameEngine(seed=1, difficulty="hard")
+
+        easy.add_trace(10)
+        normal.add_trace(10)
+        hard.add_trace(10)
+
+        self.assertEqual(easy.state.trace_percent, 8)
+        self.assertEqual(normal.state.trace_percent, 10)
+        self.assertEqual(hard.state.trace_percent, 12)
+        self.assertEqual(easy.deck.max_cpu, 12)
+        self.assertEqual(hard.state.world.alert_level, 25)
+
+    def test_difficulty_multiplies_contract_payout(self):
+        payouts = []
+        for difficulty in ("easy", "normal", "hard"):
+            engine = GameEngine(seed=2, difficulty=difficulty)
+            contract = engine.state.active_contract
+            contract.bonus_creds = 0
+            contract.rush_turn = 0
+            contact = engine._find_contact(contract.giver)
+            if contact:
+                contact.trust = 0
+            payouts.append(engine._contract_payout(contract)[0])
+
+        self.assertGreater(payouts[0], payouts[1])
+        self.assertGreater(payouts[1], payouts[2])
+
     def test_float_seed_is_coerced(self):
         engine = GameEngine(seed=42.9)
         self.assertEqual(engine.seed, 42)

@@ -78,6 +78,7 @@
       <span class="grid-chip" id="grid-clock">DAY 1 08:00</span>
       <span class="grid-chip" id="grid-shift">MORNING</span>
       <span class="grid-chip shift-chip" id="grid-shift-effect" title="Shift doctrine">STANDARD POSTURE</span>
+      <span class="grid-chip difficulty-chip" id="grid-difficulty">DIFFICULTY NORMAL</span>
       <span class="grid-chip daily-chip" id="grid-daily" style="display: none;">DAILY RUN</span>
       <span class="grid-chip rival-chip" id="grid-rival" style="display: none;">RIVAL</span>
       <span class="grid-chip alert-chip" id="grid-alert">GRID ALERT 10%</span>
@@ -588,6 +589,14 @@
         A dead courier left you a deck and one name: NEXUS. Jack in before someone else does.
       </p>
       <div class="main-menu-story" id="main-menu-story">ACT I // Ghost in the Gateway</div>
+      <label class="main-menu-difficulty">
+        <span>DIFFICULTY</span>
+        <select id="difficulty-select" aria-label="Run difficulty">
+          <option value="easy">EASY // +2 CPU, -20% trace, +10% pay</option>
+          <option value="normal" selected>NORMAL // baseline</option>
+          <option value="hard">HARD // +15 alert, +20% trace, -10% pay</option>
+        </select>
+      </label>
       <div class="main-menu-actions">
         <button class="action-btn hidden" id="menu-load-run">CONTINUE RUN</button>
         <button class="hack-btn menu-primary" id="menu-jack-in">JACK IN</button>

@@ -76,7 +76,7 @@ def print_hud(engine: GameEngine) -> None:
     print("+==========================================================================+")
     print(f"[*] Location:   {curr.name} | {curr.hostname} ({curr.ip_address}) [{curr.node_id}]")
     print(f"[*] Local Rig:  {engine.deck.local_hostname} ({engine.deck.local_ip}) [{engine.deck.model_name}]")
-    print(f"[*] Trace:      {trace_bar} | Turns: {engine.state.turns_elapsed}")
+    print(f"[*] Trace:      {trace_bar} | Turns: {engine.state.turns_elapsed} | Difficulty: {engine.difficulty.upper()}")
     risk = engine.extraction_risk()
     if risk["surge"]:
         lethal = " ⚠ LETHAL EXTRACTION" if risk["lethal"] else ""
@@ -284,9 +284,9 @@ def print_career(profile: CareerProfile) -> None:
             except (ValueError, OSError, OverflowError):  # hygiene: allow malformed timestamp shows as --
                 pass
         print(
-            f"   * [{index}] {outcome:<8} SEED {record.get('seed', '?')}  "
-            f"TURN {record.get('turns', 0)}  {record.get('creds', 0)} CR  "
-            f"COMBO x{record.get('best_combo', 0)}  {stamp}"
+            f"   * [{index}] {outcome:<8} {str(record.get('difficulty', 'normal')).upper():<6} "
+            f"SEED {record.get('seed', '?')}  TURN {record.get('turns', 0)}  "
+            f"{record.get('creds', 0)} CR  COMBO x{record.get('best_combo', 0)}  {stamp}"
         )
     print("+==========================================================================+")
 
@@ -1167,6 +1167,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     setup_terminal_encoding()
     parser = argparse.ArgumentParser(prog="cyberpulse", description="Retro-cyberpunk terminal hacking simulation game")
     parser.add_argument("--seed", type=int, default=1337, help="Deterministic world seed")
+    parser.add_argument(
+        "--difficulty", choices=("easy", "normal", "hard"), default="normal",
+        help="Run difficulty (default: normal)",
+    )
     parser.add_argument("--daily", action="store_true", help="Start the deterministic daily challenge for today")
     parser.add_argument("--data-dir", type=Path, default=None, help="Savegame data directory")
     parser.add_argument("--exec", dest="commands", default=None, help="Execute semicolon-separated commands and exit")
@@ -1190,12 +1194,13 @@ def main(argv: Optional[List[str]] = None) -> int:
             seed=seed_value,
             open_browser=not args.no_browser,
             daily_key=daily_key_value,
+            difficulty=args.difficulty,
         )
         return 0
 
     save_mgr = SaveManager(data_dir)
     career = save_mgr.load_career()
-    engine = GameEngine(seed=seed_value, career_profile=career)
+    engine = GameEngine(seed=seed_value, career_profile=career, difficulty=args.difficulty)
     engine.daily_key = daily_key_value
     save_mgr.mark_autosave_baseline(engine)
     if args.daily:
@@ -1229,7 +1234,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if menu_action == "daily":
         daily_key_value, daily_seed = daily_run()
         career = save_mgr.load_career()
-        engine = GameEngine(seed=daily_seed, career_profile=career)
+        engine = GameEngine(seed=daily_seed, career_profile=career, difficulty=args.difficulty)
         engine.daily_key = daily_key_value
         save_mgr.mark_autosave_baseline(engine)
         print(f"DAILY RUN {daily_key_value} // seed {daily_seed}")

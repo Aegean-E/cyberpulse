@@ -469,4 +469,17 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. Cover formula weights, clamping, ranking, cap/deduplication, persistence, career defaults, CLI display and the Web payload.
 - **Consequences**: Every settled run now has a comparable result and a place on a persistent leaderboard, while old careers remain valid and the formula is visible in one module. Test suite: 402 tests, 100% green.
 
+### ADR-036: Difficulty Modes: Trace, Starting Conditions and Contract Pay
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: Every run used the same trace curve and contract economy. Experienced players had no explicit challenge dial, and newer players had no gentler entry point beyond reading the command list.
+- **Decision**:
+  1. Add `difficulty.py` with `easy`, `normal`, `hard`, normalization of unknown values to normal, and multipliers: trace 0.8/1.0/1.2; contract pay 1.1/1.0/0.9.
+  2. Add `GameEngine.difficulty` with a default of normal. Easy grants +2 max CPU (and fills it); Hard starts the grid at +15 alert. Normal leaves the existing start state untouched.
+  3. Apply the trace multiplier in `mitigated_trace` (after stance/dampener/proxy mitigation) and the contract multiplier in `_contract_payout`, so all trace sources and payouts use the same rules.
+  4. Persist difficulty in save payloads, run-history records and Hall of Fame entries; old saves default to normal. Expose it through run summaries and state payloads.
+  5. Add `--difficulty` to the terminal, a Web main-menu picker, HUD chips in both interfaces, and a `difficulty` field on reset API calls while keeping normal as the default.
+  6. Cover normalization, trace/start modifiers, contract pay, save round-trip, CLI HUD, API reset fallback, and existing default behavior.
+- **Consequences**: Runs now have an explicit challenge dial without changing Normal-mode behavior, and difficulty remains visible in the archive and leaderboard. Balance changes are isolated to one module and three call sites. Test suite: 409 tests, 100% green.
+
 
