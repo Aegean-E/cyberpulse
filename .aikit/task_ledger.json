@@ -1,56 +1,16 @@
 {
   "version": 1,
   "active_task": {
-    "task_id": "task-cyberpulse-profile-settings",
+    "task_id": "task-cyberpulse-faction-standing",
     "last_phase": "in_progress",
-    "active_phase": 5,
-    "status": "completed",
-    "updated_at": 1793377574.7304063,
-    "owner": "opencode:profile-settings-1",
-    "started_by": "opencode:profile-settings-1",
-    "continuations": [],
-    "completed_at": 1793377608.124974
+    "active_phase": 4,
+    "status": "in_progress",
+    "updated_at": 1793377966.90793,
+    "owner": "opencode:faction-standing-1",
+    "started_by": "opencode:faction-standing-1",
+    "continuations": []
   },
   "checkpoints": [
-    {
-      "task_id": "task-cyberpulse-difficulty",
-      "phase": "in_progress",
-      "phase_num": 3,
-      "description": "[3/4] Difficulty engine, CLI/API and Web selector green; 409 tests",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793376031.7902808,
-      "timestamp_str": "2026-10-30 19:00:31",
-      "agent": "opencode:difficulty-1"
-    },
-    {
-      "task_id": "task-cyberpulse-difficulty",
-      "phase": "in_progress",
-      "phase_num": 2,
-      "description": "[1/4] Add three difficulty modes with trace, starting-condition and contract-pay modifiers",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793376059.189588,
-      "timestamp_str": "2026-10-30 19:00:59",
-      "agent": "opencode:difficulty-1",
-      "impact_assessment": {
-        "why": "Every run used the same trace curve and contract economy, so experienced players had no explicit challenge dial and newer players had no gentler entry point.",
-        "benefits": "Easy and Hard create replayable challenge levels, persist in the archive and leaderboard, and isolate balance changes in one module.",
-        "risks": "contract: engine/save/history payloads gain a difficulty field and the API reset accepts one; dependency: none; concurrency: one run per session; state: normal must remain byte-for-byte behaviorally unchanged and old saves must default to normal.",
-        "mitigation": "Normalize unknown values to normal, keep Normal multipliers at 1.0, apply modifiers in central trace/payout methods, persist the field, and cover both non-normal and default paths with tests."
-      }
-    },
-    {
-      "task_id": "task-cyberpulse-difficulty",
-      "phase": "in_progress",
-      "phase_num": 4,
-      "description": "[4/4] Difficulty modes complete; project gate 5/5, 409 tests; checklists: passed",
-      "files_affected": [],
-      "status": "in_progress",
-      "timestamp": 1793376130.9163928,
-      "timestamp_str": "2026-10-30 19:02:10",
-      "agent": "opencode:difficulty-1"
-    },
     {
       "task_id": "task-cyberpulse-difficulty",
       "phase": "completed",
@@ -256,6 +216,45 @@
       "timestamp": 1793377608.1249762,
       "timestamp_str": "2026-10-30 19:26:48",
       "agent": "opencode:profile-settings-1"
+    },
+    {
+      "task_id": "task-cyberpulse-faction-standing",
+      "phase": "in_progress",
+      "phase_num": 2,
+      "description": "[1/4] Add permanent Syndicate and Street standing with contract-pay and shop effects",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793377794.4501584,
+      "timestamp_str": "2026-10-30 19:29:54",
+      "agent": "opencode:faction-standing-1",
+      "impact_assessment": {
+        "why": "Contracts and clean runs only affect per-run outcomes and operative trust; there is no lasting faction identity or long-term reward for a playstyle.",
+        "benefits": "Standing gives contracts and clean extractions a career-level payoff, makes the Black Market respond to Street reputation, and adds a dossier progression axis.",
+        "risks": "contract: career.json gains additive faction_standing and shop prices gain a standing multiplier; dependency: none; concurrency: single-user profile saves; state: old careers default to zero, caps must bound bonuses, and current-run effects should use the standing snapshot taken at run start.",
+        "mitigation": "Normalize and cap standings, snapshot them at engine creation, apply bounded multipliers in central payout/shop paths, and cover growth, caps, persistence, old-career defaults and both interfaces with tests."
+      }
+    },
+    {
+      "task_id": "task-cyberpulse-faction-standing",
+      "phase": "in_progress",
+      "phase_num": 3,
+      "description": "[3/4] Faction growth, contract/shop effects, CLI/API/Web display green; 426 tests",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793377922.1040833,
+      "timestamp_str": "2026-10-30 19:32:02",
+      "agent": "opencode:faction-standing-1"
+    },
+    {
+      "task_id": "task-cyberpulse-faction-standing",
+      "phase": "in_progress",
+      "phase_num": 4,
+      "description": "[4/4] Faction standing complete; project gate 5/5, 426 tests; checklists: passed",
+      "files_affected": [],
+      "status": "in_progress",
+      "timestamp": 1793377966.90793,
+      "timestamp_str": "2026-10-30 19:32:46",
+      "agent": "opencode:faction-standing-1"
     }
   ]
 }

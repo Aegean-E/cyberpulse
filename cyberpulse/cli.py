@@ -217,12 +217,19 @@ def print_hunters(engine: GameEngine) -> None:
     print("+==========================================================================+")
 
 
-def print_shop(shop: BlackMarketShop, deck: CyberDeck, price_multiplier: float = 1.0) -> None:
+def print_shop(
+    shop: BlackMarketShop,
+    deck: CyberDeck,
+    price_multiplier: float = 1.0,
+    street_discount: float = 0.0,
+) -> None:
     items = shop.list_available(deck, price_multiplier=price_multiplier)
     print("\n+==========================================================================+")
     print("|                   >> BLACK MARKET CYBER-VENDOR <<                        |")
     print("+==========================================================================+")
     print(f"[*] Available Funds: {deck.cryptocreds} CryptoCreds | Market index: x{price_multiplier:.3f}")
+    if street_discount:
+        print(f"[*] Street Standing: -{street_discount * 100:.0f}% black-market discount applied.")
     if price_multiplier > 1.0:
         print("[!] The grid is hot: black-market prices are marked up tonight.")
     elif price_multiplier < 1.0:
@@ -290,6 +297,10 @@ def print_career(profile: CareerProfile) -> None:
     print(f"[*] Milestones:       {len(unlocked_names)}/{len(ACHIEVEMENTS)}")
     if unlocked_names:
         print(f"     {', '.join(unlocked_names)}")
+    standing = profile.faction_standing if isinstance(profile.faction_standing, dict) else {}
+    syndicate = int(standing.get("syndicate", 0) or 0)
+    street = int(standing.get("street", 0) or 0)
+    print(f"[*] Factions:         Syndicate {syndicate} (+{min(20, syndicate)}% contract pay) | Street {street} (-{min(15, street)}% shop)")
     print(f"[*] Daily Streak:     {profile.daily_streak} (Best: {profile.best_daily_streak})")
     daily = profile.daily_best if isinstance(profile.daily_best, dict) else {}
     if daily:
@@ -934,7 +945,12 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         return True
 
     if action == "shop":
-        print_shop(shop, engine.deck, price_multiplier=engine.world_summary()["market_multiplier"])
+        print_shop(
+            shop,
+            engine.deck,
+            price_multiplier=engine.shop_price_multiplier(),
+            street_discount=engine.street_standing_discount,
+        )
         return True
 
     if action == "buy":
@@ -942,7 +958,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print("Usage: buy <item_id> (e.g. `buy overclock_cpu`)")
             return True
         item = shop.catalog.get(parts[1])
-        ok, msg = shop.purchase(engine.deck, parts[1], price_multiplier=engine.world_summary()["market_multiplier"])
+        ok, msg = shop.purchase(engine.deck, parts[1], price_multiplier=engine.shop_price_multiplier())
         print(msg)
         if ok and (item is None or item.category != "consumable"):
             profile = save_mgr.load_career()

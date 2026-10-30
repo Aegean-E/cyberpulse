@@ -1288,6 +1288,41 @@ class TestEngine(unittest.TestCase):
         self.assertEqual(self.engine.nodes["node_proxy_a"].status, NodeStatus.DISCOVERED)
         self.assertTrue(self.engine.state.is_game_over)
 
+    def test_faction_standing_applies_bonuses_and_grows_on_settlement(self):
+        from cyberpulse.models import CareerProfile
+
+        profile = CareerProfile(faction_standing={"syndicate": 10, "street": 10})
+        engine = GameEngine(seed=2, career_profile=profile)
+        baseline = GameEngine(seed=2)
+
+        self.assertAlmostEqual(engine.contract_standing_bonus, 0.10)
+        self.assertAlmostEqual(engine.street_standing_discount, 0.10)
+        self.assertGreater(engine.shop_price_multiplier(), 0)
+        self.assertLess(engine.shop_price_multiplier(), baseline.shop_price_multiplier())
+
+        contract = engine.state.active_contract
+        contract.bonus_creds = 0
+        contract.rush_turn = 0
+        base_contract = baseline.state.active_contract
+        base_contract.bonus_creds = 0
+        base_contract.rush_turn = 0
+        for current in (engine, baseline):
+            contact = current._find_contact(current.state.active_contract.giver)
+            if contact:
+                contact.trust = 0
+        self.assertGreater(
+            engine._contract_payout(contract)[0],
+            baseline._contract_payout(base_contract)[0],
+        )
+
+        contract.completed = True
+        engine.state.is_victory = True
+        engine.settle_career(profile)
+
+        self.assertEqual(profile.faction_standing["syndicate"], 12)
+        self.assertEqual(profile.faction_standing["street"], 11)
+        self.assertEqual(engine.run_summary()["factions"]["syndicate"], 12)
+
     def test_daily_modifiers_apply_starting_conditions_and_multipliers(self):
         hot = GameEngine(seed=1, daily_modifier="hot_grid")
         blackout = GameEngine(seed=1, daily_modifier="blackout")

@@ -4,6 +4,8 @@ import math
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 
+from cyberpulse.factions import normalize_standing
+
 
 class NodeType:
     GATEWAY = "GATEWAY"
@@ -129,6 +131,7 @@ class CareerProfile:
     best_daily_streak: int = 0
     last_daily_key: str = ""
     hall_of_fame: List[Dict[str, Any]] = field(default_factory=list)
+    faction_standing: Dict[str, int] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -192,6 +195,9 @@ class CareerProfile:
             if len(cleaned_hall) >= 10:
                 break
         data_clean["hall_of_fame"] = cleaned_hall
+        data_clean["faction_standing"] = normalize_standing(
+            data_clean.get("faction_standing")
+        )
         return cls(**data_clean)
 
 

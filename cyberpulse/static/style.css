@@ -4191,3 +4191,10 @@ body {
     scroll-behavior: auto !important;
   }
 }
+.dossier-factions {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--c-border);
+}
+#dossier-factions { display: flex; flex-direction: column; gap: 6px; }
+.shop-discount { margin-left: 10px; color: var(--c-warning); font-size: 9px; letter-spacing: 0.8px; }

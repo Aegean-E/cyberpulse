@@ -108,6 +108,7 @@ class TestCyberdeckServer(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn("items", data)
         self.assertGreater(len(data["items"]), 0)
+        self.assertIn("street_discount", data)
 
     def test_get_world_state_and_grid_fields(self):
         status, res = self._get("/api/world")

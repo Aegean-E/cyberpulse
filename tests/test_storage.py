@@ -190,6 +190,14 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(restored.run_history[0]["creds"], 420)
         self.assertEqual(restored.achievements, ["veteran", "ghost_protocol"])
 
+    def test_career_faction_standing_round_trips(self):
+        profile = CareerProfile(alias="Broker", faction_standing={"syndicate": 14, "street": 7})
+
+        self.save_mgr.save_career(profile)
+        restored = self.save_mgr.load_career()
+
+        self.assertEqual(restored.faction_standing, {"syndicate": 14, "street": 7})
+
     def test_career_hall_of_fame_round_trips(self):
         profile = CareerProfile(alias="Champion", hall_of_fame=[
             {"run_id": "run-1", "score": 1250, "outcome": "victory", "seed": 1337},

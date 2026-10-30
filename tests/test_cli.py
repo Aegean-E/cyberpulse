@@ -253,6 +253,13 @@ class TestCLI(unittest.TestCase):
         self.assertIn("Counter-traced", out)
         self.assertIn("contract(s) stolen", out)
 
+    def test_career_dossier_shows_faction_standing(self):
+        code, out = self.run_cli("--exec", "career")
+
+        self.assertEqual(code, 0)
+        self.assertIn("Syndicate 0", out)
+        self.assertIn("Street 0", out)
+
     def test_alias_command_persists_and_shows_in_the_dossier(self):
         code, out = self.run_cli("--exec", "alias NightFox;career")
 

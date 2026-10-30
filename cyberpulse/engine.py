@@ -8,6 +8,12 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from cyberpulse.achievements import achievement_names, evaluate_achievements
 from cyberpulse.daily import is_next_day, modifier_by_id
 from cyberpulse.difficulty import contract_multiplier, normalize_difficulty, trace_multiplier
+from cyberpulse.factions import (
+    contract_bonus,
+    normalize_standing,
+    street_discount,
+    update_standing,
+)
 from cyberpulse.rivals import generate_rival
 from cyberpulse.scoring import score_run
 from cyberpulse.tutorial import tutorial_steps
@@ -234,6 +240,11 @@ class GameEngine:
     ):
         self.seed = int(seed)
         self.difficulty = normalize_difficulty(difficulty)
+        self.faction_standing = normalize_standing(
+            career_profile.faction_standing if career_profile else {}
+        )
+        self.contract_standing_bonus = contract_bonus(self.faction_standing)
+        self.street_standing_discount = street_discount(self.faction_standing)
         modifier = modifier_by_id(daily_modifier)
         self.daily_modifier = modifier.modifier_id if modifier else ""
         # Identity of this specific run; save slots use it to purge every checkpoint on settlement.
@@ -761,6 +772,7 @@ class GameEngine:
             "daily_key": getattr(self, "daily_key", ""),
             "rival": self.rival_summary(),
             "difficulty": self.difficulty,
+            "factions": dict(self.faction_standing),
             "daily_modifier": self.daily_modifier_summary(),
             "score": self.last_run_score,
             "score_breakdown": self.last_score_breakdown,
@@ -1022,6 +1034,11 @@ class GameEngine:
             if self.state.turns_elapsed % 2 == 0:
                 self.regenerate_cpu(1)
         return messages
+
+    def shop_price_multiplier(self) -> float:
+        """Return the live market index after the Street standing discount."""
+        market = self.world_summary()["market_multiplier"]
+        return market * max(0.5, 1.0 - self.street_standing_discount)
 
     def daily_modifier_summary(self) -> Optional[Dict[str, Any]]:
         """Return the active daily modifier for HUD and archive display."""
@@ -1999,6 +2016,7 @@ class GameEngine:
             (contract.reward_creds + trust_bonus + rush_bonus)
             * contract_multiplier(self.difficulty)
             * daily_factor
+            * (1.0 + self.contract_standing_bonus)
         ))
         return total, trust_bonus, rush_bonus
 
@@ -2535,6 +2553,14 @@ class GameEngine:
         else:
             outcome = "lockout"
         contract = self.state.active_contract
+        standing = normalize_standing(profile.faction_standing)
+        if contract and contract.completed:
+            standing = update_standing(standing, "syndicate", 2)
+        if outcome in ("victory", "jackout"):
+            standing = update_standing(standing, "street", 1)
+        profile.faction_standing = standing
+        self.faction_standing = standing
+
         new_achievements = evaluate_achievements(self, profile)
         profile.achievements = list(dict.fromkeys([
             *(profile.achievements if isinstance(profile.achievements, list) else []),
@@ -2567,6 +2593,7 @@ class GameEngine:
             "daily_key": daily_key,
             "daily_modifier": self.daily_modifier,
             "difficulty": self.difficulty,
+            "factions": dict(standing),
             "score": score_info["score"],
             "score_breakdown": score_info["breakdown"],
             "finished_at": time.time(),

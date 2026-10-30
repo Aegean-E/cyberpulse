@@ -2554,6 +2554,12 @@ async function openShopModal() {
   if (!data) return;
 
   document.getElementById("shop-creds").textContent = data.creds;
+  const shopDiscount = document.getElementById("shop-discount");
+  if (shopDiscount) {
+    shopDiscount.textContent = data.street_discount
+      ? `STREET -${Math.round(data.street_discount * 100)}%`
+      : "";
+  }
   const grid = document.getElementById("shop-items-grid");
   grid.innerHTML = "";
 
@@ -2635,6 +2641,29 @@ async function openCareerModal() {
     : "Standard Factory Rig";
 
   state.careerData = data;
+  const factionsEl = document.getElementById("dossier-factions");
+  if (factionsEl) {
+    const standing = data.faction_standing || {};
+    const syndicate = Number(standing.syndicate || 0);
+    const street = Number(standing.street || 0);
+    factionsEl.innerHTML = "";
+    const rows = [
+      ["SYNDICATE", syndicate, `+${Math.min(20, syndicate)}% contract pay`],
+      ["STREET", street, `-${Math.min(15, street)}% shop prices`],
+    ];
+    rows.forEach(([name, value, bonus]) => {
+      const row = document.createElement("div");
+      row.className = "dossier-run-row";
+      const chip = document.createElement("span");
+      chip.className = "run-outcome jackout";
+      chip.textContent = name;
+      const meta = document.createElement("span");
+      meta.className = "run-meta";
+      meta.textContent = `STANDING ${value} · ${bonus}`;
+      row.append(chip, meta);
+      factionsEl.appendChild(row);
+    });
+  }
   renderHall();
 
   const dailyStreakEl = document.getElementById("dossier-daily-streak");

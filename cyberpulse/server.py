@@ -109,7 +109,9 @@ class CyberdeckSession:
             "tutorial": self.engine.tutorial_progress(),
             "quests": self.engine.list_quests(),
             "contacts": self.engine.list_contacts(),
-            "shop_items": self.shop.list_available(self.engine.deck, price_multiplier=world["market_multiplier"]),
+            "shop_items": self.shop.list_available(
+                self.engine.deck, price_multiplier=self.engine.shop_price_multiplier()
+            ),
             "workshop_recipes": self.engine.list_crafting_recipes(),
             "known_cves": self.engine.list_cves(),
             "has_save": self.save_mgr.has_save(),
@@ -251,12 +253,13 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/shop":
-            multiplier = self.server_session.engine.world_summary()["market_multiplier"]
+            multiplier = self.server_session.engine.shop_price_multiplier()
             items = self.server_session.shop.list_available(self.server_session.engine.deck, price_multiplier=multiplier)
             self.send_json_response({
                 "items": items,
                 "creds": self.server_session.engine.deck.cryptocreds,
                 "market_multiplier": multiplier,
+                "street_discount": self.server_session.engine.street_standing_discount,
             })
             return
 
@@ -597,7 +600,7 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
             if action == "shop_buy":
                 item_id = payload.get("item_id")
                 item = shop.catalog.get(item_id)
-                multiplier = engine.world_summary()["market_multiplier"]
+                multiplier = engine.shop_price_multiplier()
                 ok, msg = shop.purchase(engine.deck, item_id, price_multiplier=multiplier)
                 if ok and (item is None or item.category != "consumable"):
                     profile = save_mgr.load_career()

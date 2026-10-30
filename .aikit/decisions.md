@@ -529,4 +529,16 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   5. Cover alias normalization, CLI persistence, the HTTP action and the existing default dossier behavior.
 - **Consequences**: Players can set a lasting handle and keep their preferred presentation across reloads, while old careers and restricted storage contexts remain safe. No save schema change is required. Test suite: 420 tests, 100% green.
 
+### ADR-041: Faction Standing: Syndicate Pay and Street Shop Discounts
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: Contracts improved operative trust and per-run payments, and clean runs banked loot, but neither left a lasting faction identity. The career dossier had no reputation axis that changed how future runs played.
+- **Decision**:
+  1. Add `factions.py` with two standing tracks, Syndicate and Street. Normalize unknown/invalid values to zero, cap each at 100, and expose bounded bonuses.
+  2. Persist `CareerProfile.faction_standing`; old careers default to zero. Completed contracts add +2 Syndicate; every victory or jackout adds +1 Street at settlement.
+  3. Snapshot standing into `GameEngine` at run start. Apply `1%` Syndicate contract pay per point (cap +20%) in `_contract_payout`, and `1%` Street Black Market discount per point (cap 15%) through `shop_price_multiplier` for CLI and Web purchases.
+  4. Surface standing and its active bonuses in the terminal career dossier, the Web faction panel and the Web shop header; expose the discount in `/api/shop` and the standings through career/state payloads.
+  5. Cover normalization, caps, standing growth, effects, persistence, old-career defaults, CLI display and the shop API.
+- **Consequences**: Contracts and clean extraction now build a persistent identity that changes future pay and prices, but effects are capped and only apply from the next run. Existing saves and careers remain compatible. Test suite: 426 tests, 100% green.
+
 

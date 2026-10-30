@@ -6,11 +6,11 @@
 ---
 
 ## 📊 Codebase Metrics
-- **Total Python Modules**: `38`
-- **Total Classes**: `71`
-- **Total Top-Level Functions**: `88`
-- **Total Class Methods**: `661`
-- **Total Source Lines**: `15130`
+- **Total Python Modules**: `40`
+- **Total Classes**: `72`
+- **Total Top-Level Functions**: `92`
+- **Total Class Methods**: `668`
+- **Total Source Lines**: `15322`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1346` lines (`62699` bytes)
+**Size**: `1362` lines (`63293` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -52,7 +52,7 @@
 - `def print_hud(engine)`
 - `def print_contract(engine)`
 - `def print_hunters(engine)`
-- `def print_shop(shop, deck, price_multiplier)`
+- `def print_shop(shop, deck, price_multiplier, street_discount)`
 - `def print_tutorial(engine, profile)` - *Render the first-run field manual with live checklist state.*
 - `def print_hall(profile, difficulty)` - *Render the Hall of Fame, optionally filtered by difficulty.*
 - `def print_career(profile)`
@@ -108,7 +108,7 @@
 ### [`cyberpulse/engine.py`](cyberpulse/engine.py)
 > *Deterministic cyberspace game engine with risk-reward loss aversion and near-miss feedback.*
 
-**Size**: `3688` lines (`171891` bytes)
+**Size**: `3715` lines (`173067` bytes)
 
 **Classes:**
 - `class GameEngine` - *Manages gameplay rules, push-your-luck risk, and victory/defeat conditions.*
@@ -147,6 +147,7 @@
   - Method `.add_trace(raw_amount)` - *Increase system trace, mitigated by ICE dampeners. 100% triggers lockout & loss of loot.*
   - Method `.regenerate_cpu(amount)` - *Cool down cyberdeck processing units and recover CPU cycles.*
   - Method `.advance_turn()` - *Advance the run clock one turn: daemons harvest, then the living grid reacts.*
+  - Method `.shop_price_multiplier()` - *Return the live market index after the Street standing discount.*
   - Method `.daily_modifier_summary()` - *Return the active daily modifier for HUD and archive display.*
   - Method `.tutorial_progress()` - *Return the first-run field manual with live completion flags.*
   - Method `.rival_summary()` - *Return the active rival's public status for HUD and dossier display.*
@@ -223,10 +224,23 @@
 
 ---
 
+### [`cyberpulse/factions.py`](cyberpulse/factions.py)
+> *Faction standing normalization and bounded reputation bonuses.*
+
+**Size**: `50` lines (`1705` bytes)
+
+**Functions:**
+- `def normalize_standing(data)` - *Return a clean two-faction standing map with non-negative capped integers.*
+- `def update_standing(standing, faction, delta)` - *Add reputation to one faction and return a normalized copy.*
+- `def contract_bonus(standing)` - *Return the Syndicate contract-pay bonus (1% per point, capped at 20%).*
+- `def street_discount(standing)` - *Return the Street Black Market discount (1% per point, capped at 15%).*
+
+---
+
 ### [`cyberpulse/models.py`](cyberpulse/models.py)
 > *Domain models for CyberPulse cyberspace nodes, decks, contracts, and career profiles.*
 
-**Size**: `730` lines (`26553` bytes)
+**Size**: `736` lines (`26790` bytes)
 
 **Classes:**
 - `class NodeType`
@@ -383,7 +397,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `901` lines (`40284` bytes)
+**Size**: `904` lines (`40385` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -568,7 +582,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `610` lines (`25549` bytes)
+**Size**: `617` lines (`25777` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -599,6 +613,7 @@
   - Method `.test_replay_starts_a_run_from_an_archived_seed()`
   - Method `.test_replay_rejects_an_out_of_range_index()`
   - Method `.test_rival_commands_inspect_and_counter()`
+  - Method `.test_career_dossier_shows_faction_standing()`
   - Method `.test_alias_command_persists_and_shows_in_the_dossier()`
   - Method `.test_hall_command_filters_by_difficulty()`
   - Method `.test_tutorial_command_lists_the_first_run_steps()`
@@ -658,7 +673,7 @@
 ### [`tests/test_engine.py`](tests/test_engine.py)
 > *Unit tests for CyberPulse game engine.*
 
-**Size**: `2045` lines (`86064` bytes)
+**Size**: `2080` lines (`87558` bytes)
 
 **Classes:**
 - `class TestEngine`
@@ -747,6 +762,7 @@
   - Method `.test_daily_streak_resets_after_a_gap()`
   - Method `.test_settle_career_banks_victory_loot_once()`
   - Method `.test_exploit_lockout_does_not_claim_root_access()`
+  - Method `.test_faction_standing_applies_bonuses_and_grows_on_settlement()`
   - Method `.test_daily_modifiers_apply_starting_conditions_and_multipliers()`
   - Method `.test_difficulty_changes_trace_and_starting_state()`
   - Method `.test_difficulty_multiplies_contract_payout()`
@@ -812,6 +828,19 @@
 
 ---
 
+### [`tests/test_factions.py`](tests/test_factions.py)
+> *Unit tests for faction standing normalization and bonuses.*
+
+**Size**: `38` lines (`1137` bytes)
+
+**Classes:**
+- `class TestFactions`
+  - Method `.test_normalize_standing_drops_unknown_and_invalid_values()`
+  - Method `.test_bonuses_are_capped()`
+  - Method `.test_update_standing_clamps_growth()`
+
+---
+
 ### [`tests/test_grid.py`](tests/test_grid.py)
 > *Integration tests for living-grid simulation wired into the game engine.*
 
@@ -858,7 +887,7 @@
 ### [`tests/test_models.py`](tests/test_models.py)
 > *Unit tests for CyberPulse domain models.*
 
-**Size**: `302` lines (`12403` bytes)
+**Size**: `303` lines (`12486` bytes)
 
 **Classes:**
 - `class TestModels`
@@ -961,7 +990,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `1070` lines (`46797` bytes)
+**Size**: `1071` lines (`46844` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -1067,7 +1096,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `576` lines (`22219` bytes)
+**Size**: `584` lines (`22549` bytes)
 
 **Classes:**
 - `class TestStorage`
@@ -1083,6 +1112,7 @@
   - Method `.test_corrupt_primary_does_not_overwrite_a_good_backup()`
   - Method `.test_list_saves_falls_back_when_timestamp_is_not_finite()`
   - Method `.test_career_run_history_round_trips()`
+  - Method `.test_career_faction_standing_round_trips()`
   - Method `.test_career_hall_of_fame_round_trips()`
   - Method `.test_career_default_fallback()`
   - Method `.test_old_career_payload_uses_best_combo_default()`
