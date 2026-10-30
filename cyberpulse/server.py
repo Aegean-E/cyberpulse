@@ -20,7 +20,7 @@ from cyberpulse.achievements import achievement_status
 from cyberpulse.daily import daily_modifier, daily_run
 from cyberpulse.difficulty import normalize_difficulty
 from cyberpulse.engine import GameEngine
-from cyberpulse.models import NodeStatus, NodeType
+from cyberpulse.models import CareerProfile, NodeStatus, NodeType
 from cyberpulse.puzzles import BufferPuzzle, FrequencyPuzzle, HashCrackPuzzle
 from cyberpulse.shop import BlackMarketShop
 from cyberpulse.storage import SaveManager
@@ -179,6 +179,22 @@ class CyberdeckSession:
         clean = self.save_mgr.clean_name(name)
         suffix = f" to '{clean}'" if clean else " (label cleared)"
         return True, f"Renamed {label}{suffix}."
+
+    def reset_career(self) -> Dict[str, Any]:
+        """Back up and delete the career plus all saves, then start a fresh run."""
+        self.save_mgr.backup_career()
+        self.save_mgr.delete_career()
+        self.save_mgr.delete_all_saves()
+        self.career = CareerProfile()
+        self.engine = GameEngine(
+            seed=self.engine.seed + 1,
+            career_profile=self.career,
+            difficulty=self.engine.difficulty,
+        )
+        self.active_puzzle = None
+        self.active_puzzle_node_id = None
+        self.save_mgr.mark_autosave_baseline(self.engine)
+        return self.get_full_state()
 
     def rename_alias(self, name: Any = "") -> Tuple[bool, str]:
         """Persist a new career alias after trimming and capping it."""
@@ -466,6 +482,17 @@ class CyberdeckHTTPHandler(BaseHTTPRequestHandler):
                     self.send_json_response({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
                     return
                 self.send_json_response({"ok": ok, "message": msg, "state": self.server_session.get_full_state()})
+                return
+
+            if action == "reset_career":
+                if str(payload.get("confirm", "")) != "RESET":
+                    self.send_json_response(
+                        {"ok": False, "error": "Career reset requires confirm RESET."},
+                        HTTPStatus.BAD_REQUEST,
+                    )
+                    return
+                state = self.server_session.reset_career()
+                self.send_json_response({"ok": True, "message": "Career reset.", "state": state})
                 return
 
             if action in ("rename_alias", "alias"):

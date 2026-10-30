@@ -375,6 +375,24 @@ class SaveManager:
         self._owned_slots.clear()
         self._last_autosave_signature = None
 
+    def backup_career(self) -> Optional[Path]:
+        """Copy the current career payload to career.backup.json before a reset."""
+        data = self._read_json_with_backup(self.career_file)
+        if not isinstance(data, dict):
+            return None
+        backup_path = self.data_dir / "career.backup.json"
+        return self._write_atomic(backup_path, data)
+
+    def delete_career(self) -> None:
+        """Remove the active career profile and its shadow backup."""
+        self.career_file.unlink(missing_ok=True)
+        self.career_file.with_suffix(".bak").unlink(missing_ok=True)
+
+    def delete_all_saves(self) -> None:
+        """Remove every manual slot and the autosave checkpoint."""
+        for key in SLOT_KEYS:
+            self.delete_save(key)
+
     def save_career(self, profile: CareerProfile) -> Optional[Path]:
         """Atomically persist career meta-progression profile."""
         return self._write_atomic(self.career_file, profile.to_dict())

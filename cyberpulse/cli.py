@@ -572,7 +572,7 @@ def show_main_menu(engine: GameEngine, save_mgr: SaveManager) -> str:
         if choice in ("6", "help", "how"):
             print("Commands: status, contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, scan, probe, exploit,")
             print("          bypass, evade, social, ls, cat, steal, wipe_logs, keylogger, craft,")
-            print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, tutorial, career, hall, alias,")
+            print("          move, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, tutorial, career, hall, alias, reset_career,")
             print("          save [1-3] [name], load [1-3|auto], saves, rename, delete, replay, quit")
             print("Daily challenge: run `python -m cyberpulse.cli --daily` or choose 7.")
             continue
@@ -1063,6 +1063,27 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
         print_career(save_mgr.load_career())
         return True
 
+    if action in ("reset_career", "reset_profile"):
+        if len(parts) < 2 or parts[1].upper() != "CONFIRM":
+            print("Usage: reset_career CONFIRM")
+            return True
+        backup = save_mgr.backup_career()
+        save_mgr.delete_career()
+        save_mgr.delete_all_saves()
+        fresh = CareerProfile()
+        replayed = GameEngine(
+            seed=engine.seed + 1,
+            career_profile=fresh,
+            difficulty=engine.difficulty,
+        )
+        engine.__dict__.update(replayed.__dict__)
+        save_mgr.mark_autosave_baseline(engine)
+        if backup:
+            print(f"Career reset. Previous profile backed up to {backup}.")
+        else:
+            print("Career reset. No previous profile existed.")
+        return True
+
     if action in ("alias", "handle"):
         if len(parts) < 2:
             print("Usage: alias <name>")
@@ -1213,7 +1234,7 @@ def run_command(cmd_line: str, engine: GameEngine, save_mgr: SaveManager, auto_s
             print(f"No checkpoint in {label}.")
         return True
 
-    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, tutorial, career, hall, alias, status, save, load, saves, rename, delete, replay, quit")
+    print(f"Unknown command: '{action}'. Commands: contract, bounty, accept_job, drop_offer, decline_contract, story, quests, contacts, contact, accept, world, news, hunter, counter, probe, exploit, cve, firewall, bypass, av, evade, social, phish, craft, workshop, keylogger, daemons, myip, myfiles, ls, cat, steal, wipe_logs, move, scan, overdrive, stance, proxy, quickhack, intel, spoof, cash_out, shop, buy, rival, counter_rival, tutorial, career, hall, alias, reset_career, status, save, load, saves, rename, delete, replay, quit")
     return True
 
 

@@ -552,4 +552,15 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   4. Add a regression test that saves a run at standing 10/10, changes the career to 20/20, and verifies the loaded run still uses 10/10.
 - **Consequences**: Checkpointed runs retain their original contract and shop economics, while legacy saves remain loadable. No schema break occurs. Test suite: 427 tests, 100% green.
 
+### ADR-043: Guarded Career Reset with Automatic Backup
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: Permanent career progression had no in-game reset. Players who wanted a clean start had to delete files manually, risking the loss of a dossier they might want to keep, and old saves could resurrect pre-reset progress.
+- **Decision**:
+  1. Add `SaveManager.backup_career()` (atomic `career.backup.json`), `delete_career()` and `delete_all_saves()`.
+  2. Add `reset_career CONFIRM` to the terminal. Any other token prints usage and changes nothing. A successful reset backs up the career, deletes the profile and all slots, rebuilds a fresh engine, and resets the autosave baseline.
+  3. Add a `reset_career` API action requiring the exact `confirm: RESET` token. The Web career dossier exposes a RESET CAREER button with a typed RESET prompt and closes the dossier on success.
+  4. Cover refusal, backup contents, profile deletion, slot cleanup and the HTTP action.
+- **Consequences**: Players can start over safely, with a recoverable backup and no stale checkpoints, while accidental invocation leaves progress untouched. No save schema change is required. Test suite: 431 tests, 100% green.
+
 

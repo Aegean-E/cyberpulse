@@ -237,6 +237,29 @@ function restorePreferences() {
   if (btnCrt) btnCrt.textContent = crtOn ? "CRT ON" : "CRT OFF";
 }
 
+async function handleResetCareer() {
+  const answer = window.prompt("Type RESET to back up and clear the career, dossier, and all saves.");
+  if (answer !== "RESET") return;
+  sfx.click();
+  const res = await apiPost("/api/action", { action: "reset_career", confirm: "RESET" });
+  if (res && res.ok) {
+    sfx.success();
+    state.data = res.state;
+    state.careerData = null;
+    state.selectedNodeId = null;
+    state.hallFilter = "all";
+    closePuzzleBay();
+    renderEmptyTargetCard();
+    document.getElementById("modal-career").classList.add("hidden");
+    document.getElementById("modal-main-menu").classList.add("hidden");
+    addTerminalLog(res.message || "Career reset.", "success");
+    renderHUD(res.state);
+  } else if (res) {
+    sfx.failure();
+    addTerminalLog(res.message || res.error || "Career reset failed.", "warn");
+  }
+}
+
 async function handleSaveAlias() {
   const input = document.getElementById("dossier-alias-input");
   const name = input ? input.value.trim() : "";
@@ -287,6 +310,7 @@ function initUIEvents() {
 
   restorePreferences();
   document.getElementById("btn-save-alias").addEventListener("click", handleSaveAlias);
+  document.getElementById("btn-reset-career").addEventListener("click", handleResetCareer);
 
   // Action Buttons
   document.getElementById("btn-scan").addEventListener("click", handleScan);

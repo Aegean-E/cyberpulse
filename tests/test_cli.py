@@ -260,6 +260,28 @@ class TestCLI(unittest.TestCase):
         self.assertIn("Syndicate 0", out)
         self.assertIn("Street 0", out)
 
+    def test_reset_career_requires_confirmation_and_backs_up(self):
+        from cyberpulse.engine import GameEngine
+        from cyberpulse.models import CareerProfile
+        from cyberpulse.storage import SaveManager
+
+        manager = SaveManager(self.temp_dir)
+        manager.save_career(CareerProfile(alias="OldRun", banked_creds=900))
+        manager.save(GameEngine(seed=1), 1)
+
+        code, out = self.run_cli("--exec", "reset_career")
+        self.assertEqual(code, 0)
+        self.assertIn("Usage: reset_career CONFIRM", out)
+        self.assertEqual(manager.load_career().alias, "OldRun")
+        self.assertTrue(manager.has_save())
+
+        code, out = self.run_cli("--exec", "reset_career CONFIRM")
+        self.assertEqual(code, 0)
+        self.assertIn("Career reset", out)
+        self.assertEqual(manager.load_career().alias, "ZeroCool")
+        self.assertFalse(manager.has_save())
+        self.assertTrue((self.temp_dir / "career.backup.json").exists())
+
     def test_alias_command_persists_and_shows_in_the_dossier(self):
         code, out = self.run_cli("--exec", "alias NightFox;career")
 

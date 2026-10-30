@@ -8,6 +8,7 @@ import threading
 import unittest
 from unittest import mock
 import urllib.error
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -135,6 +136,20 @@ class TestCyberdeckServer(unittest.TestCase):
             self.assertEqual(overclock["base_cost"], 150)
         finally:
             session.engine.state.world.market_index = 1.0
+
+    def test_reset_career_requires_confirmation(self):
+        with self.assertRaises(urllib.error.HTTPError) as refused:
+            self._post("/api/action", {"action": "reset_career"})
+        self.assertEqual(refused.exception.code, 400)
+
+        status, res = self._post("/api/action", {
+            "action": "reset_career",
+            "confirm": "RESET",
+        })
+        self.assertEqual(status, 200)
+        self.assertTrue(res["ok"], res.get("message"))
+        self.assertEqual(res["state"]["career"]["alias"], "ZeroCool")
+        self.assertEqual(res["state"]["career"]["successful_runs"], 0)
 
     def test_rename_alias_action(self):
         status, res = self._post("/api/action", {"action": "rename_alias", "name": "NightFox"})

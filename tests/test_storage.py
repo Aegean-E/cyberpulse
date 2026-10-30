@@ -205,6 +205,35 @@ class TestStorage(unittest.TestCase):
         self.assertEqual(restored.run_history[0]["creds"], 420)
         self.assertEqual(restored.achievements, ["veteran", "ghost_protocol"])
 
+    def test_backup_and_delete_career_preserve_a_recovery_copy(self):
+        profile = CareerProfile(alias="BackupMe", banked_creds=777)
+        self.save_mgr.save_career(profile)
+
+        backup = self.save_mgr.backup_career()
+
+        self.assertIsNotNone(backup)
+        self.assertTrue(backup.exists())
+        payload = json.loads(backup.read_text(encoding="utf-8"))
+        self.assertEqual(payload["alias"], "BackupMe")
+        self.assertEqual(payload["banked_creds"], 777)
+
+        self.save_mgr.delete_career()
+
+        self.assertEqual(self.save_mgr.load_career().alias, "ZeroCool")
+        self.assertTrue(backup.exists())
+
+    def test_delete_all_saves_removes_every_slot(self):
+        engine = GameEngine(seed=42)
+        self.save_mgr.save(engine, 1)
+        self.save_mgr.save(engine, 2)
+        self.save_mgr.autosave(engine)
+
+        self.save_mgr.delete_all_saves()
+
+        self.assertFalse(self.save_mgr.has_save())
+        for key in ("1", "2", "auto"):
+            self.assertFalse(self.save_mgr.slot_path(key).exists())
+
     def test_career_faction_standing_round_trips(self):
         profile = CareerProfile(alias="Broker", faction_standing={"syndicate": 14, "street": 7})
 

@@ -4198,3 +4198,10 @@ body {
 }
 #dossier-factions { display: flex; flex-direction: column; gap: 6px; }
 .shop-discount { margin-left: 10px; color: var(--c-warning); font-size: 9px; letter-spacing: 0.8px; }
+.reset-career-btn {
+  align-self: flex-start;
+  margin: 8px 0 4px;
+  color: var(--c-danger);
+  border-color: var(--c-danger-glow);
+  font-size: 8px;
+}

@@ -9,8 +9,8 @@
 - **Total Python Modules**: `40`
 - **Total Classes**: `72`
 - **Total Top-Level Functions**: `92`
-- **Total Class Methods**: `670`
-- **Total Source Lines**: `15348`
+- **Total Class Methods**: `678`
+- **Total Source Lines**: `15480`
 
 ---
 
@@ -42,7 +42,7 @@
 ### [`cyberpulse/cli.py`](cyberpulse/cli.py)
 > *Interactive and scriptable retro-cyberpunk terminal CLI for CyberPulse with behavioral mechanics.*
 
-**Size**: `1362` lines (`63293` bytes)
+**Size**: `1383` lines (`64092` bytes)
 
 **Functions:**
 - `def setup_terminal_encoding()` - *Ensure stdout and stderr handle utf-8 safely across all Windows code pages.*
@@ -398,7 +398,7 @@
 ### [`cyberpulse/server.py`](cyberpulse/server.py)
 > *Zero-dependency HTTP REST backend and static file server for CyberPulse Web Cyberdeck.*
 
-**Size**: `904` lines (`40385` bytes)
+**Size**: `931` lines (`41542` bytes)
 
 **Classes:**
 - `class CyberdeckSession` - *Encapsulates the stateful game session driving the Web Cyberdeck interface.*
@@ -408,6 +408,7 @@
   - Method `.reset_game(seed, daily, difficulty)`
   - Method `.save_run(slot, name)` - *Persist the live run to a manual slot with the terminal's atomic manager.*
   - Method `.rename_save(slot, name)` - *Rename an existing manual checkpoint without changing the run.*
+  - Method `.reset_career()` - *Back up and delete the career plus all saves, then start a fresh run.*
   - Method `.rename_alias(name)` - *Persist a new career alias after trimming and capping it.*
   - Method `.delete_save(slot)` - *Delete a checkpoint from the archive without touching the live run.*
   - Method `.load_run(slot)` - *Replace the live engine with a saved run from the requested slot.*
@@ -446,7 +447,7 @@
 ### [`cyberpulse/storage.py`](cyberpulse/storage.py)
 > *Crash-resilient savegame and career profile storage engine for CyberPulse.*
 
-**Size**: `391` lines (`17060` bytes)
+**Size**: `409` lines (`17827` bytes)
 
 **Classes:**
 - `class SaveManager` - *Manages atomic saving and loading of game states and career profiles.*
@@ -471,6 +472,9 @@
   - Method `.list_saves()` - *Return metadata for every restorable slot, newest first.*
   - Method `.delete_save(slot)` - *Remove a slot's savegame and its shadow backup.*
   - Method `.delete_run(run_id)` - *Purge this interface's owned checkpoints of a settled run, leaving other runs untouched.*
+  - Method `.backup_career()` - *Copy the current career payload to career.backup.json before a reset.*
+  - Method `.delete_career()` - *Remove the active career profile and its shadow backup.*
+  - Method `.delete_all_saves()` - *Remove every manual slot and the autosave checkpoint.*
   - Method `.save_career(profile)` - *Atomically persist career meta-progression profile.*
   - Method `.load_career()` - *Load persistent career profile with backup recovery or return fresh profile.*
 
@@ -583,7 +587,7 @@
 ### [`tests/test_cli.py`](tests/test_cli.py)
 > *Integration tests for CyberPulse CLI.*
 
-**Size**: `617` lines (`25777` bytes)
+**Size**: `639` lines (`26754` bytes)
 
 **Classes:**
 - `class TestCLI`
@@ -615,6 +619,7 @@
   - Method `.test_replay_rejects_an_out_of_range_index()`
   - Method `.test_rival_commands_inspect_and_counter()`
   - Method `.test_career_dossier_shows_faction_standing()`
+  - Method `.test_reset_career_requires_confirmation_and_backs_up()`
   - Method `.test_alias_command_persists_and_shows_in_the_dossier()`
   - Method `.test_hall_command_filters_by_difficulty()`
   - Method `.test_tutorial_command_lists_the_first_run_steps()`
@@ -991,7 +996,7 @@
 ### [`tests/test_server.py`](tests/test_server.py)
 > *Unit and integration tests for CyberPulse HTTP REST server.*
 
-**Size**: `1071` lines (`46844` bytes)
+**Size**: `1086` lines (`47473` bytes)
 
 **Classes:**
 - `class TestCyberdeckServer`
@@ -1005,6 +1010,7 @@
   - Method `.test_get_shop()`
   - Method `.test_get_world_state_and_grid_fields()`
   - Method `.test_market_markup_reaches_shop_endpoint()`
+  - Method `.test_reset_career_requires_confirmation()`
   - Method `.test_rename_alias_action()`
   - Method `.test_get_career()`
   - Method `.test_action_scan_and_spoof()`
@@ -1097,7 +1103,7 @@
 ### [`tests/test_storage.py`](tests/test_storage.py)
 > *Unit tests for CyberPulse savegame and career profile persistence.*
 
-**Size**: `599` lines (`23260` bytes)
+**Size**: `628` lines (`24307` bytes)
 
 **Classes:**
 - `class TestStorage`
@@ -1114,6 +1120,8 @@
   - Method `.test_corrupt_primary_does_not_overwrite_a_good_backup()`
   - Method `.test_list_saves_falls_back_when_timestamp_is_not_finite()`
   - Method `.test_career_run_history_round_trips()`
+  - Method `.test_backup_and_delete_career_preserve_a_recovery_copy()`
+  - Method `.test_delete_all_saves_removes_every_slot()`
   - Method `.test_career_faction_standing_round_trips()`
   - Method `.test_career_hall_of_fame_round_trips()`
   - Method `.test_career_default_fallback()`
