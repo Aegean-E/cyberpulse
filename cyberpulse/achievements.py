@@ -28,6 +28,10 @@ ACHIEVEMENTS: Tuple[Achievement, ...] = (
     Achievement("high_roller", "High Roller", "Bank 1,000 credits."),
     Achievement("hot_extraction", "Hot Extraction", "Jack out at 85% trace or higher."),
     Achievement("full_story", "Full Story", "Reach Act V."),
+    Achievement("hard_clear", "Hard Clear", "Win a run on Hard difficulty."),
+    Achievement("daily_devotion", "Daily Devotion", "Reach a 7-day daily streak."),
+    Achievement("daily_legend", "Daily Legend", "Reach a 30-day daily streak."),
+    Achievement("faction_insider", "Faction Insider", "Reach 10 standing with the Syndicate or Street."),
 )
 
 BY_ID: Dict[str, Achievement] = {entry.achievement_id: entry for entry in ACHIEVEMENTS}
@@ -110,4 +114,16 @@ def evaluate_achievements(engine: Any, profile: CareerProfile) -> List[str]:
         unlock("hot_extraction")
     if engine.state.story_act >= 5:
         unlock("full_story")
+    if engine.state.is_victory and getattr(engine, "difficulty", "normal") == "hard":
+        unlock("hard_clear")
+    if int(getattr(profile, "daily_streak", 0) or 0) >= 7:
+        unlock("daily_devotion")
+    if int(getattr(profile, "best_daily_streak", 0) or 0) >= 30:
+        unlock("daily_legend")
+    standing = getattr(profile, "faction_standing", {}) or {}
+    if max(
+        int(standing.get("syndicate", 0) or 0),
+        int(standing.get("street", 0) or 0),
+    ) >= 10:
+        unlock("faction_insider")
     return new_ids

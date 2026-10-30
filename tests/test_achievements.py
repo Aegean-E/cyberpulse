@@ -79,6 +79,28 @@ class TestAchievements(unittest.TestCase):
         self.assertIn("veteran", unlocked)
         self.assertIn("hot_extraction", unlocked)
 
+    def test_hard_clear_requires_a_hard_victory(self):
+        hard = GameEngine(seed=1, difficulty="hard")
+        normal = GameEngine(seed=1)
+        hard.state.is_victory = True
+        normal.state.is_victory = True
+
+        self.assertIn("hard_clear", evaluate_achievements(hard, CareerProfile()))
+        self.assertNotIn("hard_clear", evaluate_achievements(normal, CareerProfile()))
+
+    def test_daily_streak_milestones(self):
+        profile = CareerProfile(daily_streak=7, best_daily_streak=30)
+
+        unlocked = evaluate_achievements(self.engine, profile)
+
+        self.assertIn("daily_devotion", unlocked)
+        self.assertIn("daily_legend", unlocked)
+
+    def test_faction_insider_at_ten_standing(self):
+        profile = CareerProfile(faction_standing={"syndicate": 10, "street": 0})
+
+        self.assertIn("faction_insider", evaluate_achievements(self.engine, profile))
+
     def test_unlocks_are_not_returned_twice(self):
         self.engine.state.best_combo = 5
         first = evaluate_achievements(self.engine, self.profile)

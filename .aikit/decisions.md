@@ -563,4 +563,15 @@ contract, a dependency, a data format or the architecture; IDs are consecutive a
   4. Cover refusal, backup contents, profile deletion, slot cleanup and the HTTP action.
 - **Consequences**: Players can start over safely, with a recoverable backup and no stale checkpoints, while accidental invocation leaves progress untouched. No save schema change is required. Test suite: 431 tests, 100% green.
 
+### ADR-044: Milestone Catalog Expansion: Hard, Daily and Faction Goals
+- **Date**: 2026-10-30
+- **Status**: Accepted
+- **Context**: The original twelve milestones predated difficulty modes, daily streaks and faction standing. Those systems had their own records but no permanent badge in the dossier mastery ladder.
+- **Decision**:
+  1. Add four catalog entries: Hard Clear (victory on Hard), Daily Devotion (7-day streak), Daily Legend (30-day streak), and Faction Insider (10 standing with Syndicate or Street).
+  2. Evaluate them in the existing settlement-time evaluator after stats and standing updates, so they unlock once and remain idempotent.
+  3. Keep the catalog as the single source for CLI counts, Web badges and API status; old careers simply unlock eligible badges on their next settlement.
+  4. Cover Hard versus Normal, streak thresholds, faction thresholds, catalog length and duplicate-settlement behavior.
+- **Consequences**: The newer progression systems now feed the same permanent mastery ladder, without new commands or save fields. Test suite: 434 tests, 100% green.
+
 

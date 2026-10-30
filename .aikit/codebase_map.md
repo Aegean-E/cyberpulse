@@ -9,8 +9,8 @@
 - **Total Python Modules**: `40`
 - **Total Classes**: `72`
 - **Total Top-Level Functions**: `92`
-- **Total Class Methods**: `678`
-- **Total Source Lines**: `15480`
+- **Total Class Methods**: `681`
+- **Total Source Lines**: `15518`
 
 ---
 
@@ -26,7 +26,7 @@
 ### [`cyberpulse/achievements.py`](cyberpulse/achievements.py)
 > *Career milestone catalog and settlement-time evaluation.*
 
-**Size**: `113` lines (`4291` bytes)
+**Size**: `129` lines (`5157` bytes)
 
 **Classes:**
 - `class Achievement` - *A permanent career milestone shown in the dossier.*
@@ -569,7 +569,7 @@
 ### [`tests/test_achievements.py`](tests/test_achievements.py)
 > *Unit tests for career milestone evaluation and catalog integrity.*
 
-**Size**: `91` lines (`3326` bytes)
+**Size**: `113` lines (`4216` bytes)
 
 **Classes:**
 - `class TestAchievements`
@@ -580,6 +580,9 @@
   - Method `.test_victory_conditions_unlock_ghost_and_speed()`
   - Method `.test_contract_vault_and_economy_conditions()`
   - Method `.test_hot_extraction_and_veteran_conditions()`
+  - Method `.test_hard_clear_requires_a_hard_victory()`
+  - Method `.test_daily_streak_milestones()`
+  - Method `.test_faction_insider_at_ten_standing()`
   - Method `.test_unlocks_are_not_returned_twice()`
 
 ---
